@@ -7,7 +7,7 @@
 
 ## 팀명
 
-> TripleValues
+- TripleValues
 
 ---
 
