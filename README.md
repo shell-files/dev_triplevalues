@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | [이현서](https://github.com/mpsddd-commits) | 팀원 | 데이터 정보, 아이디어, DB, FE, BE, 업데이트 중 |
 | [이나라](링크URL) | 팀원 | WBS, DB, FE, BE, 업데이트 중 |
-| [남영준](링크URL) | 팀장 | DB 정의서, DB, FE, BE, 업데이트 중 |
+| [남영준](https://github.com/HorieZA) | 팀장 | DB 정의서, DB, FE, BE, 업데이트 중 |
 - 이름 클릭시 팀원관련 링크 이동(수정중)
 ---
 
