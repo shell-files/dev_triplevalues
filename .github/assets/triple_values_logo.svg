@@ -1,0 +1,54 @@
+<svg width="680" height="520" viewBox="0 0 680 520" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>Triple Values 팀 로고</title>
+  <desc>환경, 사회, 지배구조(ESG) 3가지 가치를 상징하는 트리플 밸류스 팀 로고</desc>
+
+  <!-- Background -->
+  <rect width="680" height="520" fill="#ffffff"/>
+
+  <!-- Triangle E (Environment - Green) -->
+  <polygon points="340,120 240,295 440,295" fill="#2d7a4f" opacity="0.92"/>
+  <!-- Triangle S (Social - Blue) -->
+  <polygon points="340,380 210,160 290,160 340,260 390,160 470,160" fill="#1a5fa8" opacity="0.85"/>
+  <!-- Overlap blend areas -->
+  <polygon points="290,160 340,260 260,295 240,295" fill="#1a4d7a" opacity="0.55"/>
+  <polygon points="390,160 440,295 420,295 340,260" fill="#1a5a3a" opacity="0.55"/>
+
+  <!-- Person 1 (E - left) -->
+  <circle cx="282" cy="222" r="11" fill="#ffffff" opacity="0.95"/>
+  <rect x="272" y="236" width="20" height="22" rx="4" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Person 2 (S - center top) -->
+  <circle cx="340" cy="185" r="11" fill="#ffffff" opacity="0.95"/>
+  <rect x="330" y="199" width="20" height="22" rx="4" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Person 3 (G - right) -->
+  <circle cx="398" cy="222" r="11" fill="#ffffff" opacity="0.95"/>
+  <rect x="388" y="236" width="20" height="22" rx="4" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Central connecting dot -->
+  <circle cx="340" cy="255" r="7" fill="#f5c842" opacity="0.98"/>
+
+  <!-- E S G labels -->
+  <text x="262" y="283" text-anchor="middle" font-size="13" font-weight="700" font-family="Helvetica Neue, Arial, sans-serif" fill="#ffffff" opacity="0.9">E</text>
+  <text x="340" y="155" text-anchor="middle" font-size="13" font-weight="700" font-family="Helvetica Neue, Arial, sans-serif" fill="#ffffff" opacity="0.9">S</text>
+  <text x="418" y="283" text-anchor="middle" font-size="13" font-weight="700" font-family="Helvetica Neue, Arial, sans-serif" fill="#ffffff" opacity="0.9">G</text>
+
+  <!-- Outer ring accent -->
+  <circle cx="340" cy="232" r="108" fill="none" stroke="#2d7a4f" stroke-width="1.5" opacity="0.3"/>
+  <circle cx="340" cy="232" r="118" fill="none" stroke="#1a5fa8" stroke-width="0.8" opacity="0.2"/>
+
+  <!-- Team name -->
+  <text x="340" y="400" text-anchor="middle" font-size="28" font-weight="700" font-family="Helvetica Neue, Arial, sans-serif" fill="#1a2e1a" letter-spacing="2">TRIPLE VALUES</text>
+  <text x="340" y="430" text-anchor="middle" font-size="13" font-weight="400" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" fill="#4a7a5a" letter-spacing="4">트리플 밸류스</text>
+
+  <!-- Divider -->
+  <line x1="240" y1="448" x2="440" y2="448" stroke="#2d7a4f" stroke-width="0.8" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text x="340" y="470" text-anchor="middle" font-size="11" font-weight="400" font-family="Helvetica Neue, Arial, sans-serif" fill="#5a7a6a" letter-spacing="1.5">ESG SUPPLY CHAIN MANAGEMENT</text>
+
+  <!-- Three dots representing 3 members -->
+  <circle cx="316" cy="490" r="3.5" fill="#2d7a4f"/>
+  <circle cx="340" cy="490" r="3.5" fill="#1a5fa8"/>
+  <circle cx="364" cy="490" r="3.5" fill="#f5c842"/>
+</svg>
