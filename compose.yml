@@ -27,7 +27,7 @@ services:
       - ./backend/uv.lock:/workspace/uv.lock
       - ./backend/.python-version:/workspace/.python-version
     environment:
-      - HOST_IP=http://tv.weareithero.cloud
+      - HOST_IP=${HOST_IP}
     command: [ "uv", "run", "fastapi", "run" ]
 
 networks:
