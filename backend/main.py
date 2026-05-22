@@ -18,3 +18,8 @@ app.add_middleware(
 @app.get("/")
 def read_root():
   return {"msg": "Triple Values!"}
+
+@app.get("/about")
+def about():
+  return {"msg": "도움 없이 스스로 개발 도전 중!"}
+
