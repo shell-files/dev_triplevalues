@@ -1,4 +1,16 @@
 services:
+  frontend:
+    container_name: frontend
+    image: nginx:1.28
+    restart: always
+    networks:
+      - main-network
+    ports:
+      - 80:80
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./frontend/default.conf:/etc/nginx/conf.d/default.conf:ro
+
   backend:
     container_name: backend
     image: uv:1
@@ -7,8 +19,6 @@ services:
       - 8000:8000
     networks:
       - main-network
-    # depends_on:
-    #   - mariadb
     working_dir: /workspace
     volumes:
       - ./backend/main.py:/workspace/main.py
@@ -17,32 +27,9 @@ services:
       - ./backend/uv.lock:/workspace/uv.lock
       - ./backend/.python-version:/workspace/.python-version
     environment:
-      - HOST_IP=http://aiedu.tplinkdns.com
-    command: ["uv", "run", "fastapi", "run"]
-
-  # mariadb:
-  #   container_name: mariadb
-  #   image: mariadb:12.1.2
-  #   restart: always
-  #   ports:
-  #     - 3306:3306
-  #   networks:
-  #     - main-network
-  #   volumes:
-  #     - ./.mariadb/conf.d:/etc/mysql/conf.d:ro
-  #     - ./.mariadb/initdb.d:/docker-entrypoint-initdb.d:ro
-  #     - data-mariadb:/var/lib/mysql:rw
-  #   environment:
-  #     - MARIADB_HOST=localhost
-  #     - MARIADB_PORT=3306
-  #     - MARIADB_ROOT_PASSWORD=1234
-  #     - MARIADB_DATABASE=edu
-  #     - TZ=Asia/Seoul
-  #     - LC_ALL:en_US.UTF-8
+      - HOST_IP=http://tv.weareithero.cloud
+    command: [ "uv", "run", "fastapi", "run" ]
 
 networks:
-  main-network: 
+  main-network:
     driver: bridge
-
-# volumes:
-#   data-mariadb:
