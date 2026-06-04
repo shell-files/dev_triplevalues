@@ -11,7 +11,7 @@ def logStatus(message: str):
     currentTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     safePrint(f"[{currentTime}] {message}", flush=True)
 
-def injectModifiedJsonlToPostgres(jsonlPath="esg_ontology_template.jsonl"):
+def injectModifiedJsonlToPostgres(jsonlPath="esgOntologyTemplate.jsonl"):
     startTotalTime = time.time()
     
     logStatus("PostgreSQL 데이터베이스 연결 시도 중...")
