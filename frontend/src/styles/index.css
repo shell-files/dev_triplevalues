@@ -1,0 +1,97 @@
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Tailwind v4 단일 임포트 */
+@import "tailwindcss";
+
+/* ── CSS 변수 ─────────────────────────────────────────────── */
+:root {
+  --color-primary: #03a94d;
+  --color-emerald: #10b981;
+  --color-amber: #f59e0b;
+  --color-red: #ef4444;
+  --color-slate-950: #020617;
+  --color-slate-bg: #f8fafc;
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* ── 글로벌 초기화 및 폰트 ─────────────────────────────────── */
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background-color: var(--color-slate-bg);
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── 커스텀 스크롤바 ───────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── 차트 툴팁 애니메이션 ───────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── 공급망 지도 라인 배지 ─────────────────────────────────── */
+.supply-chain-line {
+  width: 1px;
+  background: linear-gradient(to bottom, #94a3b8, #cbd5e1);
+}
+
+/* ── 산림파괴 리스크 배지 ─────────────────────────────────── */
+.deforest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* ── 인증 카드 ────────────────────────────────────────────── */
+.cert-card-yes {
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.cert-card-no {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  text-align: center;
+  opacity: 0.7;
+}
