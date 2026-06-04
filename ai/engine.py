@@ -5,17 +5,11 @@ Ontology Rule Registry, and Hugging Face Dataset Exporter.
 import os
 import re
 import json
-import datetime
-import hashlib
-import glob
 import time
 import ollama
-import pandas as pd
-from pypdf import PdfReader
+import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
-from psycopg2.extras import execute_values
-from datasets import Dataset 
 
 import dbClient as db
 from settings import settings, safePrint, simpleTokenizer
@@ -25,357 +19,459 @@ os.environ["OLLAMA_HOST"] = settings.ollama_host
 ollamaClient = ollama.Client(host=settings.ollama_host)
 reranker = CrossEncoder(settings.rerank_model)
 
-# 인메모리 파이프라인 전역 상태 관리 객체 (CamelCase 적용)
+# 인메모리 파이프라인 전역 상태 관리 객체
 bm25Index = None
 globalChunksPool = []
-ontologyRegistry: dict = {}
-ontologyTemplateList: list = []
+_ONTOLOGY_REGISTRY: dict = {}
+_ONTOLOGY_TEMPLATE_LIST: list = []
 
 
 # ════════════════════════════════════════════════════════
-# 🛠️ 온톨로지(Ontology) 전용 정규식 수치 분석 및 캐싱 로직
+# 온톨로지(Ontology) 질문 복합 유형 분석 및 캐싱 로직
 # ════════════════════════════════════════════════════════
-def parseNumericCriteria(textCriteria: str) -> tuple[float | None, str]:
-    """줄글 형태의 마스터 기준 답변 예시에서 비교 연산자와 임계 수치를 정규식으로 안전하게 추출합니다."""
-    if not textCriteria:
-        return None, ">="
-    nums = re.findall(r"\d+\.\d+|\d+", textCriteria)
-    if not nums:
-        return None, ">="
-    value = float(nums[0])
+def parseComplexCriteria(questionText: str) -> dict:
+    """
+    [개선된 버전] 불필요한 제품명/규격번호 숫자를 필터링하고 
+    물결표(~) 구조를 인식하여 정교한 RANGE 및 NUMERIC 마스터 기준값을 추출합니다.
+    """
+    result = {
+        "criteria_type": "BOOL",
+        "operator": "== Y",
+        "threshold_value": None,
+        "min_value": None,
+        "max_value": None
+    }
     
-    operator = ">="
-    if "이하" in textCriteria or "미만" in textCriteria or "Zero" in textCriteria or "0.0" in textCriteria:
-        operator = "<="
-    elif "초과" in textCriteria:
-        operator = ">"
-    elif "미달" in textCriteria:
-        operator = "<"
-    return value, operator
+    if not questionText:
+        return result
+
+    # 1. 전처리 가드레일: 의도치 않은 메타 숫자(4자리 제품명, ASTM 규격 번호 등)를 임시 제거
+    # 예: Al 3003 -> Al , ASTM B209 -> ASTM B 로 변경하여 수치 인식 방지
+    cleanText = re.sub(r"\b\d{4}\b", "", questionText)  # 4자리 숫자(3003 등) 제거
+    cleanText = re.sub(r"B\d+", "B", cleanText)         # B209 등 규격명 뒤의 숫자 제거
+
+    # 2. 범위형 분석 (문장에 '범위 내'가 있거나 숫자~숫자 구조가 명시적인 경우)
+    # 정규식으로 [숫자][공백이나 물결][숫자] 형태를 직접 타겟팅 (예: 1.00~1.50)
+    rangeMatch = re.search(r"(\d+\.\d+|\d+)\s*[~-]\s*(\d+\.\d+|\d+)", cleanText)
+    
+    if "범위 내" in questionText or rangeMatch:
+        if rangeMatch:
+            result["criteria_type"] = "RANGE"
+            result["min_value"] = float(rangeMatch.group(1))
+            result["max_value"] = float(rangeMatch.group(2))
+            result["operator"] = "BETWEEN"
+            return result
+        else:
+            # 물결표는 없지만 '범위 내' 키워드가 있는 경우 폴백 처리
+            nums = re.findall(r"\d+\.\d+|\d+", cleanText)
+            if len(nums) >= 2:
+                result["criteria_type"] = "RANGE"
+                result["min_value"] = float(nums[0])
+                result["max_value"] = float(nums[1])
+                result["operator"] = "BETWEEN"
+                return result
+
+    # 3. 단일 수치 비교형 분석 ('이하', '미만', '초과', '이상')
+    nums = re.findall(r"\d+\.\d+|\d+", cleanText)
+    
+    if "Zero" in questionText or "zero" in questionText or "0건" in questionText:
+        result["criteria_type"] = "NUMERIC"
+        result["operator"] = "<="
+        result["threshold_value"] = 0.0
+        return result
+
+    if nums:
+        val = float(nums[0])
+        if "이하" in questionText:
+            result["criteria_type"] = "NUMERIC"
+            result["operator"] = "<="
+            result["threshold_value"] = val
+        elif "미만" in questionText:
+            result["criteria_type"] = "NUMERIC"
+            result["operator"] = "<"
+            result["threshold_value"] = val
+        elif "초과" in questionText:
+            result["criteria_type"] = "NUMERIC"
+            result["operator"] = ">"
+            result["threshold_value"] = val
+        elif "이상" in questionText or "충족" in questionText:
+            result["criteria_type"] = "NUMERIC"
+            result["operator"] = ">="
+            result["threshold_value"] = val
+
+    # 4. 상태 확인형 불리언 가드
+    if "않습니까" in questionText:
+        result["operator"] = "== N"
+        
+    return result
 
 def buildOntologyRegistry():
-    """MariaDB의 최신 마스터 지표 데이터를 조회하여 메모리 내 온톨로지 사전을 완전히 동기화 구축합니다."""
-    global ontologyRegistry, ontologyTemplateList
-    ontologyRegistry.clear()
-    ontologyTemplateList.clear()
+    """MariaDB의 최신 마스터 지표 데이터를 조회하여 복합 온톨로지 사전을 동기화 구축합니다."""
+    global _ONTOLOGY_REGISTRY, _ONTOLOGY_TEMPLATE_LIST
+    _ONTOLOGY_REGISTRY.clear()
+    _ONTOLOGY_TEMPLATE_LIST.clear()
     
     sql = "SELECT indicator_no, indicator_name, question, action_plan FROM SELF_ASSESS_CHECKLIST"
     rows = db.findAll(sql)
     
     for row in rows:
         indName = row["indicator_name"]
-        rawCriteria = row["question"]
-        val, op = parseNumericCriteria(rawCriteria)
+        rawQuestion = row["question"]        
+        # 고도화된 복합 기준 분석기 호출
+        criteriaMeta = parseComplexCriteria(rawQuestion)
         
-        # 1. 인메모리 딕셔너리 매핑 레이어 적재
-        ontologyRegistry[indName] = {
+        # DB에 action_plan이 없는 경우 안전 가드
+        dbAction = row.get("action_plan") or "지표 기준 미달: 공급망 정밀 실사 및 시정 조치 가동"
+        
+        # 1. 인메모리 온톨로지 딕셔너리 빌드
+        _ONTOLOGY_REGISTRY[indName] = {
             "indicator_no": row["indicator_no"],
-            "action_plan": row.get("action_plan", "즉시 시정 조치 가동"),
-            "threshold_value": val if val is not None else 0.0,
-            "operator": op,
-            "raw_text": rawCriteria
+            "action_plan": dbAction,
+            "raw_text": rawQuestion,
+            **criteriaMeta  # 분기된 메타 정보 전량 언팩 적재
         }
         
-        # 2. AI 학습용 및 아티팩트용 템플릿 리스트 생성
-        ontologyTemplateList.append({
+        # 2. AI 학습 아티팩트용 템플릿 추가
+        _ONTOLOGY_TEMPLATE_LIST.append({
             "indicator_no": row["indicator_no"],
             "indicator_name": indName,
-            "parsed_operator": op,
-            "parsed_threshold": val if val is not None else 0.0,
-            "raw_expression": rawCriteria
+            "raw_expression": rawQuestion,
+            "action_plan": dbAction,
+            "meta": criteriaMeta
         })
         
-    safePrint(f"[온톨로지 엔지니어링] 총 {len(ontologyRegistry)}개의 지표 온톨로지 규칙 캐싱 완료.")
+    safePrint(f"[온톨로지 엔지니어링] DB 원본 기반 {len(_ONTOLOGY_REGISTRY)}개의 지표 온톨로지 복합 분기 규칙 캐싱 완료.")
 
-def exportOntologyToJsonl(outputFilename: str = "esgOntologyTemplate.jsonl"):
-    """구축된 온톨로지 리스트를 파인튜닝 지식 데이터 백업용 JSONL 파일로 출력합니다."""
-    global ontologyTemplateList
-    if not ontologyTemplateList:
+# ════════════════════════════════════════════════════════
+# 수정 완료된 완성본 JSONL 기반 로드 로직
+# ════════════════════════════════════════════════════════
+def buildOntologyRegistryFromJsonl(jsonlPath: str = "./esgOntologyTemplate.jsonl"):
+    """
+    사용자가 오프라인에서 수정을 완료한 완성본 JSONL 파일을 직접 파싱하여 
+    전역 온톨로지 사전 및 템플릿 메모리 구조를 동기화합니다.
+    """
+    global _ONTOLOGY_REGISTRY, _ONTOLOGY_TEMPLATE_LIST
+    _ONTOLOGY_REGISTRY.clear()
+    _ONTOLOGY_TEMPLATE_LIST.clear()
+    
+    if not os.path.exists(jsonlPath):
+        safePrint(f"[경고] 완성본 온톨로지 파일이 존재하지 않습니다. DB 연동을 임시 가동합니다: {jsonlPath}")
+        buildOntologyRegistry()
         return
+
+    count = 0
+    with open(jsonlPath, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                indName = data["indicator_name"]
+                rawQuestion = data["raw_expression"]
+                meta = data["meta"]
+                # DB action_plan을 우선하되, 파일에도 없으면 기본값 주입 (이중 안전장치)
+                fileActionPlan = data.get("action_plan") or meta.get("action_plan") or "지표 마스터 기준 미달에 따른 공급망 정밀 실사 가동"
+                
+                # 메모리 글로벌 레지스트리에 수치 매핑 규칙 주입
+                _ONTOLOGY_REGISTRY[indName] = {
+                    "indicator_no": data["indicator_no"],
+                    "action_plan": fileActionPlan,
+                    "raw_text": rawQuestion,
+                    "criteria_type": meta.get("criteria_type"),
+                    "operator": meta.get("operator"),
+                    "threshold_value": meta.get("threshold_value"),
+                    "min_value": meta.get("min_value"),
+                    "max_value": meta.get("max_value")
+                }
+                
+                # AI 포맷 리스트 구조화 보존
+                _ONTOLOGY_TEMPLATE_LIST.append(data)
+                count += 1
+            except Exception as e:
+                safePrint(f"[JSONL 로드 에러] 라인 파싱 실패: {e}")
+                
+    safePrint(f"[온톨로지 엔지니어링] 완성본 JSONL 기반 {count}개 지표 복합 룰 규칙 완벽 바인딩 성공.")
+
+# ════════════════════════════════════════════════════════
+# 🔍 Hybrid Retriever Engine (BM25 + pgvector + Rerank)
+# ════════════════════════════════════════════════════════
+def searchHybridDocuments(query: str, topK: int = 3) -> list:
+    global bm25Index, globalChunksPool
+    candidates = []
+    
+    if bm25Index and globalChunksPool:
+        tokenizedQuery = simpleTokenizer(query)
+        bm25Scores = bm25Index.get_scores(tokenizedQuery)
+        topBM25Idx = sorted(range(len(bm25Scores)), key=lambda i: bm25Scores[i], reverse=True)[:topK*2]
+        for idx in topBM25Idx:
+            if bm25Scores[idx] > 0:
+                candidates.append(globalChunksPool[idx]["content"])
+
     try:
-        with open(outputFilename, "w", encoding="utf-8") as f:
-            for item in ontologyTemplateList:
-                f.write(json.dumps(item, ensure_ascii=False) + "\n")
-        safePrint(f"[온톨로지 백업] AI 파인튜닝 포맷 이관 완료: {outputFilename}")
+        conn = db.getPostgresConn()
+        if conn:
+            queryEmbed = ollamaClient.embeddings(model=settings.embedModel, prompt=query)["embedding"]
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT content FROM ESG_PDF_VECTORS 
+                    ORDER BY embedding <=> %s::vector LIMIT %s;
+                """, (queryEmbed, topK*2))
+                for row in cur.fetchall():
+                    candidates.append(row[0])
     except Exception as e:
-        safePrint(f"[온톨로지 백업 실패] : {e}")
+        safePrint(f"[Dense 검색 오류] : {e}")
 
+    candidates = list(set(candidates))    
+    pairs = [[query, doc] for doc in candidates]
+    rerankScores = reranker.predict(pairs)
+    scoredDocs = sorted(zip(candidates, rerankScores), key=lambda x: x[1], reverse=True)
+    
+    return [doc for doc, score in scoredDocs[:topK]]
 
 # ════════════════════════════════════════════════════════
-# 🚀 Ingestion Pipeline (PDF pgvector + Excel MariaDB + HF 업로드 동시 처리)
+# ⚖️ 지식 연동 온톨로지 다형성(Type) 룰 검증 엔진
 # ════════════════════════════════════════════════════════
-# 
-def extractAndChunkPdf(pdfPath: str, chunkSize: int = 500, chunkOverlap: int = 150) -> list:
-    """150자 오버랩 연결 결합 세팅이 추가된 슬라이딩 윈도우 청킹 함수"""
-    chunks = []
-    fileName = os.path.basename(pdfPath)
-    try:
-        reader = PdfReader(pdfPath)
-        fullText = "".join([page.extract_text() or "" for page in reader.pages])
-        fullText = re.sub(r'\s+', ' ', fullText).strip()
+def evaluateEsgByOntology(matchedIndicatorName: str, userVal: float | None, userBool: str | None) -> tuple[str, str]:
+    """
+    추출된 온톨로지 유형(RANGE, NUMERIC, BOOL)에 따라 
+    수치 연속형 대조 및 불리언 일치 여부를 다각도로 검증하여 합격/불합격을 판정합니다.
+    """
+    global _ONTOLOGY_REGISTRY
+    if matchedIndicatorName not in _ONTOLOGY_REGISTRY:
+        return "진단 보류", "등록된 온톨로지 매핑 정보를 찾을 수 없습니다."
         
-        # 500자 크기로 슬라이싱하되, 다음 시작점은 350자(500 - 150) 뒤로 설정하여 150자가 중복 결합됨
-        step = chunkSize - chunkOverlap
-        if step <= 0: step = chunkSize  # 예외 방지 가드레일
+    spec = _ONTOLOGY_REGISTRY[matchedIndicatorName]
+    cType = spec["criteria_type"]
+    action = spec["action_plan"]
+    isPassed = False
 
-        for i in range(0, len(fullText), step):
-            textSlice = fullText[i:i+chunkSize]            
-            # 고유 식별을 위한 해시값 생성
-            chunkId = hashlib.md5(f"{fileName}_{i}_{textSlice[:20]}".encode()).hexdigest()
-            chunks.append({
-                "chunk_id": chunkId,
-                "file_name": fileName,
-                "content": textSlice,
-                "doc_type": "PDF",
-                "timestamp": datetime.datetime.now().isoformat()
-            })
+    # 분기 1: 범위형 검증 (RANGE)
+    if cType == "RANGE":
+        if userVal is not None:
+            minV = spec["min_value"]
+            maxV = spec["max_value"]
+            isPassed = (minV <= userVal <= maxV)
+        else:
+            isPassed = False # 수치 입력 누락 시 기본 불합격 가드레일
+
+    # 분기 2: 단일 수치 비교형 검증 (NUMERIC)
+    elif cType == "NUMERIC":
+        if userVal is not None:
+            th = spec["threshold_value"]
+            op = spec["operator"]
+            if op == ">=": isPassed = (userVal >= th)
+            elif op == "<=": isPassed = (userVal <= th)
+            elif op == ">": isPassed = (userVal > th)
+            elif op == "<": isPassed = (userVal < th)
+        else:
+            isPassed = False
+
+    # 분기 3: 상태/확인형 불리언 검증 (BOOL)
+    elif cType == "BOOL":
+        if userBool:
+            op = spec["operator"]
+            cleanBool = userBool.strip().upper()
             
-            # 텍스트의 끝에 도달하면 루프 종료
-            if i + chunkSize >= len(fullText):
-                break
-                
-    except Exception as e:
-        safePrint(f"[오류] PDF 파싱 실패 ({fileName}): {e}")
-    return chunks
+            if "== Y" in op:
+                isPassed = cleanBool in ["Y", "YES", "TRUE", "확인", "완료", "합격"]
+            elif "== N" in op:
+                isPassed = cleanBool in ["N", "NO", "FALSE", "미완료", "ZERO", "0건"]
+        else:
+            isPassed = False
 
-def initAndSaveToPgvector(chunks: list):
-    conn = db.getPostgresConn()
-    if not conn: return
+    status = "합격" if isPassed else "불합격"
+    return status, action
+
+def getSupplyChainRiskReport(failedShortName: str, judgementStatus: str) -> dict:
+    """
+    [RM_TIER_TREE 연동] 불합격 판정 시, 해당 협력사로부터 상위 Tier 1 공급사까지의 위험 전파 경로를 실시간 추적합니다.
+    """
+    if judgementStatus != "불합격":
+        return {"risk_propagated": False, "propagation_path": []}
+
+    nodeInfo = db.findOne("SELECT raw_id, tier FROM RM_TIER_TREE WHERE short_name = %s LIMIT 1", (failedShortName,))
+    if not nodeInfo:
+        return {
+            "partner_name": failedShortName,
+            "impact_level": "High",
+            "action_plan": "즉시 공급망 정밀 실사단 파견 필요",
+            "risk_propagated": True,
+            "propagation_path": []
+        }
+        
+    rawId = nodeInfo['raw_id']
+    failedTier = nodeInfo['tier']
+    affectedChain = db.findAll("""
+        SELECT tier, short_name, item_name FROM RM_TIER_TREE 
+        WHERE raw_id = %s AND tier < %s ORDER BY tier DESC
+    """, (rawId, failedTier))
+
+    propagationPath = [{"tier": failedTier, "short_name": failedShortName, "status": "위험 발생원 🔴"}]
+    for row in affectedChain:
+        propagationPath.append({
+            "tier": row["tier"],
+            "short_name": row["short_name"],
+            "status": f"간접 리스크 전파 ⚠️ ({row['item_name']} 공급망 오염)"
+        })
+        
+    return {
+        "risk_propagated": True,
+        "raw_id": rawId,
+        "danger_level": "고위험 (High Risk)",
+        "propagation_path": propagationPath,
+        "action_plan": "즉시 상위 공급망 납품 검역 강화 및 대체 소싱(Alternative Sourcing) 프로세스 가동"
+    }
+
+def saveAiInferenceLog(partnerName: str, query: str, resultText: str, status: str, riskChain: dict, aiModel: str, duration: float):
+    """
+    [변경 완료] 새롭게 정의된 edu.AI_LOGS 테이블 스키마에 맞춰
+    LLM 추론 결과 및 평가 로그를 MariaDB에 적재합니다.
+    """
+    # 1. 딕셔너리 형태의 risk_chain 데이터를 문자열 포맷(JSON)으로 직렬화
+    riskChainJson = json.dumps(riskChain, ensure_ascii=False)
+    
+    # 2. 제공해주신 AI_LOGS 테이블의 컬럼명에 맞춰 SQL 쿼리 재구성
+    # (log_id는 AUTO_INCREMENT, created_at은 DEFAULT current_timestamp()이므로 인서트문에서 배제)
+    sql = """
+        INSERT INTO AI_LOGS (
+            partner_name, 
+            user_query, 
+            ai_evaluation, 
+            judgement_status, 
+            risk_chain_json, 
+            ai_model, 
+            inference_duration
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    
     try:
-        with conn, conn.cursor() as cur:
-            # CREATE EXTENSION: PostgreSQL에서 기본적으로 제공하지 않는 특수한 기능(데이터 타입, 인덱스, 함수 등)을 추가할 때 사용하는 명령어
-            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS ESG_PDF_VECTORS (
-                    id SERIAL PRIMARY KEY,
-                    chunk_id TEXT UNIQUE,
-                    fileName TEXT,
-                    content TEXT,
-                    embedding vector(1024),
-                    timestamp TEXT
-                );
-            """)
-            
-            dataToInsert = []
-            for chunk in chunks:
-                resp = ollamaClient.embeddings(model=settings.embed_model, prompt=chunk["content"])
-                dataToInsert.append((chunk["chunk_id"], chunk["file_name"], chunk["content"], resp["embedding"], chunk["timestamp"]))
-            
-            execute_values(cur, """
-                INSERT INTO ESG_PDF_VECTORS (chunk_id, file_name, content, embedding, timestamp)
-                VALUES %s ON CONFLICT (chunk_id) DO NOTHING;
-            """, dataToInsert)
-            conn.commit()
-            safePrint(f"[PostgreSQL] {len(chunks)}개 PDF 벡터 스토어 동기화 완료.")
+        # 내장된 db 유틸리티를 사용하여 데이터 바인딩 및 저장 실행
+        db.save(sql, (
+            partnerName, 
+            query, 
+            resultText,  # ai_evaluation 컬럼에 매핑
+            status,       # judgement_status 컬럼에 매핑
+            riskChainJson, 
+            aiModel, 
+            duration      # inference_duration 컬럼에 매핑
+        ))
+        safePrint(f"[DB 로그 적재 성공] AI_LOGS 테이블에 '{partnerName}' 업체의 ESG 감사 이력이 보관되었습니다.")
     except Exception as e:
-        safePrint(f"[PostgreSQL 오류] pgvector 저장 실패: {e}")
+        safePrint(f"[DB 로그 적재 실패] AI_LOGS 적재 중 SQL 오류 발생: {e}")
 
-def loadSelfAssessChecklistToMariadb(excelDir: str):
-    """
-    엑셀의 각 시트(탭) 이름을 기반으로 partnerType을 동적으로 추출하여
-    SELF_ASSESS_CHECKLIST 테이블에 마스터 데이터를 정합성 있게 적재합니다.
-    
-    [partnerType 변환 규칙]
-    - '1차 협력사' -> '1차 협력사'
-    - '2차 협력사 Hall제련' -> '2차 협력사'
-    - '3차-A 채굴 (전체 3차 적용)' -> '3차-A'
-    - '3차-B Bayer정련 (알루미나)' -> '3차-B'
-    """
-    # 1. 마스터 데이터 갱신을 위한 기존 테이블 초기화 및 외래키 체크 제어
-    db.save("SET FOREIGN_KEY_CHECKS = 0;")
-    db.save("TRUNCATE TABLE SELF_ASSESS_CHECKLIST;")
-    db.save("SET FOREIGN_KEY_CHECKS = 1;")
-    
-    checklistRows = []
-    
-    # 디렉토리 내 엑셀 파일 탐색
-    for pattern in ("*.xlsx", "*.xls"):
-        for excelPath in glob.glob(os.path.join(excelDir, pattern)):
-            try:
-                # sheetName=None 설정으로 모든 시트를 딕셔너리 형태로 호출
-                # header=0 설정으로 최상단 제목 열(헤더)을 데이터 파싱에서 제외
-                xlDict = pd.read_excel(excelPath, sheetName=None, header=0)
-                
-                for sheetName, df in xlDict.items():
-                    # 시트 이름(탭 이름) 정제 로직 생성
-                    sheetNameClean = sheetName.strip()
-                    
-                    # 정규식을 사용하여 '1차 협력사', '2차 협력사', '3차-A', '3차-B' 형태의 핵심 접두사 추출
-                    match = re.search(r"^(\d+차\s*협력사|\d+차-[A-Z])", sheetNameClean)
-                    if match:
-                        partnerType = match.group(1).strip()
-                    else:
-                        # 매칭 구조가 예외일 경우 공백 제거 후 10자까지만 폴백용으로 사용
-                        partnerType = sheetNameClean[:10]
-                    
-                    safePrint(f"[파싱 진행] 시트명: '{sheetName}' -> 확정 partnerType: '{partnerType}'")
-                    
-                    for idx, row in df.iterrows():
-                        # 결측치(NaN) 데이터를 빈 문자열('')로 안전 치환 후 텍스트 공백 제거
-                        rowVals = [str(v).strip() if pd.notna(v) else "" for v in row.values]
-                        
-                        # 최소한 지표번호와 카테고리, 지표명이 존재할 수 있는 배열 길이인지 검증
-                        if len(rowVals) >= 3:
-                            indicatorNoRaw = rowVals[0]
-                            if not indicatorNoRaw.replace('.0', '').isdigit(): # 실수형 문자열 차단 방어
-                                continue
-                            
-                            # DDL 구조 및 제공된 데이터프레임 구조에 따른 1:1 변수 매핑
-                            indicatorNo   = int(indicatorNoRaw) # 정수 변환
-                            category       = rowVals[1] if len(rowVals) > 1 else "공통"
-                            indicatorName = rowVals[2] if len(rowVals) > 2 else "미지정 지표"
-                            priority       = rowVals[3] if len(rowVals) > 3 else "Normal"
-                            starYn        = rowVals[4] if len(rowVals) > 4 else "N"
-                            question       = rowVals[5] if len(rowVals) > 5 else ""
-                            passAnswer    = rowVals[6] if len(rowVals) > 6 else ""
-                            failAnswer    = rowVals[7] if len(rowVals) > 7 else ""
-                            riskLevel     = rowVals[8] if len(rowVals) > 8 else "중"
-                            evidenceYn    = rowVals[9] if len(rowVals) > 9 else "N"
-                            evidenceList  = rowVals[10] if len(rowVals) > 10 else ""
-                            actionPlan    = rowVals[11] if len(rowVals) > 11 else "즉시 시정조치 가이드라인 가동"
-                            deleteYn      = 0  # 삭제 여부 기본값 FALSE(0)
-                            
-                            # 2. DDL insert 문 매핑 구조 파라미터 리스트업
-                            checklistRows.append((
-                                partnerType,  
-                                indicatorNo,
-                                category,
-                                indicatorName,
-                                priority,
-                                starYn,
-                                question,
-                                passAnswer,
-                                failAnswer,
-                                riskLevel,
-                                evidenceYn,
-                                evidenceList,
-                                actionPlan,
-                                deleteYn
-                            ))
-                            
-            except Exception as e:
-                safePrint(f"[오류] '{os.path.basename(excelPath)}' 처리 중 크리티컬 예외 발생: {e}")
-                
-    # 3. 데이터베이스 벌크 인서트 수행
-    if checklistRows:
-        sql = """
-            INSERT INTO SELF_ASSESS_CHECKLIST (
-                partner_type, indicator_no, category, indicator_name, priority, 
-                star_yn, question, pass_answer, fail_answer, risk_level, 
-                evidence_yn, evidence_list, action_plan, delete_yn
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        db.saveMany(sql, checklistRows)
-        safePrint(f"\n[MariaDB 성공] 시트별 등급 분기 적용 완료 -> 총 {len(checklistRows)}개 핵심 지표 마스터 적재 완료.")
 
-def loadRiskCriteriaToMariadb(excelDir: str):
+def processEsgComplianceQuery(userQuery: str, partnerName: str) -> dict:
     """
-    '자가진단_리스크_분류_기준.xlsx' 파일을 읽어 
-    제공된 실제 DDL 구조를 가진 ESG_RISK_CRITERIA 테이블에 전수 적재합니다.
+    [수정 완성본] 무거운 MariaDB 텍스트 조회를 완전히 제거하고,
+    정제된 완성본 JSONL 온톨로지 캐시 데이터 + 비정형 PDF 하이브리드 검색 컨텍스트를 결합하여
+    다형성 규칙 판정 및 보수적 가드레일을 수행하는 통합 감사 리포팅 파이프라인
     """
-    # 1. 기존 리스크 기준 마스터 초기화 및 외래키 체크 제어
-    db.save("SET FOREIGN_KEY_CHECKS = 0;")
-    db.save("TRUNCATE TABLE ESG_RISK_CRITERIA;")
-    db.save("SET FOREIGN_KEY_CHECKS = 1;")
+    global _ONTOLOGY_REGISTRY
+    startTime = time.time()
     
-    riskCriteriaRows = []
-    seenItems = set()
+    # 1. 사용자 쿼리에서 수치 데이터 및 불리언 경향 동적 분석
+    userNumbers = re.findall(r"\d+\.\d+|\d+", userQuery)
+    userVal = float(userNumbers[0]) if userNumbers else None    
+    # 간단한 불리언 판별 가드레일 (쿼리에 특정 키워드가 발견되면 기본 Y 상태로 간주)
+    userBool = "Y" if any(kwd in userQuery for kwd in ["확인", "발생", "검출", "1건", "있음", "탈락"]) else "N"
     
-    # 디렉토리 내에서 리스크 분류 기준 관련 엑셀 파일 탐색
-    for pattern in ("*리스크*분류*.xlsx", "*리스크*분류*.xls", "자가진단_리스크_분류_기준.xlsx"):
-        for excelPath in glob.glob(os.path.join(excelDir, pattern)):
-            try:
-                # 첫 번째 행은 타이틀 텍스트이므로 header=1로 설정하여 지정합니다.
-                xlDict = pd.read_excel(excelPath, sheetName=None, header=1)
-                
-                for sheetName, df in xlDict.items():
-                    safePrint(f"[리스크 분류 파싱] 파일: {os.path.basename(excelPath)} / 시트명: '{sheetName}'")
-                    
-                    for idx, row in df.iterrows():
-                        rowVals = [str(v).strip() if pd.notna(v) else "" for v in row.values]
-                        
-                        if len(rowVals) >= 4:
-                            itemName   = rowVals[0] 
-                            highRisk   = rowVals[1] 
-                            mediumRisk = rowVals[2] 
-                            lowRisk    = rowVals[3] 
-                            
-                            if not itemName or itemName == "항목" or "기준 추천" in itemName:
-                                continue
-                                
-                            if itemName not in seenItems:
-                                riskCriteriaRows.append((
-                                    itemName,
-                                    highRisk,
-                                    mediumRisk,
-                                    lowRisk
-                                ))
-                                seenItems.add(itemName)
-                                
-            except Exception as e:
-                safePrint(f"[오류] '{os.path.basename(excelPath)}' 리스크 기준 파싱 중 크리티컬 예외 발생: {e}")
+    # 2. [최적화] MariaDB 대신 로컬 온톨로지 사전을 탐색하여 텍스트 컨텍스트 및 매칭 지표 추출
+    localOntologyContexts = []
+    keywords = re.findall(r'[a-zA-Z가-힣0-9]+', userQuery)
+    matchedIndicator = None
+    
+    if keywords:
+        for kwd in keywords:
+            for indName, spec in _ONTOLOGY_REGISTRY.items():
+                # 검색어 키워드가 지표명이나 원문 문항 텍스트에 포함되어 있는지 매칭
+                if kwd in indName or kwd in spec["raw_text"]:
+                    if not matchedIndicator:
+                        matchedIndicator = indName
+                    localOntologyContexts.append(
+                        f"[정제 완료 마스터 가이드라인] 지표명: {indName} | 기준문항: {spec['raw_text']}"
+                    )
+    
+    # 3. 비정형 PDF 증빙 문서 대상 하이브리드(Vector + BM25) 리트리버 가동
+    vectordbContexts = searchHybridDocuments(userQuery, topK=2)    
+    # 지식 구조 컨텍스트와 문서 데이터 컨텍스트 병합
+    combinedContexts = localOntologyContexts + vectordbContexts
+    contextStr = "\n".join(combinedContexts) if combinedContexts else "참조 가능한 마스터 가이드라인 및 증빙 문서가 존재하지 않습니다."
+    
+    # ════════════════════════════════════════════════════════
+    # ⚖️ 온톨로지 템플릿 Registry 기반 동적 규칙 검증 및 판정 레이어
+    # ════════════════════════════════════════════════════════
+    judgementStatus = "검토 필요"
+    actionPlan = "정확한 매칭 기준이 없으므로 담당자 수동 검토 및 재실행 요망"
+    
+    # 매칭된 지표 규칙이 사전에 존재한다면 다형성(Type) 판정 엔진 작동
+    if matchedIndicator:
+        judgementStatus, fileSpecificAction = evaluateEsgByOntologyAdvanced(
+            matchedIndicatorName=matchedIndicator,
+            userVal=userVal,
+            userBool=userBool
+        )
+        # 이제 .jsonl 파일에서 추출된 커스텀 조치 계획이 불합격 시 action_plan에 완벽히 주입됩니다.
+        if judgementStatus == "불합격":
+            actionPlan = fileSpecificAction
+        elif judgementStatus == "합격":
+            actionPlan = "마스터 기준 충족. 특이사항 없음"
 
-    # 2. 마리아DB 최종 벌크 인서트 트랜잭션 수행
-    if riskCriteriaRows:
-        sqlRisk = """
-            INSERT INTO ESG_RISK_CRITERIA (
-                item_name, high_risk, medium_risk, low_risk
-            ) VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE 
-                high_risk = VALUES(high_risk), 
-                medium_risk = VALUES(medium_risk), 
-                low_risk = VALUES(low_risk);
-        """
-        db.saveMany(sqlRisk, riskCriteriaRows)
-        safePrint(f"[MariaDB 성공] ESG_RISK_CRITERIA 테이블에 총 {len(riskCriteriaRows)}건의 리스크 평가 마스터 기준 적재 완료.")
+    # ════════════════════════════════════════════════════════
+    # 🚨 [최우선 가드레일] 인권/아동/강제노동 관련 위반 차단 레이어
+    # ════════════════════════════════════════════════════════
+    # 온톨로지 판정 결과보다 우선하여 무조건 불합격 처리하는 최상위 시스템 가드레일
+    if any(kwd in userQuery for kwd in ["아동", "강제노동", "인권위반"]):
+        if (userVal is not None and userVal > 0) or userBool == "Y":
+            judgementStatus = "불합격"
+            actionPlan = "① 즉시 공급 중단 ② CSDDD 이행계획서 징구 및 현장 정밀 실사단 파견"
+    
+    # 🎯 [사후 검증] 철 함량 강제 가드레일 (기존 유지)
+    if any(kwd in userQuery for kwd in ["Fe", "철", "Fe(철)"]) and userVal is not None and userVal > 0.70:
+        judgementStatus = "불합격"
+        actionPlan = "① 즉시 공급 중단 및 공정 전수조사 ② 원자재 공급사 변경 검토 ③ 성분 분석 성적서(수입검사재) 재요구"
+
+    # 4. 공급망 리스크 전파 경로 분석 호출 및 구조화
+    riskChain = getSupplyChainRiskReport(partnerName, judgementStatus)
+    
+    if judgementStatus == "불합격":
+        # 트리 기반 연쇄 전파 플랜이 특별히 정의되지 않았다면 사용자가 파일에 명시해둔 커스텀 조치 방안을 주입합니다.
+        if not riskChain.get("propagation_path"):
+            riskChain["action_plan"] = actionPlan
+        else:
+            # 연쇄 리스크가 전파되는 경우 트리 추적 리포트의 행동 양식을 최우선 활용하되, 본문에 병합 가능
+            actionPlan = riskChain.get("action_plan", actionPlan)
     else:
-        safePrint("[경고] 적재 대상 리스크 분류 기준 데이터가 존재하지 않습니다. 파일 경로 및 파일 양식(Header)을 확인하세요.")
-
-def exportPgvectorToHf(repoId: str ):
-    """ [복원] PostgreSQL pgvector에 저장된 모든 원천 지식 임베딩 데이터를 끌어올려 Hugging Face 허브로 원격 백업합니다."""
-    conn = db.getPostgresConn()
-    if not conn: return
-    safePrint(f"[HuggingFace 백업] '{repoId}' 허브로 벡터 데이터셋 업로드를 시작합니다...")
+        riskChain["action_plan"] = "정기 모니터링 및 분기별 ESG 데이터 업데이트 트래킹"
+        actionPlan = riskChain["action_plan"]
+    
+    # 5. 생성 인공지능 기반 감사 리포트 구성
+    prompt = (
+        f"Context:\n{contextStr}\n\n"
+        f"Query: {userQuery}\n"
+        f"Strict Evaluation Status: {judgementStatus}\n"
+        f"Enforced Action Plan: {actionPlan}\n\n"
+        f"[지침 사항 - 반드시 준수할 것]\n"
+        f"1. 당신은 엄격한 ESG 공급망 감사관입니다.\n"
+        f"2. 시스템이 판단한 결과인 'Strict Evaluation Status'({judgementStatus})를 리포트 표의 [평가 상태] 및 결론에 절대 변조 없이 그대로 출력하십시오.\n"
+        f"3. 만약 상태가 '불합격' 또는 '검토 필요'라면, 표의 평가 상태를 **불합격** 또는 **검토 필요**로 명시하고 리포트 톤앤매너를 엄격한 경고조로 작성하십시오.\n"
+        f"4. 'Enforced Action Plan'에 명시된 조치 계획 수칙을 '위험 조치 계획' 섹션에 누락 없이 마크다운 리스트로 포함하십시오.\n\n"
+        f"위 데이터와 지침을 기초로 협력사 감사 리포트를 Markdown 양식으로 구성해 주세요."
+    )
+    
+    targetModel = settings.mariadb_ollama_model    
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT chunk_id, file_name, content, embedding, timestamp FROM ESG_PDF_VECTORS;")
-            rows = cur.fetchall()
-            
-        if not rows:
-            safePrint("[HuggingFace 백업 경고] 업로드할 데이터가 백엔드 DB에 존재하지 않습니다.")
-            return
-            
-        df = pd.DataFrame(rows, columns=["chunk_id", "file_name", "content", "embedding", "timestamp"])
-        dataset = Dataset.from_pandas(df)
-        
-        dataset.push_to_hub(repoId, private=False)
-        safePrint(f"[HuggingFace 성공] 백업 허브 빌드 및 업로드 완료 -> {repoId}")
+        aiResp = ollamaClient.generate(model=targetModel, prompt=prompt)["response"]
     except Exception as e:
-        safePrint(f"[HuggingFace 오류] 원격 클라우드 업로드 실패: {e}")
+        aiResp = f"LLM 생성 실패.\n상태: {judgementStatus}\n조치방안: {actionPlan}"
 
-def runConcurrentIngestionPipeline(pdfDir: str, excelDir: str, hfRepo: str = None):
-    """[동시 다발 처리] PDF(pgvector) 적재, Excel(MariaDB) 적재, 온톨로지 캐싱 및 HF 백업을 원스톱으로 처리합니다."""
-    safePrint("\n=== 🚀 [통합 파이프라인] 전처리 및 분기 동시 적재 가동 ===")
+    inferenceDuration = time.time() - startTime
     
-    # 1. PDF 가공 후 pgvector 적재 및 BM25 구축
-    pdfChunks = []
-    for pdfPath in glob.glob(os.path.join(pdfDir, "*.pdf")):
-        pdfChunks.extend(extractAndChunkPdf(pdfPath))
-    if pdfChunks:
-        initAndSaveToPgvector(pdfChunks)
-        
-        global globalChunksPool, bm25Index
-        globalChunksPool = pdfChunks
-        tokenizedCorpus = [simpleTokenizer(c["content"]) for c in pdfChunks]
-        bm25Index = BM25Okapi(tokenizedCorpus)
-        
-    # 2. 엑셀 마스터 적재 및 온톨로지 캐시 레이어 빌드 (동시 수행)
-    loadSelfAssessChecklistToMariadb(excelDir)
-    loadRiskCriteriaToMariadb(excelDir)
-    buildOntologyRegistry()
-    exportOntologyToJsonl("esgOntologyTemplate.jsonl")
+    # 디버깅/보존용 인스턴스 로깅 (필요시 주석 해제)
+    saveAiInferenceLog(partnerName, userQuery, aiResp, judgementStatus, riskChain, targetModel, inferenceDuration)
     
-    # 3. 데이터셋 허깅페이스 파이프라인 원격 이관 트리거
-    if hfRepo:
-        exportPgvectorToHf(repoId=hfRepo)
-
+    return {
+        "evaluation_result": aiResp,
+        "judgement_status": judgementStatus,
+        "risk_chain_analysis": riskChain
+    }
