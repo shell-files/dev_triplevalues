@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 /* 중앙 통제형 스타일 경로 동기화 및 별칭 바인딩 */
 import '@styles/App.css';
 import SidebarNav from "@components/Layout/SidebarNav";
+import HeaderNav from "@components/Layout/HeaderNav";
 
 // [4단계 기준] 아직 이관 배치되지 않은 하부 페이지 자산들은 import 체인을 차단하고,
 // npm run dev 실행 시 무결한 구동을 입증할 수 있도록 인라인 가상 화면 플레이스홀더 구조로 수렴시킵니다.
@@ -109,9 +110,21 @@ const App = () => {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white border-b border-gray-100 p-4 text-xs text-gray-400 font-mono select-none">
-          [HeaderNav 이관 예정 구역 - 6단계 진행 예정]
-        </div>
+        <HeaderNav
+          userRole={userRole}
+          setUserRole={setUserRole}
+          showNotif={showNotif}
+          setShowNotif={setShowNotif}
+          notifications={notifications}
+          setNotifications={setNotifications}
+          unread={unread}
+          setMobileMenuOpen={setMobileMenuOpen}
+          setPage={setPage}
+          setSelPartner={setSelPartner}
+          setSelBom={setSelBom}
+          setUrgentRM={setUrgentRM}
+          setIsRequestingRM={setIsRequestingRM}
+        />
         
         <main className="flex-1 overflow-y-auto p-6" onClick={() => { if (showNotif) setShowNotif(false); }}>
           {pages[displayPage()]}
