@@ -1,4 +1,4 @@
-MariaDB 및 PostgreSQL(pgvector) 데이터베이스 통합 관리 모듈
+# MariaDB 및 PostgreSQL(pgvector) 데이터베이스 통합 관리 모듈
 """
 Integrated Database Client for MariaDB and PostgreSQL.
 """
@@ -73,21 +73,21 @@ def saveMany(sql: str, params=None) -> bool:
 # PostgreSQL (pgvector Storage)
 # ════════════════════════════════════════════════════════
 def getPostgresConn():
-    dbConnStr = settings.postgres_conn_str
+    dbConnStr = settings.postgresConnStr
     try:
         return psycopg2.connect(dbConnStr)
     except psycopg2.OperationalError as e:
-        target_db = settings.postgres_database
+        targetDb = settings.postgres_database
         if "does not exist" in str(e) or "database" in str(e).lower():
-            safePrint(f"[경고] '{target_db}' DB 없음. 자동 생성 시도...")
-            fallback = dbConnStr.replace(f"dbname={target_db}", "dbname=postgres")
+            safePrint(f"[경고] '{targetDb}' DB 없음. 자동 생성 시도...")
+            fallback = dbConnStr.replace(f"dbname={targetDb}", "dbname=postgres")
             try:
-                conn_pg = psycopg2.connect(fallback)
-                conn_pg.autocommit = True
-                with conn_pg.cursor() as cur:
+                connPg = psycopg2.connect(fallback)
+                connPg.autocommit = True
+                with connPg.cursor() as cur:
                     # "DB가 없으면 새로 생성하는 명령어"
-                    cur.execute(f"CREATE DATABASE {target_db};")
-                conn_pg.close()
+                    cur.execute(f"CREATE DATABASE {targetDb};")
+                connPg.close()
                 return psycopg2.connect(dbConnStr)
             except Exception as create_err:
                 safePrint(f"[오류] DB 자동 생성 실패: {create_err}")
