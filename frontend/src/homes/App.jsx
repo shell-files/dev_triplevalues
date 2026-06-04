@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 /* 중앙 통제형 스타일 경로 동기화 및 별칭 바인딩 */
 import '@styles/App.css';
+import SidebarNav from "@components/Layout/SidebarNav";
 
 // [4단계 기준] 아직 이관 배치되지 않은 하부 페이지 자산들은 import 체인을 차단하고,
 // npm run dev 실행 시 무결한 구동을 입증할 수 있도록 인라인 가상 화면 플레이스홀더 구조로 수렴시킵니다.
@@ -61,44 +62,51 @@ const App = () => {
 
   // 조건부 가상 돔 바인딩 체인 (npm run dev 상시 컴파일 컴플리트 규격)
   const pages = {
-    dashboard: <PlaceholderPage title="📊 원청사 메인 관제 대시보드" desc="Phase 2 스프린트에서 Recharts 탄소 배출 시각화 차트 및 종합 KPI 카드가 안착될 영역입니다." />,
+    dashboard: <PlaceholderPage title="원청사 메인 관제 대시보드" desc="Phase 2 스프린트에서 Recharts 탄소 배출 시각화 차트 및 종합 KPI 카드가 안착될 영역입니다." />,
     partner: selPartner === null ? (
-      <PlaceholderPage title="🏢 공급망 협력사 마스터 목록" desc="Phase 2 스프린트에서 전사 1·2·3차 협력사 격자 명세 목록 데이터 테이블이 연결될 영역입니다." />
+      <PlaceholderPage title="공급망 협력사 마스터 목록" desc="Phase 2 스프린트에서 전사 1·2·3차 협력사 격자 명세 목록 데이터 테이블이 연결될 영역입니다." />
     ) : (
-      <PlaceholderPage title="🔍 협력사 ESG 스코어 상세 뷰" desc="Phase 2 스프린트에서 협력사 자가진단 및 증빙 서류 정밀 실사 검증 패널이 안착될 영역입니다." />
+      <PlaceholderPage title="협력사 ESG 스코어 상세 뷰" desc="Phase 2 스프린트에서 협력사 자가진단 및 증빙 서류 정밀 실사 검증 패널이 안착될 영역입니다." />
     ),
     company_info: (
-      <PlaceholderPage title="🌿 협력사 포털 - 기업 정보 관리" desc="Phase 4 피날레 스프린트에서 웰컴 스크린 및 2대 탭 교차 토글 시스템이 완공될 영역입니다." />
+      <PlaceholderPage title="협력사 포털 - 기업 정보 관리" desc="Phase 4 피날레 스프린트에서 웰컴 스크린 및 2대 탭 교차 토글 시스템이 완공될 영역입니다." />
     ),
-    po: <PlaceholderPage title="📦 글로벌 구매 PO 마스터 관리" desc="향후 구매 관리 도메인 스프린트에서 격자 보드가 이식될 영역입니다." />,
+    po: <PlaceholderPage title="글로벌 구매 PO 마스터 관리" desc="향후 구매 관리 도메인 스프린트에서 격자 보드가 이식될 영역입니다." />,
     rawmat: urgentRM ? (
-      <PlaceholderPage title="📐 특정 항목 선택형 긴급 요청 Form" desc="Phase 3 스프린트에서 긴급 자재 보완 인터랙션이 가동될 영역입니다." />
+      <PlaceholderPage title="특정 항목 선택형 긴급 요청 Form" desc="Phase 3 스프린트에서 긴급 자재 보완 인터랙션이 가동될 영역입니다." />
     ) : isRequestingRM ? (
-      <PlaceholderPage title="📝 원자재 정보 요청 서식 인터페이스" desc="Phase 3 스프린트에서 다차원 정보 서식이 탑재될 영역입니다." />
+      <PlaceholderPage title="원자재 정보 요청 서식 인터페이스" desc="Phase 3 스프린트에서 다차원 정보 서식이 탑재될 영역입니다." />
     ) : (
-      <PlaceholderPage title="⛓️ Scope 3 핵심 원자재 자산 관리" desc="Phase 3 스프린트에서 원자재 계약 상태 관제 명세가 연동될 영역입니다." />
+      <PlaceholderPage title="Scope 3 핵심 원자재 자산 관리" desc="Phase 3 스프린트에서 원자재 계약 상태 관제 명세가 연동될 영역입니다." />
     ),
-    risk: <PlaceholderPage title="🚨 글로벌 규제별 리스크 현황 관제탑" desc="향후 평가 도메인 스프린트에서 독립 리스크 레이아웃이 연동될 영역입니다." />,
-    inspection: <PlaceholderPage title="📋 6단계 현장 실사 계획 및 보고서 작성" desc="Phase 3 스프린트에서 실사 프로세스 흐름 칩 바 및 동적 보고서 폼이 안착될 영역입니다." />,
+    risk: <PlaceholderPage title="글로벌 규제별 리스크 현황 관제탑" desc="향후 평가 도메인 스프린트에서 독립 리스크 레이아웃이 연동될 영역입니다." />,
+    inspection: <PlaceholderPage title="6단계 현장 실사 계획 및 보고서 작성" desc="Phase 3 스프린트에서 실사 프로세스 흐름 칩 바 및 동적 보고서 폼이 안착될 영역입니다." />,
     bom: selBom === null ? (
-      <PlaceholderPage title="🌳 제품군별 자재 명세서 (BOM) 목록 조회" desc="Phase 3 스프린트에서 알루미늄 가공 자재 계층 트리 맵 구조가 활성화될 영역입니다." />
+      <PlaceholderPage title="제품군별 자재 명세서 (BOM) 목록 조회" desc="Phase 3 스프린트에서 알루미늄 가공 자재 계층 트리 맵 구조가 활성화될 영역입니다." />
     ) : (
-      <PlaceholderPage title="📐 BOM 상세 계층 관제" desc="Phase 3 스프린트에서 독립 공급망 맵 트리 레이아웃이 연동될 영역입니다." />
+      <PlaceholderPage title="BOM 상세 계층 관제" desc="Phase 3 스프린트에서 독립 공급망 맵 트리 레이아웃이 연동될 영역입니다." />
     ),
     partner_list: (
-      <PlaceholderPage title="🤝 하위 N차 공급망 벤더 정보 조회" desc="Phase 4 피날레 스프린트에서 하위 벤더 권한별 계층 필터 제약 보드가 이식될 영역입니다." />
+      <PlaceholderPage title="하위 N차 공급망 벤더 정보 조회" desc="Phase 4 피날레 스프린트에서 하위 벤더 권한별 계층 필터 제약 보드가 이식될 영역입니다." />
     ),
-    partner_rawmat: <PlaceholderPage title="🛠️ 원자재 사양 보완 및 요청 관리" desc="Phase 4 피날레 스프린트에서 11대 컬럼 개편 및 정보 입력 가상 워크플로우 엔진이 최종 완공될 영역입니다." />,
+    partner_rawmat: <PlaceholderPage title="원자재 사양 보완 및 요청 관리" desc="Phase 4 피날레 스프린트에서 11대 컬럼 개편 및 정보 입력 가상 워크플로우 엔진이 최종 완공될 영역입니다." />,
   };
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
       {mobileMenuOpen && <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />}
       
-      {/* 차주 2단계, 3단계 스프린트에서 실물 자산으로 치환될 레이아웃 프레임 플레이스홀더 영역 */}
-      <div className="w-56 bg-slate-950 text-slate-500 p-4 text-xs font-mono select-none">
-        [SidebarNav 이관 예정 구역 - 5단계 진행 예정]
-      </div>
+      <SidebarNav
+        page={page}
+        setPage={setPage}
+        userRole={userRole}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        setSelPartner={setSelPartner}
+        setSelBom={setSelBom}
+        setUrgentRM={setUrgentRM}
+        setIsRequestingRM={setIsRequestingRM}
+      />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="bg-white border-b border-gray-100 p-4 text-xs text-gray-400 font-mono select-none">
