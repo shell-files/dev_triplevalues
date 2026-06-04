@@ -15,14 +15,14 @@ if __name__ == "__main__":
     # # ====================================================================
     # # 🔄 [선택] 새 PDF/Excel 파일이 추가되어 데이터베이스 및 벡터 적재가 필요할 때만 주석 해제
     # # ====================================================================
-    print("=" * 70)
-    print("💡 [Step 1] PDF/Excel 동시 적재 + 온톨로지 사전 빌드 + 허깅페이스 원격 백업")
-    print("=" * 70)
-    runConcurrentIngestionPipeline(
-        pdfDir="./esgPdfFiles", 
-        excelDir="./esgExcelFiles",
-        hfRepo="Makesols/esg-vector-dataset"
-    )
+    # print("=" * 70)
+    # print("💡 [Step 1] PDF/Excel 동시 적재 + 온톨로지 사전 빌드 + 허깅페이스 원격 백업")
+    # print("=" * 70)
+    # runConcurrentIngestionPipeline(
+    #     pdfDir="./esgPdfFiles", 
+    #     excelDir="./esgExcelFiles",
+    #     hfRepo="Makesols/esg-vector-dataset"
+    # )
     
     # ====================================================================
     # 🚀 [상시 실행] 수정 완료된 완성본 jsonl 기반으로 온톨로지 규칙을 초고속 로드 (서빙 레이어)

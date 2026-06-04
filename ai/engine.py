@@ -211,7 +211,7 @@ def searchHybridDocuments(query: str, topK: int = 3) -> list:
     try:
         conn = db.getPostgresConn()
         if conn:
-            queryEmbed = ollamaClient.embeddings(model=settings.embedModel, prompt=query)["embedding"]
+            queryEmbed = ollamaClient.embeddings(model=settings.embed_model, prompt=query)["embedding"]
             with conn.cursor() as cur:
                 cur.execute("""
                     SELECT content FROM ESG_PDF_VECTORS 
@@ -406,7 +406,7 @@ def processEsgComplianceQuery(userQuery: str, partnerName: str) -> dict:
     
     # 매칭된 지표 규칙이 사전에 존재한다면 다형성(Type) 판정 엔진 작동
     if matchedIndicator:
-        judgementStatus, fileSpecificAction = evaluateEsgByOntologyAdvanced(
+        judgementStatus, fileSpecificAction = evaluateEsgByOntology(
             matchedIndicatorName=matchedIndicator,
             userVal=userVal,
             userBool=userBool

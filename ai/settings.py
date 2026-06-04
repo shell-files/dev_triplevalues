@@ -84,9 +84,9 @@ def checkAndPullOllamaModel(ollamaClient, modelName: str) -> None:
     """Ensures the target Ollama model is available locally, pulling if absent."""
     safePrint(f"[조회] Ollama 모델 '{modelName}' 로컬 설치 상태 검사 중...")
     try:
-        models_list = ollamaClient.list()
+        modelsList = ollamaClient.list()
         downloaded = []
-        for m in models_list.get("models", []):
+        for m in modelsList.get("models", []):
             name = m.get("model", m.get("name", ""))
             downloaded.append(name)
             if ":" in name:
