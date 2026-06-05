@@ -17,6 +17,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@errors': fileURLToPath(new URL('./src/homes/errors', import.meta.url)),
       '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+      '@homes': fileURLToPath(new URL('./src/homes', import.meta.url)),
       '@styles': fileURLToPath(new URL('./src/styles', import.meta.url)),
       '@gates': fileURLToPath(new URL('./src/homes/gates', import.meta.url)),
       '@logins': fileURLToPath(new URL('./src/homes/logins', import.meta.url)),
