@@ -82,9 +82,9 @@ const MainDashboard = () => {
               <button
                 onClick={runAi}
                 disabled={aiLoading}
-                className="w-full py-2.5 bg-[#03a94d] hover:bg-[#02823b] disabled:bg-gray-200 text-white font-bold text-xs rounded-lg transition shadow-sm select-none shrink-0 mt-2"
+                className="w-full py-2.5 bg-[#03a94d] hover:bg-[#02823b] disabled:bg-gray-200 text-white font-bold text-s rounded-lg transition shadow-sm select-none shrink-0 mt-2"
               >
-                {aiLoading ? "실사 분석 가동 중" : "AI 공급망 전체 분석 시작"}
+                {aiLoading ? "실사 분석 가동 중" : "AI 분석 시작"}
               </button>
             </CardContent>
           </Card>
