@@ -1,19 +1,20 @@
 import React from "react";
-import { Card } from "@components/Common/Card";
 
-export const KpiCard = ({ title, value, subtext, trend, trendType }) => {
+const Kpi = ({ icon, accent, label, value, sub }) => {
   return (
-    <Card>
-      <p className="text-xs font-semibold text-gray-500 mb-1">{title}</p>
-      <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-1">{value}</h3>
-      <div className="flex items-center gap-1.5">
-        {trend && (
-          <span className={"text-xs font-bold " + (trendType === "up" ? "text-red-500" : trendType === "down" ? "text-blue-500" : "text-[#03a94d]")}>
-            {trend}
-          </span>
-        )}
-        <span className="text-[11px] text-gray-400 font-medium">{subtext}</span>
+    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+      {icon && (
+        <div className={(accent || "bg-[#03a94d]") + " w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl shrink-0"}>
+          {icon}
+        </div>
+      )}
+      <div className="flex-1">
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="text-xl font-black text-gray-900 leading-tight">{value}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
       </div>
-    </Card>
+    </div>
   );
 };
+
+export default Kpi;
