@@ -30,10 +30,10 @@ const MainDashboard = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full">
       <div>
-        <h2 className="text-xl font-black text-gray-900 tracking-tight">ESG 공급망 메인 대시보드</h2>
-        <p className="text-xs font-medium text-gray-400 mt-0.5">현대모비스 · 3003 합금 · 원청사→1·2차→3차 · CSRD/CSDDD/Net-Zero 2045</p>
+        <h2 className="text-xl font-black text-[#03a94d] tracking-tight">대시보드</h2>
+        <p className="text-xs font-medium text-gray-400 mt-0.5">현대모비스 Scope 3 공급망 및 글로벌 ESG 규제(CSRD, CSDDD, Net-Zero 2045) 대응 통합 관제 시스템입니다.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -45,16 +45,18 @@ const MainDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <Card className="p-5 flex flex-col h-[420px]">
-            <CardHeader>
+          {/* 하단 영역 높이를 h-[calc(100vh-290px)]로 정밀 정정하여 전체 브라우저 스크롤을 완벽 소멸 */}
+          <Card className="p-5 flex flex-col h-[calc(100vh-290px)] min-h-[420px]">
+            <CardHeader className="shrink-0 mb-2">
               <CardTitle>AI Agent 공급망 리스크 종합 실사</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <p className="text-xs text-gray-500 leading-relaxed">
+            <CardContent className="flex-1 flex flex-col justify-between overflow-hidden h-[calc(100%-3.5rem)]">
+              <p className="text-xs text-gray-500 leading-relaxed shrink-0 mb-2">
                 글로벌 공급망 원자재 이력 및 협력사 정량 지표를 종합 분석하여 잠재적 규제 위반 요소를 실시간으로 추적합니다.
               </p>
               
-              <div className="flex-1 my-3 bg-slate-50 border border-gray-100 rounded-xl p-3 font-mono text-xs overflow-y-auto whitespace-pre-wrap text-gray-700">
+              {/* overflow-y-auto 및 min-h-0를 통해 카드 내부 독립 스크롤 메커니즘 무결성 확보 */}
+              <div className="flex-1 my-1 bg-slate-50 border border-gray-100 rounded-xl p-3 font-mono text-xs overflow-y-auto whitespace-pre-wrap text-gray-700 min-h-0">
                 {aiLoading ? (
                   <div className="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
                     <span className="w-5 h-5 border-2 border-[#03a94d] border-t-transparent rounded-full animate-spin" />
@@ -72,7 +74,7 @@ const MainDashboard = () => {
               <button
                 onClick={runAi}
                 disabled={aiLoading}
-                className="w-full py-2.5 bg-[#03a94d] hover:bg-[#02823b] disabled:bg-gray-200 text-white font-bold text-xs rounded-lg transition shadow-sm select-none"
+                className="w-full py-2.5 bg-[#03a94d] hover:bg-[#02823b] disabled:bg-gray-200 text-white font-bold text-xs rounded-lg transition shadow-sm select-none shrink-0 mt-2"
               >
                 {aiLoading ? "실사 분석 가동 중" : "AI 공급망 전체 분석 시작"}
               </button>
@@ -81,11 +83,13 @@ const MainDashboard = () => {
         </div>
 
         <div className="lg:col-span-2">
-          <Card className="p-5 flex flex-col h-[420px]">
-            <CardHeader>
+          {/* 우측 알림 피드 카드 역시 높이를 싱크 처리하여 균형성 복원 */}
+          <Card className="p-5 flex flex-col h-[calc(100vh-290px)] min-h-[420px]">
+            <CardHeader className="shrink-0 mb-2">
               <CardTitle>AI Agent 리스크 실시간 알림 피드</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto space-y-3 pr-1">
+            {/* 알람 누적 증가 시 카드 내부 가용 격자선 안에서 유연하게 내부 탐색 구동 */}
+            <CardContent className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 h-[calc(100%-3.5rem)]">
               {alerts.map((alert) => {
                 const isHigh = alert.type === "고위험";
                 const borderCls = isHigh ? "border-red-500 bg-red-50/40" : "border-amber-400 bg-amber-50/40";
