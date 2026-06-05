@@ -37,7 +37,7 @@ const HeaderNav = ({
             onChange={(e) => setUserRole(e.target.value)}
             className="text-xs font-bold text-gray-800 bg-transparent border-none outline-none cursor-pointer focus:ring-0 pr-6"
           >
-            <option value="현대모비스">원청사 (현대모비스)</option>
+            <option value="현대모비스">원청사 포털</option>
             <option value="1차 협력사">1차 협력사 포털</option>
             <option value="2차 협력사">2차 협력사 포털</option>
             <option value="3차 협력사">3차 협력사 포털</option>
