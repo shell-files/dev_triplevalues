@@ -42,8 +42,8 @@ const MainDashboard = () => {
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full">
       <div>
-        <h2 className="text-xl font-black text-[#03a94d] tracking-tight">대시보드</h2>
-        <p className="text-xs font-medium text-gray-400 mt-0.5">현대모비스 Scope 3 공급망 및 글로벌 ESG 규제(CSRD, CSDDD, Net-Zero 2045) 대응 통합 관제 시스템입니다.</p>
+        <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">대시보드</h2>
+        <p className="text-sm text-gray-400 mt-0.5">현대모비스 Scope 3 공급망 및 글로벌 ESG 규제(CSRD, CSDDD, Net-Zero 2045) 대응 통합 관제 시스템입니다.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
