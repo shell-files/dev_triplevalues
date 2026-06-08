@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Card } from "@components/Common/Card";
 import { RChip } from "@components/Common/Chip";
+import CircleIcon from "@components/Common/Icons/CircleIcon";
 
 const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanies }) => {
-  const [selCo, setSelCo] = useState(null);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
 
-  const companies = apiCompanies || [];
+  const companies = (apiCompanies || []).filter((c) => c.tier !== 0);
 
   const g = (c, key) => {
     if (key === "id") return c.id || c.partner_id;
@@ -16,6 +16,31 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
     if (key === "short") return c.short || c.short_name || "";
     if (key === "tierLabel") return c.tierLabel || c.tier_label || "";
     return c[key];
+  };
+
+  const getTierTheme = (tier) => {
+    if (tier === 1) {
+      return {
+        color: "#03a94d",
+        bgClass: "bg-emerald-50 text-emerald-700 border-emerald-100"
+      };
+    }
+    if (tier === 2) {
+      return {
+        color: "#0ea5e9",
+        bgClass: "bg-sky-50 text-sky-700 border-sky-100"
+      };
+    }
+    if (tier === 3) {
+      return {
+        color: "#8b5cf6",
+        bgClass: "bg-violet-50 text-violet-700 border-violet-100"
+      };
+    }
+    return {
+      color: "#64748b",
+      bgClass: "bg-slate-50 text-slate-500 border-slate-100"
+    };
   };
 
   const totalCompanies = companies.length;
@@ -109,20 +134,21 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
       <div className="space-y-3">
         {filtered.length > 0 ? (
           filtered.map((c) => {
-            const displayCo = c;
-            const isSelected = selCo === g(c, "id");
+            const theme = getTierTheme(c.tier);
             return (
               <Card key={g(c, "id")} className="overflow-hidden border-gray-100 hover:border-gray-200 transition-all">
                 <div
                   className="p-4 flex items-center justify-between cursor-pointer select-none bg-white"
-                  onClick={() => setSelCo(isSelected ? null : g(c, "id"))}
+                  onClick={() => {
+                    if (setSelPartner) setSelPartner(c);
+                  }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-slate-200" />
+                    <CircleIcon className="w-5 h-5" color={theme.color} />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-900 text-sm">{g(c, "short")}</span>
-                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">{g(c, "tierLabel")}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${theme.bgClass}`}>{g(c, "tierLabel")}</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">코드: {g(c, "id")}</p>
                     </div>
@@ -140,36 +166,6 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
                     </button>
                   </div>
                 </div>
-
-                {isSelected && (
-                  <div className="border-t border-gray-50 bg-slate-50/30 p-4 space-y-4 animate-fade-in">
-                    <div>
-                      <p className="text-xs font-bold text-gray-900 mb-2">7대 글로벌 규제 인증 문서 준수율 현황</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-                        {[
-                          ["ISO 14001 환경경영", displayCo.iso14001],
-                          ["ISO 45001 안전보건", displayCo.iso45001],
-                          ["IATF 16949 품질", displayCo.iatf],
-                          ["RBA 책임비즈니스", displayCo.rba],
-                          ["CMRT 분쟁광물", displayCo.cmrt],
-                          ["RMAP 책임광물", displayCo.rmap],
-                          ["EMAT 전기차광물", displayCo.emat],
-                        ].map((pair, i) => {
-                          const val = pair[1] || "N";
-                          const isY = val === "Y";
-                          return (
-                            <div key={i} className="bg-white border border-gray-100 rounded-xl p-2.5 flex flex-col justify-between shadow-2xs">
-                              <p className="text-gray-400 font-semibold text-[10px] tracking-tight mb-1">{pair[0]}</p>
-                              <span className={"inline-block text-[10px] px-1.5 py-0.5 rounded font-bold border text-center " + (isY ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100")}>
-                                {isY ? "Y (준수)" : "N (미준수)"}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </Card>
             );
           })
