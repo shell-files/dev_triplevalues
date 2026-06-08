@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import SidebarNav from "@components/Layout/SidebarNav";
 import HeaderNav from "@components/Layout/HeaderNav";
 import MainDashboard from "@homes/admin/MainDashboard";
+import PartnerList from "@homes/admin/partners/PartnerList";
+import PartnerDetail from "@homes/admin/partners/PartnerDetail";
+import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
 
@@ -19,20 +22,53 @@ const App = () => {
   const [page, setPage] = useState("dashboard");
   const [showNotif, setShowNotif] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState("현대모비스");
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
+  const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
   const unread = notifications.filter((n) => !n.read).length;
+
+  const handleResetPage = () => {
+    setPage("dashboard");
+    setSelPartner(null);
+  };
+
+  const handleMenuChange = (targetPage) => {
+    setPage(targetPage);
+    setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
+  };
 
   const renderContent = () => {
     if (page === "dashboard") {
       return <MainDashboard />;
     }
     
+    if (page === "partner") {
+      // 2Depth 상세 관제 레코드가 존재하면 PartnerDetail을 바인딩하고, 없으면 1Depth 목록인 PartnerList를 렌더링
+      if (selPartner) {
+        return (
+          <PartnerDetail
+            partner={selPartner}
+            partnerRegistration="시스템 자동화 트랙"
+            onBack={() => setSelPartner(null)}
+          />
+        );
+      }
+      return (
+        <PartnerList
+          userRole={userRole}
+          partnerRegistration="시스템 자동화 트랙"
+          setSelPartner={setSelPartner}
+          apiCompanies={apiCompanies}
+        />
+      );
+    }
+    
     const pages = {
-      partners: <PlaceholderPage title="협력사 정보 관리" desc="Phase 3 스프린트에서 소재지 그리드 보정 및 4대 서류 증빙자료 탭 복구가 처리될 영역입니다." />,
-      boms: <PlaceholderPage title="BOM 구조 관리" desc="Phase 4 스프린트에서 자재 명세서 트리형 컴포넌트 구조 고도화가 완성될 영역입니다." />,
-      pos: <PlaceholderPage title="구매 발주 관리" desc="Phase 4 스프린트에서 트랜잭션 진행 현황 및 SChip 상태 결합이 진행될 영역입니다." />,
-      materials: <PlaceholderPage title="원자재 사양 관리" desc="Phase 4 피날레 스프린트에서 11대 컬럼 개편 및 정보 입력 가상 워크플로우 엔진이 최종 완공될 영역입니다." />,
+      bom: <PlaceholderPage title="BOM 구조 관리" desc="Phase 4 스프린트에서 자재 명세서 트리형 컴포넌트 구조 고도화가 완성될 영역입니다." />,
+      po: <PlaceholderPage title="구매 발주 관리" desc="Phase 4 스프린트에서 트랜잭션 진행 현황 및 SChip 상태 결합이 진행될 영역입니다." />,
+      rawmat: <PlaceholderPage title="원자재 사양 관리" desc="Phase 4 피날레 스프린트에서 11대 컬럼 개편 및 정보 입력 가상 워크플로우 엔진이 최종 완공될 영역입니다." />,
     };
 
     return pages[page] || <PlaceholderPage title="준비 중인 화면" desc="선택한 메뉴의 화면 마이그레이션 스프린트 가동을 대기 중입니다." />;
@@ -46,26 +82,25 @@ const App = () => {
       
       <SidebarNav
         page={page}
-        setPage={setPage}
-        userRole="현대모비스"
+        setPage={handleMenuChange}
+        userRole={userRole}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <HeaderNav
-          userRole="현대모비스"
-          setUserRole={() => {}}
+          userRole={userRole}
+          setUserRole={setUserRole}
           showNotif={showNotif}
           setShowNotif={setShowNotif}
           notifications={notifications}
           setNotifications={setNotifications}
           unread={unread}
           setMobileMenuOpen={setMobileMenuOpen}
-          setPage={setPage}
+          onResetPage={handleResetPage}
         />
         
-        {/* pt-16을 주입하여 fixed 헤더 영역 컴포넌트의 가림 간섭을 완벽 방어 */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 relative pt-16">
           {renderContent()}
         </main>

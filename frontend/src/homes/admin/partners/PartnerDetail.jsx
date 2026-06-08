@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Card from "@components/Common/Card";
+import { Card } from "@components/Common/Card";
 import { RChip } from "@components/Common/Chip";
 
 const PartnerDetail = ({ partner, partnerRegistration, onBack }) => {
