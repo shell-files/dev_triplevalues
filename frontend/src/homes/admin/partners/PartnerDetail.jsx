@@ -398,26 +398,130 @@ const PartnerDetail = ({ partner, partnerRegistration, onBack }) => {
             {/* 자가진단 증빙 자료 */}
             <Card className="p-5 space-y-4">
               <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">자가진단 증빙 자료</h2>
-              {renderFileList(["124.pdf", "사업자등록증.pdf"])}
+              {renderFileList(["자가진단 증빙자료_1.pdf", "자가진단 증빙자료_2.jpg"])}
             </Card>
 
             {/* 글로벌 인증 증빙 자료 */}
             <Card className="p-5 space-y-4">
               <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">글로벌 인증 증빙 자료</h2>
-              {renderFileList(["1234s.pdf", "1234.pdf"])}
+              {renderFileList(["CMRT_v2026.pdf", "EMAT_v2026.pdf", "ISO14001_v2026.pdf", "ISO45001_v2026.pdf", "IATF16949_v2026.pdf", "RBA_v2026.pdf", "RMAP_v2026.pdf"])}
             </Card>
 
             {/* 행동강령 준수 서약서 */}
             <Card className="p-5 space-y-4">
               <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">행동강령 준수 서약서</h2>
-              {renderFileList(["yanado.gif"])}
+              {renderFileList(["행동강령 준수 서약서.pdf"])}
             </Card>
           </div>
         )}
 
         {activeTab === "factory" && (
-          <Card className="p-6 text-center border-dashed border-gray-200">
-            <p className="text-sm text-gray-400">공장 자산별 실시간 탄소 배출량(Scope 1, 2) 및 FEOC 사양 그리드는 다음 연동 스프린트에서 연동될 구역입니다.</p>
+          <Card className="p-6 bg-white">
+            {/* ESG 가중합산 요약 보드 */}
+            <div>
+              <div className="font-bold text-emerald-600 text-sm mb-2">
+                ESG 가중합산 요약 (공장별 이용 비율 반영)
+              </div>
+              <div className="grid grid-cols-4 border-b border-gray-200 pb-4 mb-4 text-xs">
+                <div>
+                  <div className="text-gray-400 font-semibold">Scope 1</div>
+                  <div className="font-bold text-gray-800 mt-1">352 tCO₂e</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 font-semibold">Scope 2</div>
+                  <div className="font-bold text-gray-800 mt-1">292 tCO₂e</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 font-semibold">FEOC 비중</div>
+                  <div className="font-bold text-gray-800 mt-1">473%</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 font-semibold">TRIR</div>
+                  <div className="font-bold text-gray-800 mt-1">372</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 공장 목록 */}
+            <div className="mt-6">
+              <div className="border-b border-gray-900 pb-2 mb-4 font-bold text-gray-900 text-sm">
+                공장 목록 (2개)
+              </div>
+
+              <div className="space-y-3">
+                {/* 공장 1 카드 */}
+                <div className="border border-gray-900 bg-white rounded-xl p-4 space-y-3 mb-3 last:mb-0">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col text-left">
+                      <span className="font-bold text-gray-900 text-sm">공장1</span>
+                      <span className="text-xs text-gray-400 mt-1">공장1 주소지</span>
+                    </div>
+                    <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
+                      가동중
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">이용 비율</div>
+                      <div className="font-bold text-gray-800">50%</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">Scope 1</div>
+                      <div className="font-bold text-gray-800">553 tCO₂e</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">Scope 2</div>
+                      <div className="font-bold text-gray-800">231 tCO₂e</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">FEOC</div>
+                      <div className="font-bold text-gray-800">523%</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">TRIR</div>
+                      <div className="font-bold text-gray-800">512</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 공장 2 카드 */}
+                <div className="border border-gray-900 bg-white rounded-xl p-4 space-y-3 mb-3 last:mb-0">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col text-left">
+                      <span className="font-bold text-gray-900 text-sm">공장2</span>
+                      <span className="text-xs text-gray-400 mt-1">공장2 주소지</span>
+                    </div>
+                    <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
+                      가동중
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">이용 비율</div>
+                      <div className="font-bold text-gray-800">50%</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">Scope 1</div>
+                      <div className="font-bold text-gray-800">152 tCO₂e</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">Scope 2</div>
+                      <div className="font-bold text-gray-800">353 tCO₂e</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">FEOC</div>
+                      <div className="font-bold text-gray-800">423%</div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="text-gray-400 font-semibold mb-1">TRIR</div>
+                      <div className="font-bold text-gray-800">232</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Card>
         )}
       </div>
