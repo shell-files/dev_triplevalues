@@ -48,7 +48,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
 
   const filtered = companies.filter((c) => {
     const matchSearch = g(c, "short").toLowerCase().includes(search.toLowerCase());
-    const matchTier = tierFilter === "all" || g(c, "tierLabel") === tierFilter;
+    const matchTier = tierFilter === "all" || g(c, "tierLabel").includes(tierFilter);
     const matchRisk = riskFilter === "all" || g(c, "risk") === riskFilter;
     return matchSearch && matchTier && matchRisk;
   });
@@ -57,7 +57,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">협력사 정보 관리</h1>
+          <h1 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보 관리</h1>
           <p className="text-sm text-gray-400 mt-1">공급망 내 파트너사의 ESG 위험 수준 및 주요 글로벌 인증 준수 현황을 실시간 관제합니다.</p>
         </div>
       </div>
@@ -162,7 +162,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
                       }}
                       className="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-800"
                     >
-                      상세 관제
+                      상세 보기
                     </button>
                   </div>
                 </div>
