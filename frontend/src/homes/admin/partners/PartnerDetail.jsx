@@ -72,6 +72,7 @@ const MOCK_CHECKLIST_B = [
 const PartnerDetail = ({ partner, partnerRegistration, onBack }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [openCards, setOpenCards] = useState({});
+  const [selectedVersion, setSelectedVersion] = useState("v2");
 
   const p = partner || {};
 
@@ -124,6 +125,38 @@ const PartnerDetail = ({ partner, partnerRegistration, onBack }) => {
       return "bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm px-4 py-2 text-xs font-black rounded-full whitespace-nowrap";
     }
     return "bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm px-4 py-2 text-xs font-black rounded-full whitespace-nowrap";
+  };
+
+  const handleDownload = (filename) => {
+    alert(`[모의 다운로드] ${filename} 파일의 다운로드를 시작합니다.`);
+  };
+
+  const renderFileList = (files) => {
+    const isScrollable = files.length >= 5;
+    return (
+      <div className={isScrollable ? "max-h-60 overflow-y-auto pr-1 space-y-2" : "space-y-2"}>
+        {files.map((file, idx) => (
+          <div
+            key={idx}
+            className="bg-slate-50/60 border border-gray-100 p-3 rounded-xl flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="bg-gray-100 text-gray-400 font-bold rounded-lg w-7 h-7 flex items-center justify-center text-xs shrink-0 font-mono">
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+              <span className="text-sm font-bold text-gray-800 truncate">{file}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleDownload(file)}
+              className="text-xs px-3 py-1.5 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg font-bold text-gray-700 transition shrink-0"
+            >
+              다운로드
+            </button>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const getChecklistData = () => {
@@ -274,13 +307,25 @@ const PartnerDetail = ({ partner, partnerRegistration, onBack }) => {
 
         {activeTab === "selfassess" && (
           <div className="space-y-3">
+            <div className="w-full bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-3xs mb-4">
+              <span className="text-xs font-bold text-gray-600">버전:</span>
+              <select
+                value={selectedVersion}
+                onChange={(e) => setSelectedVersion(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              >
+                <option value="v2">v2 (17건 · 2026. 6. 05.)</option>
+                <option value="v1">v1 (11건 · 2026. 5. 28.)</option>
+              </select>
+            </div>
             {checklistItems.map((item, idx) => {
-              const isSelected = !!openCards[item.id];
+              const cardKey = `card_${item.id}_${idx}`;
+              const isSelected = !!openCards[cardKey];
               return (
-                <Card key={item.id} className="overflow-hidden border-gray-100 hover:border-gray-200 transition-all">
+                <Card key={cardKey} className="overflow-hidden border-gray-100 hover:border-gray-200 transition-all">
                   <div
                     className="p-4 flex items-center justify-between cursor-pointer select-none bg-white gap-4"
-                    onClick={() => handleToggleCard(item.id)}
+                    onClick={() => handleToggleCard(cardKey)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="bg-gray-100 text-gray-400 font-black rounded-lg w-8 h-8 flex items-center justify-center shrink-0">
@@ -343,37 +388,31 @@ const PartnerDetail = ({ partner, partnerRegistration, onBack }) => {
         )}
 
         {activeTab === "evidence" && (
-          <Card className="p-5 space-y-4">
-            <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">4대 규제 대응 서류 증빙자료 정합성 검증 원장</h2>
-            <div className="space-y-2 text-xs">
-              {[
-                ["환경 경영 규제 대응 실적서 (ISO 14001 인증서 등)", p.iso14001, "env_doc.pdf"],
-                ["안전 보건 예방 활동 실적서 (ISO 45001 인증서 등)", p.iso45001, "safety_doc.pdf"],
-                ["자동차 부품 공급망 품질 원장 (IATF 16949 인증서 등)", p.iatf, "quality_doc.pdf"],
-                ["글로벌 분쟁 광물 규제 대응 증빙서 (CMRT 레포트 등)", p.cmrt, "cmrt_report.xlsx"],
-              ].map((doc, idx) => {
-                const isY = doc[1] === "Y";
-                return (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/60 border border-gray-100 rounded-xl">
-                    <div className="space-y-1">
-                      <p className="font-bold text-gray-800">{doc[0]}</p>
-                      <p className="text-[10px] text-gray-400 font-mono">파일명: {isY ? doc[2] : "미제출"}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={"px-2 py-0.5 rounded font-extrabold text-[10px] border " + (isY ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-600 border-red-100")}>
-                        {isY ? "검증 완료" : "증빙 누락"}
-                      </span>
-                      {isY && (
-                        <button className="text-[10px] border border-gray-200 bg-white px-2 py-1 rounded font-semibold text-gray-600 hover:bg-gray-50 shadow-3xs">
-                          다운로드
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
+          <div className="space-y-6">
+            {/* 자가진단 완료 문서 */}
+            <Card className="p-5 space-y-4">
+              <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">자가진단 완료 문서</h2>
+              {renderFileList(["자가진단 체크리스트(1차 협력사).pdf"])}
+            </Card>
+
+            {/* 자가진단 증빙 자료 */}
+            <Card className="p-5 space-y-4">
+              <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">자가진단 증빙 자료</h2>
+              {renderFileList(["124.pdf", "사업자등록증.pdf"])}
+            </Card>
+
+            {/* 글로벌 인증 증빙 자료 */}
+            <Card className="p-5 space-y-4">
+              <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">글로벌 인증 증빙 자료</h2>
+              {renderFileList(["1234s.pdf", "1234.pdf"])}
+            </Card>
+
+            {/* 행동강령 준수 서약서 */}
+            <Card className="p-5 space-y-4">
+              <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">행동강령 준수 서약서</h2>
+              {renderFileList(["yanado.gif"])}
+            </Card>
+          </div>
         )}
 
         {activeTab === "factory" && (
