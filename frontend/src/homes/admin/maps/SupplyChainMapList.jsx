@@ -174,13 +174,13 @@ const SupplyChainMapList = ({
           <span className="text-sm font-bold text-gray-500">
             조회된 마스터 제품 규격 : <span id="product-count" className="text-emerald-600 font-extrabold">{filteredProducts.length}개</span>
           </span>
-          <span className="text-xs md:text-sm text-gray-400 font-semibold">
-            * 행을 클릭하시면 상세 공급망 트리(BOM 버전별 추적) 화면으로 즉각 라우팅됩니다.
+          <span className="text-xs md:text-sm text-gray-400">
+            * 클릭하시면 상세 공급망 맵 화면으로 이동합니다.
           </span>
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400 font-semibold text-sm py-12">
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-s py-12">
             {currentCategory ? "조회된 제품 정보가 없습니다." : "상단의 제품 카테고리를 선택하시면 제품 목록이 조회됩니다."}
           </div>
         ) : (
