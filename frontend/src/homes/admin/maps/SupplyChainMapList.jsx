@@ -66,7 +66,7 @@ const SupplyChainMapList = ({
     : [];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full flex flex-col">
       {/* 상단 제어 바 */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -76,7 +76,7 @@ const SupplyChainMapList = ({
 
         <div className="flex items-center gap-3">
           <button
-            className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-lg shadow-sm transition-colors group cursor-pointer"
+            className="inline-flex items-center gap-2 bg-[#03a94d] hover:bg-[#02823b] active:bg-[#026b30] text-white font-bold text-sm px-4 py-2.5 rounded-lg shadow-sm transition-colors group cursor-pointer"
             onClick={onViewMaterialRequest}
           >
             <span>원자재 요청</span>
@@ -101,16 +101,16 @@ const SupplyChainMapList = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="검색할 제품을 입력하세요 (예: 열차폐판, 휠, AI 3003-H14 등)"
-              className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2.5 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 font-semibold transition-colors"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2.5 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition-colors"
             />
           </div>
         </div>
 
         {/* 하단: 다중 태그 필터 바 */}
-        <div className="flex flex-col gap-3 pt-3 border-t border-gray-100">
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-3 pt-3 border-t border-gray-100">
           {/* 카테고리 태그 필터 */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className="text-sm font-bold text-gray-500 w-24 shrink-0">제품 카테고리</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-gray-500 shrink-0">제품 카테고리</span>
             <div className="flex flex-wrap gap-2" id="category-filter-container">
               {["열차폐판", "휠", "파이프", "튜브"].map((cat) => {
                 const isActive = cat === currentCategory;
@@ -119,7 +119,7 @@ const SupplyChainMapList = ({
                     key={cat}
                     onClick={() => setCurrentCategory(currentCategory === cat ? null : cat)}
                     className={`filter-tag-btn px-4 py-1.5 rounded-full text-sm font-bold transition-colors cursor-pointer ${isActive
-                      ? "bg-gray-900 text-white"
+                      ? "bg-[#03a94d] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                   >
@@ -130,9 +130,12 @@ const SupplyChainMapList = ({
             </div>
           </div>
 
+          {/* 구분선 */}
+          <div className="h-4 w-px bg-gray-200 hidden md:block"></div>
+
           {/* 상태 태그 필터 */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className="text-sm font-bold text-gray-500 w-24 shrink-0">상태</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-gray-500 shrink-0">상태</span>
             <div className="flex flex-wrap gap-2" id="status-filter-container">
               {[
                 { key: "ALL", label: "전체" },
@@ -146,7 +149,7 @@ const SupplyChainMapList = ({
                   if (stat.key === "EMERGENCY") {
                     btnClass = "filter-status-btn px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-rose-50 border border-rose-300 text-rose-700 cursor-pointer";
                   } else {
-                    btnClass = "filter-status-btn px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-gray-900 text-white cursor-pointer";
+                    btnClass = "filter-status-btn px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
                   }
                 }
 
@@ -166,8 +169,8 @@ const SupplyChainMapList = ({
       </div>
 
       {/* 마스터 제품 데이터 테이블 그리드 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 bg-slate-50/50 border-b border-gray-100 flex justify-between items-center flex-wrap gap-2">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-410px)] min-h-[350px]">
+        <div className="p-4 bg-slate-50/50 border-b border-gray-100 flex justify-between items-center flex-wrap gap-2 shrink-0">
           <span className="text-sm font-bold text-gray-500">
             조회된 마스터 제품 규격 : <span id="product-count" className="text-emerald-600 font-extrabold">{filteredProducts.length}개</span>
           </span>
@@ -176,37 +179,35 @@ const SupplyChainMapList = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed border-collapse text-sm text-gray-700">
-            <colgroup>
-              <col className="w-[8%]" />
-              <col className="w-[10%]" />
-              <col className="w-[22%]" />
-              <col className="w-[18%]" />
-              <col className="w-[22%]" />
-              <col className="w-[10%]" />
-              <col className="w-[10%]" />
-            </colgroup>
-            <thead>
-              <tr className="border-b border-gray-100 text-gray-500 font-bold bg-slate-50/50">
-                <th className="px-6 py-3.5 text-sm text-center">제품 ID</th>
-                <th className="px-6 py-3.5 text-sm text-center">제품 분류</th>
-                <th className="px-6 py-3.5 text-sm text-center">제품명</th>
-                <th className="px-6 py-3.5 text-sm text-center">BOM 이력 차수</th>
-                <th className="px-6 py-3.5 text-sm text-center">연계 협력사</th>
-                <th className="px-6 py-3.5 text-sm text-center">상태</th>
-                <th className="px-6 py-3.5 text-center text-sm">공급망 맵</th>
-              </tr>
-            </thead>
-            <tbody id="product-table-body" className="divide-y divide-gray-100">
-              {filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-6 py-8 text-center text-gray-400 font-semibold text-sm">
-                    {currentCategory ? "조회된 제품 정보가 없습니다." : "상단의 제품 카테고리를 선택하시면 제품 목록이 조회됩니다."}
-                  </td>
+        {filteredProducts.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center text-gray-400 font-semibold text-sm py-12">
+            {currentCategory ? "조회된 제품 정보가 없습니다." : "상단의 제품 카테고리를 선택하시면 제품 목록이 조회됩니다."}
+          </div>
+        ) : (
+          <div className="overflow-x-auto overflow-y-auto flex-1">
+            <table className="w-full table-fixed border-collapse text-sm text-gray-700">
+              <colgroup>
+                <col className="w-[8%]" />
+                <col className="w-[10%]" />
+                <col className="w-[22%]" />
+                <col className="w-[18%]" />
+                <col className="w-[22%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-500 font-bold bg-slate-50/50">
+                  <th className="px-6 py-3.5 text-sm text-center">제품 ID</th>
+                  <th className="px-6 py-3.5 text-sm text-center">제품 분류</th>
+                  <th className="px-6 py-3.5 text-sm text-center">제품명</th>
+                  <th className="px-6 py-3.5 text-sm text-center">BOM 이력 차수</th>
+                  <th className="px-6 py-3.5 text-sm text-center">연계 협력사</th>
+                  <th className="px-6 py-3.5 text-sm text-center">상태</th>
+                  <th className="px-6 py-3.5 text-center text-sm">공급망 맵</th>
                 </tr>
-              ) : (
-                filteredProducts.map((item) => {
+              </thead>
+              <tbody id="product-table-body" className="divide-y divide-gray-100">
+                {filteredProducts.map((item) => {
                   const isEmergency = item.status === "EMERGENCY";
                   return (
                     <tr
@@ -214,21 +215,21 @@ const SupplyChainMapList = ({
                       onClick={() => onViewDetail(item.id)}
                       className="hover:bg-gray-50 transition-colors cursor-pointer group"
                     >
-                      <td className="px-6 py-4 font-mono font-bold text-gray-500 text-sm truncate text-center">
+                      <td className="px-6 py-4 text-gray-500 text-sm truncate text-center">
                         {item.id}
                       </td>
                       <td className="px-6 py-4 truncate text-center">
-                        <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-600 transition-colors truncate text-center">
+                        <div className="text-gray-900 text-sm group-hover:text-emerald-600 transition-colors truncate text-center">
                           {item.name}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-700 font-semibold text-sm truncate text-center">
+                      <td className="px-6 py-4 text-gray-700 text-sm truncate text-center">
                         {item.detailName}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 font-semibold text-sm truncate text-center">
+                      <td className="px-6 py-4 text-gray-600 text-sm truncate text-center">
                         {item.bom}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 font-semibold text-sm truncate text-center">
+                      <td className="px-6 py-4 text-gray-600 text-sm truncate text-center">
                         {item.partners}
                       </td>
                       <td className="px-6 py-4 truncate text-center">
@@ -257,11 +258,11 @@ const SupplyChainMapList = ({
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
