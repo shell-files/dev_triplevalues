@@ -1,5 +1,4 @@
 import React from "react";
-/* 절대 경로 별칭(Alias) 인프라 스펙 반영 */
 import heroLogo from "@assets/logos/TVLogo.png";
 
 const PARTNER_NAV_CATEGORIES = [
@@ -19,21 +18,24 @@ const NAV_CATEGORIES = [
     items: [
       { key: "dashboard", label: "메인 대시보드", badge: null },
       { key: "partner", label: "협력사 정보", badge: null },
-      { key: "bom", label: "BOM 관리", badge: null },
+    ]
+  },
+  {
+    title: "■ 공급망 추적 관리",
+    items: [
+      { key: "supplychainMap", label: "공급망 맵", badge: null },
     ]
   },
   {
     title: "■ 구매 및 자재 관리",
     items: [
       { key: "po", label: "PO 관리", badge: null },
-      { key: "rawmat", label: "원자재 관리", badge: null },
     ]
   },
   {
     title: "■ 실사 및 평가",
     items: [
       { key: "risk", label: "리스크 현황", badge: null },
-      { key: "inspection", label: "현장 실사", badge: "3건" },
     ]
   }
 ];
@@ -43,11 +45,7 @@ const SidebarNav = ({
   setPage,
   userRole,
   mobileMenuOpen,
-  setMobileMenuOpen,
-  setSelPartner = () => {},
-  setSelBom = () => {},
-  setUrgentRM = () => {},
-  setIsRequestingRM = () => {}
+  setMobileMenuOpen
 }) => {
   const isPartnerMode = userRole !== "현대모비스";
   const currentCategories = isPartnerMode ? PARTNER_NAV_CATEGORIES : NAV_CATEGORIES;
@@ -67,10 +65,6 @@ const SidebarNav = ({
             } else {
               setPage("dashboard");
             }
-            setSelPartner(null);
-            setSelBom(null);
-            setUrgentRM(null);
-            setIsRequestingRM(false);
             setMobileMenuOpen(false);
           }}
           className="w-full flex items-center justify-center bg-white h-16 rounded-lg shadow-sm overflow-hidden cursor-pointer select-none"
@@ -99,10 +93,6 @@ const SidebarNav = ({
                       key={n.key} 
                       onClick={() => { 
                         setPage(n.key); 
-                        setSelPartner(null); 
-                        setSelBom(null); 
-                        setUrgentRM(null); 
-                        setIsRequestingRM(false); 
                         setMobileMenuOpen(false); 
                       }} 
                       className={cls}
