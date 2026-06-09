@@ -66,11 +66,12 @@ const SupplyChainMapList = ({
     : [];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-5">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full">
       {/* 상단 제어 바 */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">공급망 맵 제품 리스트</h1>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">공급망 맵 제품 리스트</h2>
+          <p className="text-sm text-gray-400 mt-0.5">BOM 규격별 제품 목록을 조회하고 상세 공급망 정보 및 이력을 확인합니다.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -93,13 +94,13 @@ const SupplyChainMapList = ({
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
         {/* 상단: 검색창 (실시간 필터링 적용) */}
         <div className="flex flex-col gap-1.5 w-full">
-          <label className="text-sm font-bold text-gray-600 tracking-tight">제품 분류명 검색</label>
+          <label className="text-sm font-bold text-gray-600 tracking-tight">제품 검색</label>
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="검색할 제품명을 입력하세요 (예: 열차폐판, 휠, 배터리 케이스 등)"
+              placeholder="검색할 제품을 입력하세요 (예: 열차폐판, 휠, AI 3003-H14 등)"
               className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2.5 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 font-semibold transition-colors"
             />
           </div>
@@ -131,7 +132,7 @@ const SupplyChainMapList = ({
 
           {/* 상태 태그 필터 */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className="text-sm font-bold text-gray-500 w-24 shrink-0">조사 상태</span>
+            <span className="text-sm font-bold text-gray-500 w-24 shrink-0">상태</span>
             <div className="flex flex-wrap gap-2" id="status-filter-container">
               {[
                 { key: "ALL", label: "전체" },
@@ -189,10 +190,10 @@ const SupplyChainMapList = ({
             <thead>
               <tr className="border-b border-gray-100 text-gray-500 font-bold bg-slate-50/50">
                 <th className="px-6 py-3.5 text-sm text-center">제품 ID</th>
-                <th className="px-6 py-3.5 text-sm text-center">제품 분류명</th>
+                <th className="px-6 py-3.5 text-sm text-center">제품 분류</th>
                 <th className="px-6 py-3.5 text-sm text-center">제품명</th>
                 <th className="px-6 py-3.5 text-sm text-center">BOM 이력 차수</th>
-                <th className="px-6 py-3.5 text-sm text-center">연계 협력사 총합</th>
+                <th className="px-6 py-3.5 text-sm text-center">연계 협력사</th>
                 <th className="px-6 py-3.5 text-sm text-center">상태</th>
                 <th className="px-6 py-3.5 text-center text-sm">공급망 맵</th>
               </tr>
@@ -217,7 +218,7 @@ const SupplyChainMapList = ({
                         {item.id}
                       </td>
                       <td className="px-6 py-4 truncate text-center">
-                        <div className="font-bold text-gray-900 text-sm md:text-base group-hover:text-emerald-600 transition-colors truncate text-center">
+                        <div className="font-bold text-gray-900 text-sm group-hover:text-emerald-600 transition-colors truncate text-center">
                           {item.name}
                         </div>
                       </td>
