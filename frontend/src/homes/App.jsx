@@ -4,6 +4,7 @@ import HeaderNav from "@components/Layout/HeaderNav";
 import MainDashboard from "@homes/admin/MainDashboard";
 import PartnerList from "@homes/admin/partners/PartnerList";
 import PartnerDetail from "@homes/admin/partners/PartnerDetail";
+import SupplyChainMap from "@homes/admin/maps/SupplyChainMap";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -69,7 +70,7 @@ const App = () => {
     
     const pages = {
       // 추후 파스칼 표기법 규칙에 의거하여 만든 <SupplyChainMap /> 컴포넌트가 매핑될 예정입니다.
-      supplychainMap: <PlaceholderPage title="공급망 맵" desc="이전 세션에서 검증된 정적 HTML 4종 자산이 단일 원천 상태 머신 기반으로 마이그레이션될 공급망 통합 관제 영역입니다." />,
+      supplychainMap: <SupplyChainMap />,
       po: <PlaceholderPage title="구매 발주 관리" desc="Phase 4 스프린트에서 트랜잭션 진행 현황 및 SChip 상태 결합이 진행될 영역입니다." />,
       risk: <PlaceholderPage title="리스크 현황" desc="Phase 4 스프린트에서 리스크 분석 및 ESG 평가 현황이 진행될 영역입니다." />
     };
