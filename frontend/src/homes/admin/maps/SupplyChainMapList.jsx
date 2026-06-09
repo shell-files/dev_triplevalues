@@ -9,7 +9,7 @@ const PRODUCTS_MOCK = [
     bom: 'v3.4 (최신 2026-06-01 개정)',
     partners: '8개사 (1차 2, 2차 4, 3차 2)',
     status: 'EMERGENCY',
-    statusLabel: '조사 진행중'
+    statusLabel: '긴급 요청'
   },
   {
     id: 'PRD-002',
@@ -49,31 +49,21 @@ const SupplyChainMapList = ({
   onViewRequest = () => { }
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
-  const [currentCategory, setCurrentCategory] = useState("열차폐판");
+  const [currentCategory, setCurrentCategory] = useState(null);
   const [currentStatus, setCurrentStatus] = useState("ALL");
 
-  const applyFilters = () => {
-    setAppliedSearchQuery(searchQuery.trim().toLowerCase());
-  };
+  const filteredProducts = currentCategory
+    ? PRODUCTS_MOCK.filter((item) => {
+      const matchesSearch =
+        item.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+        item.detailName.toLowerCase().includes(searchQuery.trim().toLowerCase());
+      const matchesCategory = item.category === currentCategory;
+      const matchesStatus =
+        currentStatus === "ALL" || item.status === currentStatus;
 
-  const resetFilters = () => {
-    setSearchQuery("");
-    setAppliedSearchQuery("");
-    setCurrentCategory("열차폐판");
-    setCurrentStatus("ALL");
-  };
-
-  const filteredProducts = PRODUCTS_MOCK.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(appliedSearchQuery) ||
-      item.detailName.toLowerCase().includes(appliedSearchQuery);
-    const matchesCategory = item.category === currentCategory;
-    const matchesStatus =
-      currentStatus === "ALL" || item.status === currentStatus;
-
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+      return matchesSearch && matchesCategory && matchesStatus;
+    })
+    : [];
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -101,33 +91,17 @@ const SupplyChainMapList = ({
 
       {/* 다중 조건 검색 필터 카드 */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
-        {/* 상단: 검색창 및 초기화/적용 버튼 */}
-        <div className="flex flex-col md:flex-row items-end gap-4">
-          <div className="flex-1 flex flex-col gap-1.5 w-full">
-            <label className="text-sm font-bold text-gray-600 tracking-tight">제품 분류명 검색</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="검색할 제품명을 입력하세요 (예: 열차폐판, 휠, 배터리 케이스 등)"
-                className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2.5 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 font-semibold transition-colors"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 w-full md:w-auto shrink-0 justify-end">
-            <button
-              onClick={applyFilters}
-              className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors shadow-sm cursor-pointer"
-            >
-              검색 필터 적용
-            </button>
-            <button
-              onClick={resetFilters}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-sm px-3.5 py-2.5 rounded-lg transition-colors cursor-pointer"
-            >
-              초기화
-            </button>
+        {/* 상단: 검색창 (실시간 필터링 적용) */}
+        <div className="flex flex-col gap-1.5 w-full">
+          <label className="text-sm font-bold text-gray-600 tracking-tight">제품 분류명 검색</label>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="검색할 제품명을 입력하세요 (예: 열차폐판, 휠, 배터리 케이스 등)"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2.5 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 font-semibold transition-colors"
+            />
           </div>
         </div>
 
@@ -142,10 +116,10 @@ const SupplyChainMapList = ({
                 return (
                   <button
                     key={cat}
-                    onClick={() => setCurrentCategory(cat)}
+                    onClick={() => setCurrentCategory(currentCategory === cat ? null : cat)}
                     className={`filter-tag-btn px-4 py-1.5 rounded-full text-sm font-bold transition-colors cursor-pointer ${isActive
-                        ? "bg-gray-900 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                   >
                     {cat}
@@ -202,23 +176,32 @@ const SupplyChainMapList = ({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm text-gray-700 table-fixed min-w-[800px]">
+          <table className="w-full table-fixed border-collapse text-sm text-gray-700">
+            <colgroup>
+              <col className="w-[8%]" />
+              <col className="w-[10%]" />
+              <col className="w-[22%]" />
+              <col className="w-[18%]" />
+              <col className="w-[22%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <thead>
               <tr className="border-b border-gray-100 text-gray-500 font-bold bg-slate-50/50">
-                <th className="px-6 py-3.5 w-28 text-sm">제품 ID</th>
-                <th className="px-6 py-3.5 w-36 text-sm">제품 분류명</th>
-                <th className="px-6 py-3.5 text-sm">제품명</th>
-                <th className="px-6 py-3.5 text-sm">BOM 이력 차수</th>
-                <th className="px-6 py-3.5 text-sm">연계 협력사 총합</th>
-                <th className="px-6 py-3.5 w-32 text-sm">상태</th>
-                <th className="px-6 py-3.5 text-right w-52 text-sm">작업 관리</th>
+                <th className="px-6 py-3.5 text-sm text-center">제품 ID</th>
+                <th className="px-6 py-3.5 text-sm text-center">제품 분류명</th>
+                <th className="px-6 py-3.5 text-sm text-center">제품명</th>
+                <th className="px-6 py-3.5 text-sm text-center">BOM 이력 차수</th>
+                <th className="px-6 py-3.5 text-sm text-center">연계 협력사 총합</th>
+                <th className="px-6 py-3.5 text-sm text-center">상태</th>
+                <th className="px-6 py-3.5 text-center text-sm">공급망 맵</th>
               </tr>
             </thead>
             <tbody id="product-table-body" className="divide-y divide-gray-100">
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-8 text-center text-gray-400 font-semibold text-sm">
-                    조회된 제품 정보가 없습니다.
+                    {currentCategory ? "조회된 제품 정보가 없습니다." : "상단의 제품 카테고리를 선택하시면 제품 목록이 조회됩니다."}
                   </td>
                 </tr>
               ) : (
@@ -230,57 +213,46 @@ const SupplyChainMapList = ({
                       onClick={() => onViewDetail(item.id)}
                       className="hover:bg-gray-50 transition-colors cursor-pointer group"
                     >
-                      <td className="px-6 py-4 font-mono font-bold text-gray-500 text-sm">
+                      <td className="px-6 py-4 font-mono font-bold text-gray-500 text-sm truncate text-center">
                         {item.id}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-gray-900 text-sm md:text-base group-hover:text-emerald-600 transition-colors">
+                      <td className="px-6 py-4 truncate text-center">
+                        <div className="font-bold text-gray-900 text-sm md:text-base group-hover:text-emerald-600 transition-colors truncate text-center">
                           {item.name}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-700 font-semibold text-sm">
+                      <td className="px-6 py-4 text-gray-700 font-semibold text-sm truncate text-center">
                         {item.detailName}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 font-semibold text-sm">
+                      <td className="px-6 py-4 text-gray-600 font-semibold text-sm truncate text-center">
                         {item.bom}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 font-semibold text-sm">
+                      <td className="px-6 py-4 text-gray-600 font-semibold text-sm truncate text-center">
                         {item.partners}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 truncate text-center">
                         {isEmergency ? (
-                          <span className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-1 rounded text-xs font-bold shadow-3xs animate-pulse">
+                          <span className="inline-flex items-center justify-center gap-1.5 bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-1 rounded text-xs font-bold shadow-3xs animate-pulse truncate">
                             <span className="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
                             {item.statusLabel}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded text-xs font-bold">
+                          <span className="inline-flex items-center justify-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded text-xs font-bold truncate">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                             {item.statusLabel}
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewRequest();
-                            }}
-                            className="bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-xs px-2.5 py-1.5 rounded transition-colors cursor-pointer"
-                          >
-                            긴급요청
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewMaterialRequest();
-                            }}
-                            className="bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white font-bold text-xs px-2.5 py-1.5 rounded transition-colors cursor-pointer"
-                          >
-                            원자재 요청
-                          </button>
-                        </div>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewDetail(item.id);
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          보러가기
+                        </button>
                       </td>
                     </tr>
                   );
