@@ -32,11 +32,13 @@ const App = () => {
   const handleResetPage = () => {
     setPage("dashboard");
     setSelPartner(null);
+    // setSelSupplyChain(null); // 향후 연동될 공급망 전용 상세 상태 클리어 안전장치 인프라 보존
   };
 
   const handleMenuChange = (targetPage) => {
     setPage(targetPage);
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
+    // setSelSupplyChain(null); // 향후 연동될 공급망 전용 상세 상태 클리어 안전장치 인프라 보존
   };
 
   const renderContent = () => {
@@ -66,9 +68,10 @@ const App = () => {
     }
     
     const pages = {
-      bom: <PlaceholderPage title="BOM 구조 관리" desc="Phase 4 스프린트에서 자재 명세서 트리형 컴포넌트 구조 고도화가 완성될 영역입니다." />,
+      // 추후 파스칼 표기법 규칙에 의거하여 만든 <SupplyChainMap /> 컴포넌트가 매핑될 예정입니다.
+      supplychainMap: <PlaceholderPage title="공급망 맵" desc="이전 세션에서 검증된 정적 HTML 4종 자산이 단일 원천 상태 머신 기반으로 마이그레이션될 공급망 통합 관제 영역입니다." />,
       po: <PlaceholderPage title="구매 발주 관리" desc="Phase 4 스프린트에서 트랜잭션 진행 현황 및 SChip 상태 결합이 진행될 영역입니다." />,
-      rawmat: <PlaceholderPage title="원자재 사양 관리" desc="Phase 4 피날레 스프린트에서 11대 컬럼 개편 및 정보 입력 가상 워크플로우 엔진이 최종 완공될 영역입니다." />,
+      risk: <PlaceholderPage title="리스크 현황" desc="Phase 4 스프린트에서 리스크 분석 및 ESG 평가 현황이 진행될 영역입니다." />
     };
 
     return pages[page] || <PlaceholderPage title="준비 중인 화면" desc="선택한 메뉴의 화면 마이그레이션 스프린트 가동을 대기 중입니다." />;
