@@ -109,12 +109,12 @@ const RiskList = () => {
       {/* 3대 공급망 계층별 리스크 KPI 요약 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1차 협력사 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-150 flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-blue-500 flex flex-col justify-between">
           <div>
-            <p className="text-xs font-bold text-gray-400">1차 공급망</p>
-            <h4 className="text-sm font-black text-gray-800 mt-0.5">1차 협력사 (합금)</h4>
+            <p className="text-xs font-semibold text-blue-500">1차 공급망</p>
+            <h4 className="text-base font-black text-blue-800 mt-0.5">1차 협력사 (합금)</h4>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+          <div className="mt-4 pt-3 border-t border-blue-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
               총 지표: <span className="font-bold text-gray-800">{t1.total}개</span>
             </div>
@@ -127,12 +127,12 @@ const RiskList = () => {
         </div>
 
         {/* 2차 협력사 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-150 flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-purple-500 flex flex-col justify-between">
           <div>
-            <p className="text-xs font-bold text-gray-400">2차 공급망</p>
-            <h4 className="text-sm font-black text-gray-800 mt-0.5">2차 협력사 (제련)</h4>
+            <p className="text-xs font-semibold text-purple-500">2차 공급망</p>
+            <h4 className="text-base font-black text-purple-800 mt-0.5">2차 협력사 (제련)</h4>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+          <div className="mt-4 pt-3 border-t border-purple-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
               총 지표: <span className="font-bold text-gray-800">{t2.total}개</span>
             </div>
@@ -145,12 +145,12 @@ const RiskList = () => {
         </div>
 
         {/* 3차 협력사 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-150 flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-orange-500 flex flex-col justify-between">
           <div>
-            <p className="text-xs font-bold text-gray-400">3차 공급망</p>
-            <h4 className="text-sm font-black text-gray-800 mt-0.5">3차 협력사 (채굴)</h4>
+            <p className="text-xs font-semibold text-orange-500">3차 공급망</p>
+            <h4 className="text-base font-black text-orange-800 mt-0.5">3차 협력사 (채굴)</h4>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+          <div className="mt-4 pt-3 border-t border-orange-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
               총 지표: <span className="font-bold text-gray-800">{t3.total}개</span>
             </div>
@@ -183,8 +183,19 @@ const RiskList = () => {
                     "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent cursor-pointer";
 
                   if (isActive) {
-                    btnClass =
-                      "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
+                    if (opt.key === "1") {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-blue-50 border border-blue-300 text-blue-700 cursor-pointer";
+                    } else if (opt.key === "2") {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-purple-50 border border-purple-300 text-purple-700 cursor-pointer";
+                    } else if (opt.key === "3") {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-orange-50 border border-orange-300 text-orange-700 cursor-pointer";
+                    } else {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
+                    }
                   }
 
                   return (
