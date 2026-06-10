@@ -22,9 +22,6 @@ jobs:
         working-directory: ./frontend
         run: |
           "VITE_API_URL=${{ secrets.VITE_API_URL }}" | Set-Content -Path .env -Encoding UTF8
-          "VITE_API_URL_MAIN=${{ secrets.VITE_API_URL_MAIN }}" | Add-Content -Path .env
-          "VITE_API_URL_SKM=${{ secrets.VITE_API_URL_SKM }}" | Add-Content -Path .env
-          "VITE_API_URL_HG=${{ secrets.VITE_API_URL_HG }}" | Add-Content -Path .env
           "VITE_API_URL_TV=${{ secrets.VITE_API_URL_TV }}" | Add-Content -Path .env
       - name: Node Build
         working-directory: ./frontend
@@ -38,5 +35,41 @@ jobs:
       - name: Docker Up
         env:
           HOST_IP: ${{ secrets.HOST_IP }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          KAFKA_SERVER: ${{ secrets.KAFKA_SERVER }}
+          KAFKA_TOPIC: ${{ secrets.KAFKA_TOPIC }}
+          KAFKA_SELF_ASSESS_TOPIC: ${{ secrets.KAFKA_SELF_ASSESS_TOPIC }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
+          ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
+          REFRESH_TOKEN_EXPIRE_DAYS: ${{ secrets.REFRESH_TOKEN_EXPIRE_DAYS }}
+          INVITE_TOKEN_EXPIRE_DAYS: ${{ secrets.INVITE_TOKEN_EXPIRE_DAYS }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_DB5: ${{ secrets.REDIS_DB5 }}
+          REDIS_DB6: ${{ secrets.REDIS_DB6 }}
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+          OCR_KEY_PATH: ${{ secrets.OCR_KEY_PATH }}
+          MARIA_DB_USER: ${{ secrets.MARIA_DB_USER }}
+          MARIA_DB_PASSWORD: ${{ secrets.MARIA_DB_PASSWORD }}
+          MARIA_DB_HOST: ${{ secrets.MARIA_DB_HOST }}
+          MARIA_DB_DATABASE: ${{ secrets.MARIA_DB_DATABASE }}
+          MARIA_DB_EXTERNAL: ${{ secrets.MARIA_DB_EXTERNAL }}
+          MARIA_DB_PORT: ${{ secrets.MARIA_DB_PORT }}
+          MARIA_DB_KEY: ${{ secrets.MARIA_DB_KEY }}
+          COOKIE_KEY: ${{ secrets.COOKIE_KEY }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_DATABASE: ${{ secrets.POSTGRES_DATABASE }}
+          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+          OLLAMA_HOST: ${{ secrets.OLLAMA_HOST }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          EMBED_MODEL: ${{ secrets.EMBED_MODEL }}
+          RERANK_MODEL: ${{ secrets.RERANK_MODEL }}
+          HF_REPO: ${{ secrets.HF_REPO }}
         working-directory: .
         run: docker compose up -d

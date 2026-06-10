@@ -213,11 +213,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-esgExcelFiles/
-esgPdfFiles/
 *.csv
 *.parquet
+esgExcelFiles/
+esgPdfFiles/
 licenseFiles/
+supportingFiles/
 secrets/
 
 node_modules/
