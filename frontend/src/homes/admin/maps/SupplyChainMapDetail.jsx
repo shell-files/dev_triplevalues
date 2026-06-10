@@ -624,15 +624,24 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
             </div>
 
             {/* 가로/세로 트리 시각화 패널 */}
-            <div className="relative py-4 px-2 bg-slate-50/50 rounded-xl border border-gray-200/50 flex flex-col items-center justify-center gap-8 flex-1 min-h-[360px]">
+            <div className="relative py-4 px-2 bg-slate-50/50 rounded-xl border border-gray-200/50 flex-1 min-h-[460px] overflow-x-auto">
+              <div className="relative w-[600px] h-[440px] mx-auto">
+                {/* SVG 곡선/실선 연결선 */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                  {/* 1차 -> 2차 실선 */}
+                  <line x1="300" y1="116" x2="300" y2="178" stroke="#cbd5e1" strokeWidth="2" />
+                  {/* 2차 -> 3차-A (Comilog) 곡선 */}
+                  <path d="M 300 284 C 300 310, 160 310, 160 338" fill="none" stroke="#cbd5e1" strokeWidth="2" />
+                  {/* 2차 -> 3차-B (Rio Tinto) 곡선 */}
+                  <path d="M 300 284 C 300 310, 440 310, 440 338" fill="none" stroke="#cbd5e1" strokeWidth="2" />
+                </svg>
 
-              {/* 1차 협력사 레벨 (저위험: 초록 테마) */}
-              <div className="w-full flex justify-center">
+                {/* 1차 협력사 레벨 (저위험: 초록 테마) */}
                 <button
                   type="button"
                   id="node-novelis"
                   onClick={() => setSelectedNode('novelis')}
-                  className={`node-btn w-64 bg-emerald-50/40 border-2 border-emerald-500 shadow-md rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === 'novelis' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
+                  className={`absolute left-1/2 -translate-x-1/2 top-3 w-60 bg-emerald-50/40 border-2 border-emerald-500 shadow-md rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'novelis' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-emerald-600 px-1.5 py-0.5 rounded">1차 가공</span>
@@ -641,20 +650,13 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                   <p className="text-base font-bold text-gray-900">노벨리스 코리아</p>
                   <p className="text-sm text-emerald-800 mt-1 font-semibold">압연 및 합금 가공 플레이트</p>
                 </button>
-              </div>
 
-              {/* 연결선 (수직) */}
-              <div className="w-0.5 h-8 bg-gray-300 relative">
-                <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-r-2 border-b-2 border-gray-300 transform rotate-45"></div>
-              </div>
-
-              {/* 2차 제련소 레벨 (중위험: 노란 테마) */}
-              <div className="w-full flex justify-center">
+                {/* 2차 제련소 레벨 (중위험: 노란 테마) */}
                 <button
                   type="button"
                   id="node-krm"
                   onClick={() => setSelectedNode('krm')}
-                  className={`node-btn w-64 bg-amber-50/40 border-2 border-amber-400 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === 'krm' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
+                  className={`absolute left-1/2 -translate-x-1/2 top-[180px] w-60 bg-amber-50/40 border-2 border-amber-400 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'krm' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded">2차 제련</span>
@@ -663,31 +665,14 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                   <p className="text-base font-bold text-gray-900">케이알엠(주)</p>
                   <p className="text-sm text-amber-800 mt-1 font-semibold">재생 알루미늄 용해/제련</p>
                 </button>
-              </div>
 
-              {/* 연결선 (수직 분기선) */}
-              <div className="relative w-full max-w-lg flex flex-col items-center">
-                {/* 가로 들보선 */}
-                <div className="w-full h-0.5 bg-gray-300"></div>
-                {/* 두 갈래 수직선 */}
-                <div className="w-full flex justify-between px-0">
-                  <div className="w-0.5 h-8 bg-gray-300 relative ml-[25%]">
-                    <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-r-2 border-b-2 border-gray-300 transform rotate-45"></div>
-                  </div>
-                  <div className="w-0.5 h-8 bg-gray-300 relative mr-[25%]">
-                    <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-r-2 border-b-2 border-gray-300 transform rotate-45"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3차 채굴사 레벨 (2개 노드) */}
-              <div className="w-full max-w-xl flex justify-between gap-4">
+                {/* 3차 채굴사 레벨 (2개 노드) */}
                 {/* Comilog 가봉 (중위험: 노란 테마) */}
                 <button
                   type="button"
                   id="node-comilog"
                   onClick={() => setSelectedNode('comilog')}
-                  className={`node-btn flex-1 bg-amber-50/40 border-2 border-amber-400 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === 'comilog' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
+                  className={`absolute left-[40px] top-[340px] w-60 bg-amber-50/40 border-2 border-amber-400 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'comilog' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded">3차 채굴</span>
@@ -702,7 +687,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                   type="button"
                   id="node-riotinto"
                   onClick={() => setSelectedNode('riotinto')}
-                  className={`node-btn flex-1 bg-red-50/40 border-2 border-red-500 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === 'riotinto' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
+                  className={`absolute right-[40px] top-[340px] w-60 bg-red-50/40 border-2 border-red-500 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'riotinto' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">3차 채굴</span>
@@ -712,7 +697,6 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                   <p className="text-sm text-red-800 mt-1 font-semibold">보크사이트(알루미늄 원광) 수급</p>
                 </button>
               </div>
-
             </div>
           </div>
 
@@ -787,8 +771,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                 <p className="text-xs md:text-sm font-bold text-gray-500">주요 화학 구성요소 비율 명세</p>
                 <div id="chemical-container" className="space-y-3 text-xs md:text-sm">
                   {chemItems.map((item) => {
-                    const risk = getRiskLevel(item.key, item.rawVal);
-                    const barColor = getRiskColorClass(risk);
+                    const barColor = "bg-emerald-500";
                     const widthPercent = getWidthPercent(item.key, item.rawVal);
                     const styleWidth = animate ? `${widthPercent}%` : '0%';
 
