@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Chip } from "@components/Common/Chip";
 
 const PO_MOCK_DATA = [
@@ -80,6 +80,12 @@ const PO_MOCK_DATA = [
 ];
 
 const PoList = () => {
+  const [currentStatus, setCurrentStatus] = useState("ALL");
+
+  const filteredData = currentStatus === "ALL"
+    ? PO_MOCK_DATA
+    : PO_MOCK_DATA.filter((row) => row.status === currentStatus);
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "PENDING":
@@ -107,7 +113,49 @@ const PoList = () => {
         <p className="text-sm text-gray-400 mt-0.5">Al 3003 합금 영업용 PO 발주 계약 및 자재 입고 현황 원장</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[400px]">
+      {/* 상태 태그 필터 패널 */}
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-gray-500 shrink-0">발주 상태</span>
+            <div className="flex flex-wrap gap-2" id="status-filter-container">
+              {[
+                { key: "ALL", label: "전체" },
+                { key: "PENDING", label: "승인 대기" },
+                { key: "CONFIRMED", label: "발주 완료" },
+                { key: "COMPLETED", label: "입고 완료" }
+              ].map((stat) => {
+                const isActive = stat.key === currentStatus;
+                let btnClass = "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent cursor-pointer";
+
+                if (isActive) {
+                  if (stat.key === "PENDING") {
+                    btnClass = "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-amber-50 border border-amber-300 text-amber-700 cursor-pointer";
+                  } else if (stat.key === "CONFIRMED") {
+                    btnClass = "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-blue-50 border border-blue-300 text-blue-700 cursor-pointer";
+                  } else if (stat.key === "COMPLETED") {
+                    btnClass = "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-emerald-50 border border-emerald-300 text-emerald-700 cursor-pointer";
+                  } else {
+                    btnClass = "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
+                  }
+                }
+
+                return (
+                  <button
+                    key={stat.key}
+                    onClick={() => setCurrentStatus(stat.key)}
+                    className={btnClass}
+                  >
+                    {stat.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-280px)] min-h-[400px]">
         <div className="overflow-x-auto overflow-y-auto flex-1">
           <table className="w-full text-sm table-fixed min-w-[1000px] border-collapse text-gray-700">
             <colgroup>
@@ -141,7 +189,7 @@ const PoList = () => {
               </tr>
             </thead>
             <tbody>
-              {PO_MOCK_DATA.map((row) => (
+              {filteredData.map((row) => (
                 <tr key={row.po_id} className="border-t hover:bg-gray-50 transition-colors duration-150">
                   <td className="pl-6 pr-3 py-4 text-center text-[#03a94d] font-bold truncate" title={row.po_id}>
                     {row.po_id}
