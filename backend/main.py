@@ -1,25 +1,3 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from settings import settings
+from src.utils.fastset import run
 
-app = FastAPI(servers=[
-  {"url": "/", "description": "API 기본 서버"}
-])
-
-origins = ["http://localhost", settings.host_ip]
-app.add_middleware(
-  CORSMiddleware,
-  allow_origins=origins,
-  allow_credentials=True,
-  allow_methods=["*"],
-  allow_headers=["*"],
-)
-
-@app.get("/")
-def read_root():
-  return {"msg": "Triple Values!"}
-
-@app.get("/about")
-def about():
-  return {"msg": "도움 없이 스스로 개발 도전 중!"}
-
+app = run()

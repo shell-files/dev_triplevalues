@@ -45,7 +45,8 @@ const SidebarNav = ({
   setPage,
   userRole,
   mobileMenuOpen,
-  setMobileMenuOpen
+  setMobileMenuOpen,
+  navigateTo,
 }) => {
   const isPartnerMode = userRole !== "현대모비스";
   const currentCategories = isPartnerMode ? PARTNER_NAV_CATEGORIES : NAV_CATEGORIES;
@@ -61,9 +62,9 @@ const SidebarNav = ({
         <div
           onClick={() => {
             if (isPartnerMode) {
-              setPage("company_info");
+              setPage("company_info"); navigateTo?.("company_info");
             } else {
-              setPage("dashboard");
+              setPage("dashboard"); navigateTo?.("dashboard");
             }
             setMobileMenuOpen(false);
           }}

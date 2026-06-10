@@ -3,7 +3,7 @@ import { Card } from "@components/Common/Card";
 import { RChip } from "@components/Common/Chip";
 import CircleIcon from "@components/Common/Icons/CircleIcon";
 
-const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanies }) => {
+const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanies, loginData }) => {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");

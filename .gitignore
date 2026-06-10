@@ -51,6 +51,13 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# OCR json files
+secrets/
+
+# pem files
+*.pem
+# *.pfx
+
 # Translations
 *.mo
 *.pot

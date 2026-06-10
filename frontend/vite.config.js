@@ -11,6 +11,18 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 80,
     allowedHosts: ['react', 'tv.weareithero.cloud', 'tv.myapp.com'],
+    proxy: {
+      '/api': {
+        // target: 'http://tv.weareithero.cloud',
+        target: 'http://192.168.0.103:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        headers: {
+          // 'Origin': 'http://tv.weareithero.cloud'
+          'Origin': 'http://192.168.0.103:8000'
+        }
+      }
+    }
   },
   resolve: {
     alias: {
@@ -24,6 +36,9 @@ export default defineConfig({
       '@mains': fileURLToPath(new URL('./src/homes/mains', import.meta.url)),
       '@assets': fileURLToPath(new URL('./src/assets', import.meta.url)),
       '@hooks': fileURLToPath(new URL('./src/hooks', import.meta.url)),
+      '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
+      '@admin': fileURLToPath(new URL('./src/homes/admin', import.meta.url)),
+      '@partners': fileURLToPath(new URL('./src/homes/partners', import.meta.url)),
     }
   }
 })
