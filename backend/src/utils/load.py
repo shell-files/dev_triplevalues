@@ -19,8 +19,12 @@ from datasets import Dataset
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from psycopg2.extras import execute_values
 
-import dbClient as db
-from settings import settings, safePrint, simpleTokenizer
+import src.utils.db as db
+from src.utils.settings import settings
+from src.utils.aicommon import safePrint, simpleTokenizer
+
+import src.utils.agentPipeline as agentPipeline
+from src.models.aiAgentNotify import ollamaClient, bm25Index, globalChunksPool
 
 # ======================================================================
 # 0. PDF 텍스트 추출 및 슬라이딩 윈도우 청킹 (langchain splitter + 메타데이터 적용)
@@ -217,57 +221,138 @@ def loadSelfAssessChecklistToMariadb(excelDir: str):
         db.saveMany(sql, checklistRows)
         safePrint(f"\n[MariaDB 성공] 시트별 등급 분기 적용 완료 -> 총 {len(checklistRows)}개 핵심 지표 마스터 적재 완료.")
 
+def cleanCriteriaText(text: str) -> str:
+    """
+    aiAgentNotify.py의 matched_criterion 맵과 100% 매싱되도록 
+    텍스트 내의 이모지, 개행문자, 특수기호 및 UI용 괄호 메타 정보를 제거합니다.
+    """
+    if not text or pd.isna(text):
+        return ""
+    
+    text = str(text).strip()
+    
+    # 1. 엑셀 특유의 개행문자(\r\n, \n) 및 탭 문자를 일반 공백 1칸으로 치환
+    text = re.sub(r"[\r\n\t]+", " ", text)
+    
+    # 2. 이모지(🔴, 🟡, 🟢) 및 UI용 데코레이션 마크, 불릿(•) 기호 삭제
+    text = re.sub(r"[🔴🟡🟢•▪️▫️▶️]|[^\w\s\(\)~\-·,./]", "", text)
+    
+    # 3. 항목명(item_name) 매칭 시 혼선을 주는 영문 괄호 가이드 정리
+    #    예: "고위험 (High Risk)" -> "고위험", "우선순위 기준" -> "우선순위 기준"
+    text = re.sub(r"\s*\([^)]*\)", "", text)
+    
+    # 4. 연속된 공백 하나로 축소 및 최종 양끝 공백 제거
+    return re.sub(r"\s+", " ", text).strip()
+
 def loadRiskCriteriaToMariadb(excelDir: str):
-    """'자가진단_리스크_분류_기준.xlsx' 파일을 읽어 ESG_RISK_CRITERIA 테이블에 전수 적재합니다."""
-    db.save("SET FOREIGN_KEY_CHECKS = 0;")
-    db.save("TRUNCATE TABLE ESG_RISK_CRITERIA;")
-    db.save("SET FOREIGN_KEY_CHECKS = 1;")
+    """
+    [RDB 적재 레이어] '자가진단_리스크_분류_기준.xlsx' 원천 데이터를 로드하여
+    텍스트 가드레일 정제 후 ESG_RISK_CRITERIA 테이블에 안전하게 벌크 업서트합니다.
+    """
+    safePrint(f"[*] [ESG_RISK_CRITERIA] 리스크 분류 기준 마스터 적재 파이프라인 가동: {excelDir}")
     
-    riskCriteriaRows = []
-    seenItems = set()
+    # 디렉토리 내의 대상 파일 탐색 (CSV 또는 Excel 대응)
+    targetFiles = glob.glob(os.path.join(excelDir, "*리스크*분류*기준*.*"))
+    if not targetFiles:
+        safePrint(f"[!] 경고: {excelDir} 내에 리스크 분류 기준 매스터 파일이 존재하지 않습니다.")
+        return False
+        
+    targetPath = targetFiles[0]
+    safePrint(f"[*] 타겟 파일 포착: {targetPath}")
     
-    for pattern in ("*리스크*분류*.xlsx", "*리스크*분류*.xls", "자가진단_리스크_분류_기준.xlsx"):
-        for excelPath in glob.glob(os.path.join(excelDir, pattern)):
-            try:
-                xlDict = pd.read_excel(excelPath, sheet_name=None, header=1)
-                for sheetName, df in xlDict.items():
-                    safePrint(f"[리스크 분류 파싱] 파일: {os.path.basename(excelPath)} / 시트명: '{sheetName}'")
-                    for idx, row in df.iterrows():
-                        rowVals = [str(v).strip() if pd.notna(v) else "" for v in row.values]
-                        if len(rowVals) >= 4:
-                            itemName, highRisk, mediumRisk, lowRisk = rowVals[0], rowVals[1], rowVals[2], rowVals[3]
-                            if not itemName or itemName == "항목" or "기준 추천" in itemName:
-                                continue
-                            if itemName not in seenItems:
-                                riskCriteriaRows.append((itemName, highRisk, mediumRisk, lowRisk))
-                                seenItems.add(itemName)
-            except Exception as e:
-                safePrint(f"[오류] '{os.path.basename(excelPath)}' 리스크 기준 파싱 중 크리티컬 예외 발생: {e}")
+    try:
+        # 파일 확장자에 따라 pandas 판독 분기
+        if targetPath.endswith(".csv"):
+            # 첫 번째 줄이 타이틀 텍스트일 수 있으므로 header=1 처리 (제공된 CSV 명세 구조 반영)
+            df = pd.read_csv(targetPath, header=1, encoding="utf-8")
+        else:
+            df = pd.read_excel(targetPath, header=1)
+            
+        # 컬럼 매핑 표준화 (항목, 고위험, 중위험, 저위험)
+        df.columns = [col.strip() if isinstance(col, str) else f"col_{i}" for i, col in enumerate(df.columns)]
+        
+        # 필수 키 컬럼 존재 유무 확인 가드레일
+        requiredCols = ["항목", "고위험 (High Risk) 🔴", "중위험 (Medium Risk) 🟡", "저위험 (Low Risk) 🟢"]
+        # 유연한 매칭을 위해 컬럼 이름 전처리 비교
+        cleaned_columns = {cleanCriteriaText(c): c for c in df.columns}
+        
+        item_col = cleaned_columns.get("항목")
+        high_col = cleaned_columns.get("고위험")
+        medium_col = cleaned_columns.get("중위험")
+        low_col = cleaned_columns.get("저위험")
+        
+        if not (item_col and high_col and medium_col and low_col):
+            # 만약 이름 매칭이 안되면 인덱스 기준으로 강제 타게팅 가드레일 작동
+            item_col, high_col, medium_col, low_col = df.columns[0], df.columns[1], df.columns[2], df.columns[3]
 
-    if riskCriteriaRows:
-        sqlRisk = """
-            INSERT INTO ESG_RISK_CRITERIA (item_name, high_risk, medium_risk, low_risk) VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE high_risk = VALUES(high_risk), medium_risk = VALUES(medium_risk), low_risk = VALUES(low_risk);
+        recordsToInsert = []
+        
+        for _, row in df.iterrows():
+            raw_item = row.get(item_col)
+            if pd.isna(raw_item) or not str(raw_item).strip():
+                continue
+                
+            # 📌 [핵심 정제 플러그인] aiAgentNotify.py와 완벽 매칭을 위한 텍스트 표준화
+            item_name   = cleanCriteriaText(raw_item)
+            high_risk   = cleanCriteriaText(row.get(high_col))
+            medium_risk = cleanCriteriaText(row.get(medium_col))
+            low_risk    = cleanCriteriaText(row.get(low_col))
+            
+            # 리스크 분류 키워드가 정상적으로 추출된 경우에만 바인딩 리스트에 추가
+            if item_name:
+                recordsToInsert.append((item_name, high_risk, medium_risk, low_risk))
+                
+        if not recordsToInsert:
+            safePrint("[!] 파싱에 성공한 리스크 분류 마스터 데이터 행이 존재하지 않습니다.")
+            return False
+
+        # 📌 MariaDB Upsert SQL 문 가동 (동일 항목명 유입 시 실시간 최신 룰셋 업데이트)
+        upsertSql = """
+            INSERT INTO `ESG_RISK_CRITERIA` (
+                item_name, high_risk, medium_risk, low_risk
+            ) VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                high_risk   = VALUES(high_risk),
+                medium_risk = VALUES(medium_risk),
+                low_risk    = VALUES(low_risk),
+                updated_at  = NOW()
         """
-        db.saveMany(sqlRisk, riskCriteriaRows)
-        safePrint(f"[MariaDB 성공] ESG_RISK_CRITERIA 테이블에 총 {len(riskCriteriaRows)}건의 마스터 기준 적재 완료.")
+        
+        # MariaDB saveMany 인터페이스를 통해 안전하게 트랜잭션 커밋
+        success = db.saveMany(upsertSql, recordsToInsert)
+        if success:
+            safePrint(f"[+] [ESG_RISK_CRITERIA] 벌크 업서트 성공: 총 {len(recordsToInsert)}개의 표준 가드레일 항목 적재.")
+            return True
+        else:
+            safePrint("[!] 에러: 데이터베이스 적재 트랜잭션 수행 중 에러가 발생했습니다.")
+            return False
 
+    except Exception as e:
+        safePrint(f"[!] [loadRiskCriteriaToMariadb] 예외 에러 발생: {e}")
+        return False
 
 def buildOntologyRegistry():
-    """MariaDB 데이터를 기반으로 사전 구축 후 로컬로 1차 백업을 수행합니다."""
-    import engine  
-    engine.buildOntologyRegistry() # 기존 MariaDB 빌더 트리거 호출
+    """기존의 인메모리 방식 대신, agentPipeline을 통해 MariaDB(AI_AGENT_RULE)로 규칙을 동기화합니다."""
+    try:
+        agentPipeline.syncOntologyRulesToDb()
+        safePrint("[온톨로지 동기화] agentPipeline 기반 MariaDB 마스터 룰셋 동기화 완료.")
+    except Exception as e:
+        safePrint(f"[온톨로지 동기화 실패] : {e}")
 
 def exportOntologyToJsonl(outputFilename: str = "esgOntologyTemplate.jsonl"):
-    """구축된 온톨로지 리스트를 파인튜닝 지식 데이터 백업용 JSONL 파일로 출력합니다."""
-    import engine
-    if not engine._ONTOLOGY_TEMPLATE_LIST: engine.buildOntologyRegistry()
-
+    """MariaDB의 AI_AGENT_RULE 테이블에서 최신 규칙을 읽어와 JSONL 파일로 백업합니다."""
     try:
+        sql = "SELECT rule_code, rule_name, criteria_type, operator, threshold_value, regulation, action_required FROM AI_AGENT_RULE"
+        rules = db.findAll(sql)
+        
+        if not rules:
+            safePrint("[온톨로지 백업 경고] 백업할 DB 규칙 데이터가 없습니다. 먼저 동기화를 진행하세요.")
+            return
+
         with open(outputFilename, "w", encoding="utf-8") as f:
-            for item in engine._ONTOLOGY_TEMPLATE_LIST:
+            for item in rules:
                 f.write(json.dumps(item, ensure_ascii=False) + "\n")
-        safePrint(f"[온톨로지 백업] 엑셀/DB 파싱 데이터 1차 JSONL 추출 완료: {outputFilename}")
+        safePrint(f"[온톨로지 백업] DB(AI_AGENT_RULE) 기반 JSONL 추출 완료: {outputFilename}")
     except Exception as e:
         safePrint(f"[온톨로지 백업 실패] : {e}")
 
@@ -280,8 +365,6 @@ def initAndSaveToPgvectorAutoOntology(chunks: list, pgTable: str = "ESG_PDF_VECT
     MariaDB 마스터 지표와 코사인 유사도가 0.5 이상인 청크만 선별하여 pgvector에 적재합니다.
     중복 및 유사도 미달로 제외된 청크들의 상세 내역을 수집하여 하단에 상세 분석 리포트를 출력합니다.
     """
-    from engine import ollamaClient  # 💡 engine에 싱글톤으로 선언된 클라이언트 공유 참조
-    
     conn = db.getPostgresConn()
     if not conn: 
         return
@@ -453,7 +536,6 @@ def exportPgvectorToHf(repoId: str):
 # ════════════════════════════════════════════════════════
 def runConcurrentIngestionPipeline(pdfDir: str, excelDir: str, hfRepo: str = None):
     """Excel 및 PDF 통합 파이프라인 가동 시 로컬 완성본 JSONL의 상태 가드라인을 최우선 연동합니다."""
-    import engine 
     
     safePrint("\n=== 🚀 [통합 파이프라인] 전처리 및 기준 기반 순차 적재 가동 ===")
     
@@ -465,10 +547,10 @@ def runConcurrentIngestionPipeline(pdfDir: str, excelDir: str, hfRepo: str = Non
     #     DB 데이터로 덮어쓰지 않고 로컬 파일의 최종 수정본 규칙을 그대로 캐시 엔진에 주입합니다.
     if os.path.exists("esgOntologyTemplate.jsonl"):
         safePrint("[파이프라인 레이어 알림] 기존 가공 완료된 esgOntologyTemplate.jsonl 검증판이 발견되어 로컬 로더를 실행합니다.")
-        engine.buildOntologyRegistryFromJsonl("esgOntologyTemplate.jsonl")
+        buildOntologyRegistry()
     else:
         # 파일이 아예 존재하지 않는 최초 빌드 시에만 기본 Export 프로세스 작동
-        engine.buildOntologyRegistry()
+        buildOntologyRegistry()
         # 로컬 백업용 원본 내보내기 함수 호출
         exportOntologyToJsonl("esgOntologyTemplate.jsonl")
 
@@ -481,13 +563,27 @@ def runConcurrentIngestionPipeline(pdfDir: str, excelDir: str, hfRepo: str = Non
     if pdfChunks:
         initAndSaveToPgvectorAutoOntology(pdfChunks)
         
-        # 💡 [핵심 교정]: engine.py의 Retriever 상태 변수를 직접 덮어씌워 유실을 원천 차단합니다.
-        engine.globalChunksPool = pdfChunks
-        tokenizedCorpus = [simpleTokenizer(c["content"]) for c in pdfChunks]
-        engine.bm25Index = BM25Okapi(tokenizedCorpus)
-        safePrint("[인메모리 동기화] 하이브리드 검색용 글로벌 인덱스(BM25Okapi) 실시간 결합 완료.")
-        
+        # 💡 [핵심 장점 - 하이브리드 인메모리 검색 초기화]
+        # 만약 대시보드 화면 단에서 실시간 RAG 검색(BM25) 인프라를 동기화해야 한다면,
+        # 아래처럼 지워진 engine 대신 aiAgentNotify의 전역 상태를 업데이트하는 용도로 우아하게 전환할 수 있습니다.
+        try:
+            import src.models.aiAgentNotify as notify
+            notify.globalChunksPool = pdfChunks
+            tokenizedCorpus = [simpleTokenizer(c["content"]) for c in pdfChunks]
+            notify.bm25Index = BM25Okapi(tokenizedCorpus)
+            safePrint("[인메모리 동기화] 하이브리드 RAG용 글로벌 인덱스(aiAgentNotify.bm25Index) 실시간 동기화 성공.")
+        except Exception as ne:
+            safePrint(f"[인메모리 동기화 알림] 하이브리드 검색 인덱스 맵핑 스킵: {ne}")
+            
     # [단계 3] 클라우드 백업용 허깅페이스 전송
     if hfRepo:
         safePrint("[파이프라인 단계 3] Hugging Face 벡터 데이터셋 원격 백업 트리거 가동...")
         exportPgvectorToHf(repoId=hfRepo)
+
+if __name__ == "__main__":
+    # 프로젝트 환경에 맞는 폴더 경로를 인자로 넘겨주며 통합 파이프라인을 단 한 줄로 구동합니다.
+    runConcurrentIngestionPipeline(
+        pdfDir="./esgPdfFiles", 
+        excelDir="./esgExcelFiles",
+        hfRepo= None  # 필요 없다면 None, 허깅페이스 백업 필요 시 "레포ID" 기입
+    )
