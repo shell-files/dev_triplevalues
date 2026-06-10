@@ -167,7 +167,7 @@ const RiskList = () => {
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* 좌측: 계층 및 리스크 태그 필터 */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-12 sm:items-center flex-wrap">
             {/* 계층 필터 */}
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-gray-500 shrink-0">공급망 계층</span>
@@ -295,35 +295,35 @@ const RiskList = () => {
             <tbody>
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-sm">
+                  <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-base">
                     검색 결과에 해당하는 리스크 현황이 없습니다.
                   </td>
                 </tr>
               ) : (
                 filteredData.map((row) => (
                   <tr key={row.indicator_no} className={getRowClass(row.risk_level)}>
-                    <td className="pl-6 pr-3 py-4 text-center font-mono text-gray-400 truncate">{row.indicator_no}</td>
+                    <td className="pl-6 pr-3 py-4 text-center text-gray-400 truncate">{row.indicator_no}</td>
                     <td className="px-3 py-4 text-center truncate">
                       {row.tier === 1 && (
-                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold text-sm">
+                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs">
                           1차 협력사
                         </span>
                       )}
                       {row.tier === 2 && (
-                        <span className="px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 font-bold text-sm">
+                        <span className="px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs">
                           2차 협력사
                         </span>
                       )}
                       {row.tier === 3 && (
-                        <span className="px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700 font-bold text-sm">
+                        <span className="px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700 font-bold text-xs">
                           3차 협력사
                         </span>
                       )}
                     </td>
                     <td className="px-3 py-4 text-center font-bold text-gray-900 truncate" title={row.company_name}>{row.company_name}</td>
-                    <td className="px-3 py-4 text-center font-medium text-gray-700 truncate" title={row.name}>{row.name}</td>
+                    <td className="px-3 py-4 text-center font-medium text-gray-500 truncate" title={row.name}>{row.name}</td>
                     <td className="px-3 py-4 text-center text-gray-500 truncate" title={row.regs}>{row.regs}</td>
-                    <td className="px-3 py-4 text-center font-mono text-gray-600 truncate" title={row.actual_value}>{row.actual_value}</td>
+                    <td className="px-3 py-4 text-center text-gray-600 truncate" title={row.actual_value}>{row.actual_value}</td>
                     <td className="pl-3 pr-6 py-4 text-center">
                       <RChip v={row.risk_level} />
                     </td>
