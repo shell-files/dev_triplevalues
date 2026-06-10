@@ -6,6 +6,7 @@ import PartnerList from "@homes/admin/partners/PartnerList";
 import PartnerDetail from "@homes/admin/partners/PartnerDetail";
 import SupplyChainMap from "@homes/admin/maps/SupplyChainMap";
 import PoList from "@homes/admin/pos/PoList";
+import RiskList from "@homes/admin/risks/RiskList";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -73,7 +74,7 @@ const App = () => {
       // 추후 파스칼 표기법 규칙에 의거하여 만든 <SupplyChainMap /> 컴포넌트가 매핑될 예정입니다.
       supplychainMap: <SupplyChainMap />,
       po: <PoList />,
-      risk: <PlaceholderPage title="리스크 현황" desc="Phase 4 스프린트에서 리스크 분석 및 ESG 평가 현황이 진행될 영역입니다." />
+      risk: <RiskList />
     };
 
     return pages[page] || <PlaceholderPage title="준비 중인 화면" desc="선택한 메뉴의 화면 마이그레이션 스프린트 가동을 대기 중입니다." />;
