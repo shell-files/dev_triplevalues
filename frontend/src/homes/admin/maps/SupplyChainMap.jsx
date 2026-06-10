@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import SupplyChainMapList from "./SupplyChainMapList";
 import SupplyChainMapDetail from "./SupplyChainMapDetail";
 import SupplyChainMapRequest from "./SupplyChainMapRequest";
+import SupplyChainMapMaterialRequest from "./SupplyChainMapMaterialRequest";
 
 const SupplyChainMap = () => {
   const [currentView, setCurrentView] = useState("list");
@@ -35,11 +36,13 @@ const SupplyChainMap = () => {
             onBack={() => setCurrentView("list")}
           />
         );
-      /*
+
       case "materialRequest":
-        // 추후 원자재 요청 화면 마이그레이션 및 이관 렌더링 예정 구역
-        return null;
-      */
+        return (
+          <SupplyChainMapMaterialRequest
+            onBack={() => setCurrentView("list")}
+          />
+        );
 
       default:
         return (
