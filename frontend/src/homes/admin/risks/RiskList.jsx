@@ -79,9 +79,12 @@ const RiskList = () => {
 
   // 다중 필터링 적용
   const filteredData = RISK_MOCK_DATA.filter((item) => {
+    const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
-      searchQuery.trim() === "" ||
-      item.company_name.toLowerCase().includes(searchQuery.trim().toLowerCase());
+      query === "" ||
+      item.company_name.toLowerCase().includes(query) ||
+      item.name.toLowerCase().includes(query) ||
+      item.regs.toLowerCase().includes(query);
 
     const matchesTier = tierFilter === "all" || item.tier === parseInt(tierFilter, 10);
 
@@ -161,72 +164,95 @@ const RiskList = () => {
       </div>
 
       {/* 검색 및 필터 패널 */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-          {/* 검색창 */}
-          <div className="w-full md:w-72 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="협력사명 검색..."
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#03a94d]"
-            />
-            <span className="absolute left-3 top-2.5 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-4 items-center">
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* 좌측: 계층 및 리스크 태그 필터 */}
+          <div className="flex flex-col gap-3">
             {/* 계층 필터 */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-500">계층:</span>
-              <div className="flex gap-1.5" id="tier-filter-container">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-500 shrink-0">공급망 계층</span>
+              <div className="flex flex-wrap gap-2" id="tier-filter-container">
                 {[
                   { key: "all", label: "전체" },
                   { key: "1", label: "1차 협력사 (합금)" },
                   { key: "2", label: "2차 협력사 (제련)" },
                   { key: "3", label: "3차 협력사 (채굴)" },
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setTierFilter(opt.key)}
-                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition duration-150 cursor-pointer ${tierFilter === opt.key
-                      ? "bg-slate-800 text-white border-slate-800 shadow-sm"
-                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                      }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map((opt) => {
+                  const isActive = opt.key === tierFilter;
+                  let btnClass =
+                    "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent cursor-pointer";
+
+                  if (isActive) {
+                    btnClass =
+                      "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
+                  }
+
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => setTierFilter(opt.key)}
+                      className={btnClass}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* 리스크 필터 */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-500">리스크:</span>
-              <div className="flex gap-1.5" id="risk-filter-container">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-500 shrink-0">리스크 등급</span>
+              <div className="flex flex-wrap gap-2" id="risk-filter-container">
                 {[
                   { key: "all", label: "전체" },
                   { key: "저위험", label: "저위험" },
                   { key: "중위험", label: "중위험" },
                   { key: "고위험", label: "고위험" },
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setRiskFilter(opt.key)}
-                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition duration-150 cursor-pointer ${riskFilter === opt.key
-                      ? "bg-slate-800 text-white border-slate-800 shadow-sm"
-                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                      }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map((opt) => {
+                  const isActive = opt.key === riskFilter;
+                  let btnClass =
+                    "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent cursor-pointer";
+
+                  if (isActive) {
+                    if (opt.key === "고위험") {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-red-50 border border-red-300 text-red-700 cursor-pointer";
+                    } else if (opt.key === "중위험") {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-amber-50 border border-amber-300 text-amber-700 cursor-pointer";
+                    } else if (opt.key === "저위험") {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-emerald-50 border border-emerald-300 text-emerald-700 cursor-pointer";
+                    } else {
+                      btnClass =
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => setRiskFilter(opt.key)}
+                      className={btnClass}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          </div>
+
+          {/* 우측: 실시간 검색 인풋 */}
+          <div className="flex items-center w-full lg:w-80">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="검색할 내용을 입력하세요. (협력사명, 지표명, 규제)"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition-colors"
+            />
           </div>
         </div>
       </div>
