@@ -578,28 +578,28 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
           {/* 공급망 정보 요청 및 응답 진행 현황 원장 테이블 */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-4 bg-slate-50/50 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-sm md:text-base font-bold text-gray-700">공급망 정보 요청 및 응답 진행 현황 ({productData.poNumber})</h3>
+              <h3 className="text-sm md:text-base font-bold text-[#03a94d]">공급망 정보 요청 및 응답 진행 현황 ({productData.poNumber})</h3>
               <span className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 px-2 py-0.5 rounded animate-pulse">긴급조사 진행중</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm text-gray-700 table-fixed">
+              <table className="w-full text-center border-collapse text-sm text-gray-700 table-fixed">
                 <thead>
                   <tr className="border-b border-gray-100 bg-slate-50/30 text-gray-500 font-bold">
-                    <th className="px-4 py-3 w-[32%]">요청 분류 항목</th>
-                    <th className="px-4 py-3 w-[17%]">대상 공급 협력사</th>
-                    <th className="px-4 py-3 w-[17%]">연결 투입 자재명</th>
-                    <th className="px-4 py-3 w-[17%]">요청 및 발송일자</th>
-                    <th className="px-4 py-3 w-[17%]">현재 진척 상태</th>
+                    <th className="px-4 py-3 w-[32%] text-center">요청 분류 항목</th>
+                    <th className="px-4 py-3 w-[17%] text-center">대상 공급 협력사</th>
+                    <th className="px-4 py-3 w-[17%] text-center">연결 투입 자재명</th>
+                    <th className="px-4 py-3 w-[17%] text-center">요청 및 발송일자</th>
+                    <th className="px-4 py-3 w-[17%] text-center">현재 진척 상태</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {productData.requests.map((req) => (
                     <tr key={req.id}>
-                      <td className="px-4 py-3 truncate">{req.item}</td>
-                      <td className="px-4 py-3 truncate">{req.partner}</td>
-                      <td className="px-4 py-3 truncate">{req.material}</td>
-                      <td className="px-4 py-3">{req.date}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 truncate text-center">{req.item}</td>
+                      <td className="px-4 py-3 truncate text-center">{req.partner}</td>
+                      <td className="px-4 py-3 truncate text-center">{req.material}</td>
+                      <td className="px-4 py-3 text-center">{req.date}</td>
+                      <td className="px-4 py-3 text-center">
                         {req.status === "checking" ? (
                           <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">
                             {req.statusLabel}
@@ -620,7 +620,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
           {/* 공급망 맵 다단계 계층 트리 전개 */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4 flex-1 flex flex-col">
             <div>
-              <h3 className="text-sm md:text-base font-bold text-gray-700">공급망 맵</h3>
+              <h3 className="text-sm md:text-base font-bold text-[#03a94d]">공급망 맵</h3>
               <p className="text-sm text-gray-400 mt-1">* 협력사를 클릭하시면 해당 협력사의 BOM 및 원자재 정보가 우측 패널에 표시됩니다.</p>
             </div>
 
