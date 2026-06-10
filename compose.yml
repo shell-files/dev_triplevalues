@@ -23,6 +23,7 @@ services:
     volumes:
       - ./backend/src:/workspace/src
       - ./backend/main.py:/workspace/main.py
+      - ./backend/esgOntologyTemplate.jsonl:/workspace/esgOntologyTemplate.jsonl
       - ./backend/pyproject.toml:/workspace/pyproject.toml
       - ./backend/uv.lock:/workspace/uv.lock
       - ./backend/.python-version:/workspace/.python-version
