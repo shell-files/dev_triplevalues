@@ -12,6 +12,7 @@ import SupplyChainMap from "@homes/admin/maps/SupplyChainMap";
 import Login from "@homes/logins/Login";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
+import { GET, POST } from "@utils/Network";
 
 const PlaceholderPage = ({ title, desc }) => (
   <div className="p-6 bg-white rounded-xl border border-gray-200 shadow-sm animate-fade-in">
@@ -52,12 +53,13 @@ const App = () => {
 
   /* 로그아웃 핸들러 */
   const handleLogout = () => {
-    fetch("/api/auth/logout", { method: "POST" }).catch(() => {}).finally(() => {
-      setIsLoggedIn(false);
-      localStorage.removeItem("esg_login");
-      setLoginData(null);
-      setPage("dashboard");
-      setUserRole("현대모비스");
+    POST("/api/auth/logout", { method: "POST" })
+     .then(json => {
+        setIsLoggedIn(false);
+        localStorage.removeItem("esg_login");
+        setLoginData(null);
+        setPage("dashboard");
+        setUserRole("현대모비스");
     });
   };
   
@@ -87,17 +89,11 @@ const App = () => {
     /* 로그인 후 협력사 목록 API 조회 */
     useEffect(() => {
       if (!isLoggedIn) return;
-      fetch("/api/company/list", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userRole }),
-      })
-        .then(r => r.json())
+      POST("/api/company/list", { userRole })
         .then(json => {
           if (json.status && json.data?.companies) setApiCompanies(json.data.companies);
           else setApiCompanies([]);
-        })
-        .catch(() => setApiCompanies([]));
+        });
     }, [userRole, isLoggedIn]);
   
     /* 로그인 전 */

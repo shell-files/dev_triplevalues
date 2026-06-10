@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@components/Common/Card";
 import { RChip } from "@components/Common/Chip";
+import { GET } from "@utils/Network";
 
 const PartnerDetail = ({ partner, onBack, loginData }) => {
   const [activeTab, setActiveTab] = useState("info");
@@ -26,8 +27,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
     if (!pid) return;
 
     // 1) 상세 정보 (자가진단 + 공장 + 버전)
-    fetch(`/api/company/${pid}`)
-      .then(r => r.json())
+    GET(`/api/company/${pid}`)
       .then(json => {
         if (json.status && json.data) {
           setFactories(json.data.factories || []);
@@ -37,27 +37,22 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
             setSelectedVersion(json.data.currentVersion || json.data.versions[0].version);
           }
         }
-      })
-      .catch(() => {});
+      });
 
     // 2) 파일 목록 (4영역 분류)
-    fetch(`/api/company/${pid}/files`)
-      .then(r => r.json())
+    GET(`/api/company/${pid}/files`)
       .then(json => {
         if (json.status) setCategorizedFiles(json.data || { coc: [], selfassess: [], evidence: [], cert: [] });
-      })
-      .catch(() => {});
+      });
   }, [pid]);
 
   /* [v2.1] 버전 변경 시 해당 버전 자가진단 재조회 */
   useEffect(() => {
     if (!pid || !selectedVersion) return;
-    fetch(`/api/company/${pid}/selfassess?version=${selectedVersion}`)
-      .then(r => r.json())
+    GET(`/api/company/${pid}/selfassess?version=${selectedVersion}`)
       .then(json => {
         if (json.status && json.data?.answers) setSelfAssessAnswers(json.data.answers);
-      })
-      .catch(() => {});
+      });
   }, [pid, selectedVersion]);
 
   const handleToggleCard = (id) => setOpenCards(prev => ({ ...prev, [id]: !prev[id] }));

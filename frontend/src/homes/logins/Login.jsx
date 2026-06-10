@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import heroLogo from "@assets/logos/TVLogo.png";
+import { GET, POST } from "@utils/Network";
 
 const Login = ({ onLoginSuccess }) => {
   // ── States ──
@@ -22,17 +23,14 @@ const Login = ({ onLoginSuccess }) => {
     if (!email.trim()) { setError("이메일을 입력해 주세요."); return; }
     try {
       setLoading(true); setError("");
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, loginType: "oem" }),
-      }).then(r => r.json());
+      const res = await POST("/api/auth/login", { email, loginType: "oem" });
       if (res.status) {
         if (onLoginSuccess) onLoginSuccess(res.data);
         else alert("로그인 성공");
       } else { setError(res.message || "로그인에 실패했습니다."); }
-    } catch { setError("서버 연결 오류가 발생했습니다."); }
-    finally { setLoading(false); }
+    } catch { 
+      setError("서버 연결 오류가 발생했습니다."); 
+    } finally { setLoading(false); }
   };
 
   // ── N차 협력사: 인증 코드 발송 ──
@@ -40,11 +38,7 @@ const Login = ({ onLoginSuccess }) => {
     if (!email.trim()) { setError("이메일을 입력해 주세요."); return; }
     try {
       setLoading(true); setError("");
-      const res = await fetch("/api/auth/send-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      }).then(r => r.json());
+      const res = await POST("/api/auth/send-code", { email });
       if (res.status) { setCodeSent(true); alert("인증 코드가 이메일로 발송되었습니다."); }
       else { setError(res.message || "인증 코드 발송에 실패했습니다."); }
     } catch { setError("서버 연결 오류가 발생했습니다."); }
@@ -58,11 +52,7 @@ const Login = ({ onLoginSuccess }) => {
     if (!authCode.trim()) { setError("인증 코드를 입력해 주세요."); return; }
     try {
       setLoading(true); setError("");
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, authCode, loginType: "supplier" }),
-      }).then(r => r.json());
+      const res = await POST("/api/auth/login", { email, authCode, loginType: "supplier" });
       if (res.status) {
         if (onLoginSuccess) onLoginSuccess(res.data);
         else alert("로그인 성공");
