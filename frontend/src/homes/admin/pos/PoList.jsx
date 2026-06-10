@@ -109,74 +109,74 @@ const PoList = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[400px]">
         <div className="overflow-x-auto overflow-y-auto flex-1">
-          <table className="w-full text-xs text-left table-fixed min-w-[1000px]">
+          <table className="w-full text-sm table-fixed min-w-[1000px] border-collapse text-gray-700">
             <colgroup>
-              <col className="w-[12%]" />
-              <col className="w-[14%]" />
-              <col className="w-[7%]" />
-              <col className="w-[7%]" />
-              <col className="w-[7%]" />
-              <col className="w-[7%]" />
-              <col className="w-[7%]" />
-              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[11%]" />
+              <col className="w-[8%]" />
+              <col className="w-[6%]" />
+              <col className="w-[6%]" />
+              <col className="w-[6%]" />
+              <col className="w-[6%]" />
+              <col className="w-[6%]" />
               <col className="w-[6%]" />
               <col className="w-[9%]" />
               <col className="w-[10%]" />
-              <col className="w-[10%]" />
+              <col className="w-[11%]" />
             </colgroup>
             <thead>
               <tr className="bg-slate-50 border-b border-gray-100 text-gray-500 font-bold">
-                <th className="px-3 py-3 truncate">PO 번호</th>
-                <th className="px-3 py-3 truncate">제품</th>
-                <th className="px-3 py-3 truncate">폭(mm)</th>
-                <th className="px-3 py-3 truncate">길이(mm)</th>
-                <th className="px-3 py-3 truncate">중량(mm)</th>
-                <th className="px-3 py-3 truncate">부피(L)</th>
-                <th className="px-3 py-3 truncate">지름(mm)</th>
-                <th className="px-3 py-3 truncate">재질</th>
-                <th className="px-3 py-3 truncate">수량(ton)</th>
-                <th className="px-3 py-3 truncate">총액($)</th>
-                <th className="px-3 py-3 truncate">납기 예정일</th>
-                <th className="px-3 py-3 text-center truncate">상태</th>
+                <th className="pl-6 pr-3 py-3.5 text-center truncate">PO ID</th>
+                <th className="px-3 py-3.5 text-center truncate">제품</th>
+                <th className="px-3 py-3.5 text-center truncate">재질</th>
+                <th className="px-3 py-3.5 text-center truncate">폭(mm)</th>
+                <th className="px-3 py-3.5 text-center truncate">길이(mm)</th>
+                <th className="px-3 py-3.5 text-center truncate">중량(kg)</th>
+                <th className="px-3 py-3.5 text-center truncate">부피(L)</th>
+                <th className="px-3 py-3.5 text-center truncate">지름(mm)</th>
+                <th className="px-3 py-3.5 text-center truncate">수량(ton)</th>
+                <th className="px-3 py-3.5 text-center truncate">총액($)</th>
+                <th className="px-3 py-3.5 text-center truncate">납기 예정일</th>
+                <th className="pl-3 pr-6 py-3.5 text-center truncate">상태</th>
               </tr>
             </thead>
             <tbody>
               {PO_MOCK_DATA.map((row) => (
                 <tr key={row.po_id} className="border-t hover:bg-gray-50 transition-colors duration-150">
-                  <td className="px-3 py-3 text-[#03a94d] font-bold truncate" title={row.po_id}>
+                  <td className="pl-6 pr-3 py-4 text-center text-[#03a94d] font-bold truncate" title={row.po_id}>
                     {row.po_id}
                   </td>
-                  <td className="px-3 py-3 text-gray-900 font-medium truncate" title={row.product}>
+                  <td className="px-3 py-4 text-center text-gray-900 font-medium truncate" title={row.product}>
                     {row.product}
                   </td>
-                  <td className="px-3 py-3 text-gray-700 truncate" title={row.width ?? ""}>
-                    {formatValue(row.width)}
-                  </td>
-                  <td className="px-3 py-3 text-gray-700 truncate" title={row.length ?? ""}>
-                    {formatValue(row.length)}
-                  </td>
-                  <td className="px-3 py-3 text-gray-700 truncate" title={row.weight ?? ""}>
-                    {formatValue(row.weight)}
-                  </td>
-                  <td className="px-3 py-3 text-gray-700 truncate" title={row.volume ?? ""}>
-                    {formatValue(row.volume)}
-                  </td>
-                  <td className="px-3 py-3 text-gray-700 truncate" title={row.diameter ?? ""}>
-                    {formatValue(row.diameter)}
-                  </td>
-                  <td className="px-3 py-3 text-gray-700 truncate" title={row.material}>
+                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.material}>
                     {row.material}
                   </td>
-                  <td className="px-3 py-3 font-bold text-gray-900 truncate" title={row.qty}>
+                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.width ?? ""}>
+                    {formatValue(row.width)}
+                  </td>
+                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.length ?? ""}>
+                    {formatValue(row.length)}
+                  </td>
+                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.weight ?? ""}>
+                    {formatValue(row.weight)}
+                  </td>
+                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.volume ?? ""}>
+                    {formatValue(row.volume)}
+                  </td>
+                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.diameter ?? ""}>
+                    {formatValue(row.diameter)}
+                  </td>
+                  <td className="px-3 py-4 text-center text-gray-900 truncate" title={row.qty}>
                     {row.qty}
                   </td>
-                  <td className="px-3 py-3 text-gray-800 truncate" title={`$${row.total.toLocaleString()}`}>
-                    ${row.total.toLocaleString()}
+                  <td className="px-3 py-4 text-center text-gray-800 truncate" title={`$${row.total.toLocaleString()}`}>
+                    {row.total.toLocaleString()}
                   </td>
-                  <td className="px-3 py-3 text-gray-500 truncate" title={row.delivery}>
+                  <td className="px-3 py-4 text-center text-gray-500 truncate" title={row.delivery}>
                     {row.delivery}
                   </td>
-                  <td className="px-3 py-3 text-center truncate">
+                  <td className="pl-3 pr-6 py-4 text-center">
                     {getStatusBadge(row.status)}
                   </td>
                 </tr>
