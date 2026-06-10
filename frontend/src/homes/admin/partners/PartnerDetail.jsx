@@ -27,7 +27,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
     if (!pid) return;
 
     // 1) 상세 정보 (자가진단 + 공장 + 버전)
-    GET(`/api/company/${pid}`)
+    GET(`/company/${pid}`)
       .then(json => {
         if (json.status && json.data) {
           setFactories(json.data.factories || []);
@@ -40,7 +40,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
       });
 
     // 2) 파일 목록 (4영역 분류)
-    GET(`/api/company/${pid}/files`)
+    GET(`/company/${pid}/files`)
       .then(json => {
         if (json.status) setCategorizedFiles(json.data || { coc: [], selfassess: [], evidence: [], cert: [] });
       });
@@ -49,7 +49,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
   /* [v2.1] 버전 변경 시 해당 버전 자가진단 재조회 */
   useEffect(() => {
     if (!pid || !selectedVersion) return;
-    GET(`/api/company/${pid}/selfassess?version=${selectedVersion}`)
+    GET(`/company/${pid}/selfassess?version=${selectedVersion}`)
       .then(json => {
         if (json.status && json.data?.answers) setSelfAssessAnswers(json.data.answers);
       });
@@ -85,11 +85,13 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
     return "bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm px-4 py-2 text-xs font-black rounded-full whitespace-nowrap";
   };
 
+  let baseURL = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
+
   /* [v2.1] 파일 다운로드 — 실제 API 호출 */
   const handleDownload = (file) => {
     const fname = file.filename || file.origin || file;
     const a = document.createElement("a");
-    a.href = `/api/company/file/download/${fname}`;
+    a.href = `${baseURL}/company/file/download/${fname}`;
     a.download = file.origin || fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };

@@ -23,7 +23,7 @@ const Login = ({ onLoginSuccess }) => {
     if (!email.trim()) { setError("이메일을 입력해 주세요."); return; }
     try {
       setLoading(true); setError("");
-      const res = await POST("/api/auth/login", { email, loginType: "oem" });
+      const res = await POST("/auth/login", { email, loginType: "oem" });
       if (res.status) {
         if (onLoginSuccess) onLoginSuccess(res.data);
         else alert("로그인 성공");
@@ -38,7 +38,7 @@ const Login = ({ onLoginSuccess }) => {
     if (!email.trim()) { setError("이메일을 입력해 주세요."); return; }
     try {
       setLoading(true); setError("");
-      const res = await POST("/api/auth/send-code", { email });
+      const res = await POST("/auth/send-code", { email });
       if (res.status) { setCodeSent(true); alert("인증 코드가 이메일로 발송되었습니다."); }
       else { setError(res.message || "인증 코드 발송에 실패했습니다."); }
     } catch { setError("서버 연결 오류가 발생했습니다."); }
@@ -52,7 +52,7 @@ const Login = ({ onLoginSuccess }) => {
     if (!authCode.trim()) { setError("인증 코드를 입력해 주세요."); return; }
     try {
       setLoading(true); setError("");
-      const res = await POST("/api/auth/login", { email, authCode, loginType: "supplier" });
+      const res = await POST("/auth/login", { email, authCode, loginType: "supplier" });
       if (res.status) {
         if (onLoginSuccess) onLoginSuccess(res.data);
         else alert("로그인 성공");

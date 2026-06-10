@@ -32,6 +32,7 @@ services:
       - esg_pdf:/workspace/esgPdfFiles
       - esg_license:/workspace/licenseFiles
       - esg_supporting:/workspace/supportingFiles
+      - esg_sample:/workspace/sampleFiles
     environment:
       - HOST_IP=${HOST_IP}
       - DOMAIN=${DOMAIN}
@@ -82,3 +83,4 @@ volumes:
   esg_pdf:
   esg_license:
   esg_supporting:
+  esg_sample:

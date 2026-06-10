@@ -53,7 +53,7 @@ const App = () => {
 
   /* 로그아웃 핸들러 */
   const handleLogout = () => {
-    POST("/api/auth/logout", { method: "POST" })
+    POST("/auth/logout", { method: "POST" })
      .then(json => {
         setIsLoggedIn(false);
         localStorage.removeItem("esg_login");
@@ -89,7 +89,7 @@ const App = () => {
     /* 로그인 후 협력사 목록 API 조회 */
     useEffect(() => {
       if (!isLoggedIn) return;
-      POST("/api/company/list", { userRole })
+      POST("/company/list", { userRole })
         .then(json => {
           if (json.status && json.data?.companies) setApiCompanies(json.data.companies);
           else setApiCompanies([]);
