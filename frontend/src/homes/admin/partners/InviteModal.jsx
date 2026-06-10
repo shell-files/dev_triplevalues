@@ -7,6 +7,7 @@
 // ────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from "react";
+import { GET, POST } from "@utils/Network";
 
 const InviteModal = ({ isOpen, onClose, loginData }) => {
   // ── 초대 메시지 (API에서 조회)
@@ -38,15 +39,13 @@ const InviteModal = ({ isOpen, onClose, loginData }) => {
   useEffect(() => {
     if (!isOpen) return;
     const roleCode = getRoleCode();
-    fetch(`/api/invite/message?roleCode=${roleCode}`)
-      .then(r => r.json())
+    GET(`/invite/message?roleCode=${roleCode}`)
       .then(json => {
         if (json.status && json.data) {
           setInviteMsg(json.data);
           setForm(prev => ({ ...prev, messageContent: json.data.message_content || "" }));
         }
-      })
-      .catch(() => {});
+      });
   }, [isOpen]);
 
   // ── 유효성 검사 + 발송
@@ -93,12 +92,7 @@ const InviteModal = ({ isOpen, onClose, loginData }) => {
         roleCode: getRoleCode(),
       };
 
-      const res = await fetch("/api/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }).then(r => r.json());
-
+      const res = await POST("/invite", body);
       if (res.status) {
         alert(`초대가 발송되었습니다.\n(partner_id: ${res.data?.partnerId})`);
         setForm({ companyName: "", email: "", ceoName: "", messageContent: "" });
