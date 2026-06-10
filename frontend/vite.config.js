@@ -10,19 +10,19 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 80,
-    allowedHosts: ['react', 'tval.weareithero.cloud', 'tval.myapp.com'],
-    proxy: {
-      '/api': {
-        // target: 'http://tval.weareithero.cloud',
-        target: 'http://192.168.0.103:8000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        headers: {
-          // 'Origin': 'http://tval.weareithero.cloud'
-          'Origin': 'http://192.168.0.103:8000'
-        }
-      }
-    }
+    allowedHosts: ['react', 'tv.weareithero.cloud', 'tv.myapp.com'],
+    // proxy: {
+    //   '/api': {
+    //     // target: 'http://tv.weareithero.cloud',
+    //     target: 'http://192.168.0.103:8000',
+    //     changeOrigin: true,
+    //     rewrite: (path) => path.replace(/^\/api/, ''),
+    //     headers: {
+    //       // 'Origin': 'http://tv.weareithero.cloud'
+    //       'Origin': 'http://192.168.0.103:8000'
+    //     }
+    //   }
+    // }
   },
   resolve: {
     alias: {

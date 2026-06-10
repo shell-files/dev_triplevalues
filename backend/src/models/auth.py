@@ -142,6 +142,8 @@ def sendAuthCodeProcess(authCodeModel):
         # 3. Redis에 저장 (TTL 300초 = 5분)
         client2.setex(f"auth_code:{email}", 300, code)
 
+        print("authCode: ", code)
+
         # 4. Kafka를 통해 이메일 발송
         kafkaData = {
             "type": 5,
