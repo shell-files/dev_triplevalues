@@ -85,9 +85,9 @@ const PoList = () => {
       case "PENDING":
         return <Chip text="승인 대기" color="yellow" />;
       case "CONFIRMED":
-        return <Chip text="확정" color="blue" />;
+        return <Chip text="발주 완료" color="blue" />;
       case "COMPLETED":
-        return <Chip text="완료" color="green" />;
+        return <Chip text="입고 완료" color="green" />;
       default:
         return <Chip text={status} color="slate" />;
     }
@@ -101,14 +101,14 @@ const PoList = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full flex flex-col">
       <div>
-        <h1 class="text-2xl font-black text-gray-900">구매 발주 관리</h1>
-        <p class="text-sm text-gray-400 mt-1">Al 3003 합금 영업용 PO · 규격 상세 관리</p>
+        <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">구매 발주 관리</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Al 3003 합금 영업용 PO 발주 계약 및 자재 입고 현황 원장</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[400px]">
+        <div className="overflow-x-auto overflow-y-auto flex-1">
           <table className="w-full text-xs text-left table-fixed min-w-[1000px]">
             <colgroup>
               <col className="w-[12%]" />
@@ -134,34 +134,34 @@ const PoList = () => {
                 <th className="px-3 py-3 truncate">부피(L)</th>
                 <th className="px-3 py-3 truncate">지름(mm)</th>
                 <th className="px-3 py-3 truncate">재질</th>
-                <th className="px-3 py-3 truncate">수량</th>
+                <th className="px-3 py-3 truncate">수량(ton)</th>
                 <th className="px-3 py-3 truncate">총액($)</th>
-                <th className="px-3 py-3 truncate">납기</th>
+                <th className="px-3 py-3 truncate">납기 예정일</th>
                 <th className="px-3 py-3 text-center truncate">상태</th>
               </tr>
             </thead>
             <tbody>
               {PO_MOCK_DATA.map((row) => (
                 <tr key={row.po_id} className="border-t hover:bg-gray-50 transition-colors duration-150">
-                  <td className="px-3 py-3 font-mono text-[#03a94d] font-bold truncate" title={row.po_id}>
+                  <td className="px-3 py-3 text-[#03a94d] font-bold truncate" title={row.po_id}>
                     {row.po_id}
                   </td>
                   <td className="px-3 py-3 text-gray-900 font-medium truncate" title={row.product}>
                     {row.product}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-700 truncate" title={row.width ?? ""}>
+                  <td className="px-3 py-3 text-gray-700 truncate" title={row.width ?? ""}>
                     {formatValue(row.width)}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-700 truncate" title={row.length ?? ""}>
+                  <td className="px-3 py-3 text-gray-700 truncate" title={row.length ?? ""}>
                     {formatValue(row.length)}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-700 truncate" title={row.weight ?? ""}>
+                  <td className="px-3 py-3 text-gray-700 truncate" title={row.weight ?? ""}>
                     {formatValue(row.weight)}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-700 truncate" title={row.volume ?? ""}>
+                  <td className="px-3 py-3 text-gray-700 truncate" title={row.volume ?? ""}>
                     {formatValue(row.volume)}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-700 truncate" title={row.diameter ?? ""}>
+                  <td className="px-3 py-3 text-gray-700 truncate" title={row.diameter ?? ""}>
                     {formatValue(row.diameter)}
                   </td>
                   <td className="px-3 py-3 text-gray-700 truncate" title={row.material}>
@@ -170,10 +170,10 @@ const PoList = () => {
                   <td className="px-3 py-3 font-bold text-gray-900 truncate" title={row.qty}>
                     {row.qty}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-800 truncate" title={`$${row.total.toLocaleString()}`}>
+                  <td className="px-3 py-3 text-gray-800 truncate" title={`$${row.total.toLocaleString()}`}>
                     ${row.total.toLocaleString()}
                   </td>
-                  <td className="px-3 py-3 font-mono text-gray-500 truncate" title={row.delivery}>
+                  <td className="px-3 py-3 text-gray-500 truncate" title={row.delivery}>
                     {row.delivery}
                   </td>
                   <td className="px-3 py-3 text-center truncate">
