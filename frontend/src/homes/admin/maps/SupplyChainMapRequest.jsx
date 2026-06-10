@@ -24,7 +24,7 @@ const SPEC_ITEMS = {
   "spec-components": "구성요소"
 };
 
-const SupplyChainMapRequest = ({ onBack = () => {} }) => {
+const SupplyChainMapRequest = ({ onBack = () => { } }) => {
   const [product, setProduct] = useState("열차폐판");
   const [selectedPO, setSelectedPO] = useState("PO-2026-0089");
   const [requestType, setRequestType] = useState("NEW");
@@ -32,19 +32,7 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
   const [dueDate, setDueDate] = useState("");
   const [requestContent, setRequestContent] = useState("");
 
-  // 제출 기한 초기화 (오늘 + 7일)
-  useEffect(() => {
-    const today = new Date();
-    today.setDate(today.getDate() + 7);
-    const year = today.getFullYear();
-    let month = today.getMonth() + 1;
-    let day = today.getDate();
 
-    if (month < 10) month = `0${month}`;
-    if (day < 10) day = `0${day}`;
-
-    setDueDate(`${year}-${month}-${day}`);
-  }, []);
 
   // requestType에 따른 조건부 Lock 로직 및 클린업
   useEffect(() => {
@@ -88,8 +76,8 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
       return;
     }
 
-    if (!requestContent.trim()) {
-      alert("요청 상세 내용을 입력해주세요.");
+    if (!dueDate) {
+      alert("제출 기한을 설정해주세요.");
       return;
     }
 
@@ -105,7 +93,7 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">긴급요청</h2>
-          <p className="text-sm text-gray-400 mt-0.5">선택된 발주 정보 및 제품 규격에 대한 긴급 ESG 실사 요청을 발송합니다.</p>
+          <p className="text-sm text-gray-400 mt-0.5">선택된 발주 정보 및 제품 규격에 대한 긴급 ESG 원자재 정보 요청을 발송합니다.</p>
         </div>
 
         <div>
@@ -123,7 +111,7 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6 flex-1 overflow-y-auto">
         {/* 요청 대상 및 매핑 패널 */}
         <div className="space-y-4">
-          <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">요청 대상 정보</h3>
+          <h3 className="text-base font-bold text-[#03a94d] pb-2 border-b border-gray-100">요청 대상 정보</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-bold text-gray-600">대상 제품 선택</label>
@@ -164,15 +152,16 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
           </div>
 
           {/* 자동 매핑 알림 패널 */}
+          <p className="text-sm mt-2 font-bold text-gray-700">발주 정보</p>
           <div className="bg-slate-50 rounded-lg p-4 border border-gray-200/60 text-sm space-y-2">
-            <p className="font-bold text-gray-700">발주 정보</p>
+            {/* <p className="font-bold text-gray-700">발주 정보</p> */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-xs md:text-sm text-gray-400 font-semibold">협력사명</span>
+                <span className="text-xs md:text-sm text-gray-400">협력사명</span>
                 <p className="text-sm md:text-base font-bold text-gray-900 mt-0.5">{currentPOData.company}</p>
               </div>
               <div>
-                <span className="text-xs md:text-sm text-gray-400 font-semibold">원자재명</span>
+                <span className="text-xs md:text-sm text-gray-400">원자재명</span>
                 <p className="text-sm md:text-base font-bold text-gray-900 mt-0.5">{currentPOData.material}</p>
               </div>
             </div>
@@ -181,8 +170,12 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
 
         {/* 요청 항목 토글 인터페이스 */}
         <div className="space-y-3">
-          <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">요청 항목</h3>
-          <p className="text-xs md:text-sm text-gray-400 font-medium">* 긴급 규제 실사를 위해 파트너사에 요청할 세부 규격 제원 항목을 선택하세요.</p>
+          <h3 className="text-base font-bold text-[#03a94d] pb-2 border-b border-gray-100">요청 항목 선택</h3>
+          <p className="text-xs md:text-sm text-gray-400">
+            {requestType === "NEW"
+              ? "* 신규 등록의 경우 요청 항목 선택이 불가합니다."
+              : "* 긴급 규제 실사를 위해 협력사에 요청할 세부 규격 제원 항목을 선택하세요."}
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             {Object.entries(SPEC_ITEMS).map(([id, name]) => {
               const isSelected = !!activeSpecs[id];
@@ -214,14 +207,14 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
 
         {/* 공문 명세 및 자동 배지 출력 패널 */}
         <div className="space-y-4">
-          <h3 className="text-base font-bold text-gray-900 pb-2 border-b border-gray-100">긴급 요청 정보</h3>
+          <h3 className="text-base font-bold text-[#03a94d] pb-2 border-b border-gray-100">긴급 요청 정보</h3>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-gray-600">선택된 요청 항목</label>
+            <label className="text-sm font-bold text-gray-600">요청 항목</label>
             {/* 배지 출력 구역 */}
-            <div className="min-h-12 border border-gray-200 rounded-lg p-3 bg-slate-50/50 flex flex-wrap gap-2 items-center">
+            <div className="h-16 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-slate-50/50 flex flex-wrap gap-2 items-center">
               {Object.keys(activeSpecs).length === 0 ? (
-                <span className="text-sm text-gray-400 font-medium pl-1">위의 제원 항목을 선택하면 이곳에 자동으로 추가됩니다.</span>
+                <span className="text-sm text-gray-400 pl-1">위 항목에서 요청할 항목을 선택하면 자동으로 추가됩니다.</span>
               ) : (
                 Object.entries(activeSpecs).map(([id, name]) => (
                   <span
@@ -267,7 +260,7 @@ const SupplyChainMapRequest = ({ onBack = () => {} }) => {
               value={requestContent}
               onChange={(e) => setRequestContent(e.target.value)}
               placeholder="세부 내용을 입력해주세요."
-              className="w-full bg-slate-50 border border-gray-200 text-sm px-4 py-3 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold transition-colors resize-none"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-4 py-3 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors resize-none"
             ></textarea>
           </div>
         </div>
