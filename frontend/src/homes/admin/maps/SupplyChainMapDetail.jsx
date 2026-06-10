@@ -443,7 +443,7 @@ const PRODUCT_DATA_MAP = {
   }
 };
 
-const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
+const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
   const [selectedVersion, setSelectedVersion] = useState("v2.0");
   const [selectedNode, setSelectedNode] = useState("novelis");
   const [animate, setAnimate] = useState(false);
@@ -503,18 +503,19 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-5 w-full text-base">
-      
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full flex flex-col text-sm md:text-base">
+
       {/* 상단 정보 헤딩 및 목록 이동 인터페이스 */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">공급망 맵 상세</h1>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">공급망 맵 상세</h2>
+          <p className="text-sm text-gray-400 mt-0.5">선택한 제품의 BOM 구조 및 N차 공급망 상세 정보와 이력을 추적합니다.</p>
         </div>
 
         <div>
           <button
             onClick={onBack}
-            className="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-bold text-gray-700 transition cursor-pointer"
+            className="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-bold text-gray-700 transition cursor-pointer bg-white shadow-3xs"
           >
             &larr; 목록으로 돌아가기
           </button>
@@ -527,7 +528,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
         <div class="flex flex-wrap items-center gap-8 md:gap-16">
           {/* 블록 1 (대상 제품군) */}
           <div class="flex flex-col">
-            <span class="text-sm text-gray-400 font-medium">대상 제품군</span>
+            <span class="text-sm text-gray-400">대상 제품군</span>
             <span class="text-lg font-bold text-gray-900 mt-0.5">{productData.name}</span>
           </div>
 
@@ -536,12 +537,12 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
 
           {/* 블록 2 (버전 히스토리 선택) */}
           <div class="flex flex-col">
-            <span class="text-sm text-gray-400 font-medium mb-1">버전 히스토리 선택</span>
+            <span class="text-sm text-gray-400 mb-1">버전 히스토리 선택</span>
             <select
               id="version-select"
               value={selectedVersion}
               onChange={(e) => setSelectedVersion(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="v2.0">v2.0 (2026-05-15 부터 2026-12-31) [최신]</option>
               <option value="v1.0">v1.0 (2025-01-01 부터 2026-05-14)</option>
@@ -551,7 +552,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
 
         {/* [우측 독립 블록] */}
         <div class="flex flex-col sm:items-end">
-          <span class="text-sm text-gray-400 font-medium mb-1">BOM 검증 상태</span>
+          <span class="text-sm text-gray-400 mb-1">BOM 검증 상태</span>
           <div id="bom-status-badge-container">
             {selectedVersion === "v2.0" ? (
               <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold">
@@ -569,7 +570,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
       </div>
 
       {/* 2분할 레이아웃 (좌측 8 / 우측 4) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
         {/* 좌측 영역 (8열) */}
         <div className="lg:col-span-8 flex flex-col space-y-5">
@@ -594,10 +595,10 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {productData.requests.map((req) => (
                     <tr key={req.id}>
-                      <td className="px-4 py-3 font-medium text-gray-900 truncate">{req.item}</td>
-                      <td className="px-4 py-3 font-semibold truncate">{req.partner}</td>
+                      <td className="px-4 py-3 truncate">{req.item}</td>
+                      <td className="px-4 py-3 truncate">{req.partner}</td>
                       <td className="px-4 py-3 truncate">{req.material}</td>
-                      <td className="px-4 py-3 font-mono">{req.date}</td>
+                      <td className="px-4 py-3">{req.date}</td>
                       <td className="px-4 py-3">
                         {req.status === "checking" ? (
                           <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">
@@ -617,10 +618,10 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
           </div>
 
           {/* 공급망 맵 다단계 계층 트리 전개 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4 flex-1 flex flex-col">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4 flex-1 flex flex-col">
             <div>
               <h3 className="text-sm md:text-base font-bold text-gray-700">공급망 맵</h3>
-              <p className="text-xs text-gray-400 mt-1">* 협력사를 클릭하시면 해당 협력사의 BOM 및 원자재 정보가 우측 패널에 표시됩니다.</p>
+              <p className="text-sm text-gray-400 mt-1">* 협력사를 클릭하시면 해당 협력사의 BOM 및 원자재 정보가 우측 패널에 표시됩니다.</p>
             </div>
 
             {/* 가로/세로 트리 시각화 패널 */}
@@ -645,7 +646,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-emerald-600 px-1.5 py-0.5 rounded">1차 가공</span>
-                    <span className="text-xs font-mono text-emerald-700 font-bold">저위험</span>
+                    <span className="text-xs text-emerald-700 font-bold">저위험</span>
                   </div>
                   <p className="text-base font-bold text-gray-900">노벨리스 코리아</p>
                   <p className="text-sm text-emerald-800 mt-1 font-semibold">압연 및 합금 가공 플레이트</p>
@@ -660,7 +661,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded">2차 제련</span>
-                    <span className="text-xs font-mono text-amber-700 font-bold">중위험</span>
+                    <span className="text-xs text-amber-700 font-bold">중위험</span>
                   </div>
                   <p className="text-base font-bold text-gray-900">케이알엠(주)</p>
                   <p className="text-sm text-amber-800 mt-1 font-semibold">재생 알루미늄 용해/제련</p>
@@ -676,7 +677,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded">3차 채굴</span>
-                    <span className="text-xs font-mono text-amber-700 font-bold">중위험</span>
+                    <span className="text-xs text-amber-700 font-bold">중위험</span>
                   </div>
                   <p className="text-base font-bold text-gray-900">Comilog 가봉 광산 자산</p>
                   <p className="text-sm text-amber-800 mt-1 font-semibold">망간 광석 채굴 및 파쇄 공정</p>
@@ -691,7 +692,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">3차 채굴</span>
-                    <span className="text-xs font-mono text-red-700 font-bold">고위험</span>
+                    <span className="text-xs text-red-700 font-bold">고위험</span>
                   </div>
                   <p className="text-base font-bold text-gray-900">Rio Tinto 보크사이트 인프라</p>
                   <p className="text-sm text-red-800 mt-1 font-semibold">보크사이트(알루미늄 원광) 수급</p>
@@ -708,8 +709,8 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
             {/* 명세서 헤더 및 매핑 스탬프 버전 표기 */}
             <div className="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-sm md:text-base font-bold">선택 협력사 명세</h3>
-                <p id="selected-company-title" className="text-xs md:text-sm text-emerald-400 font-bold mt-0.5">
+                <h3 className="text-xs md:text-sm font-bold">협력사 명세</h3>
+                <p id="selected-company-title" className="text-md md:text-lg text-emerald-400 font-bold mt-0.5">
                   {nodeDetail.title}
                 </p>
               </div>
@@ -725,7 +726,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => {} }) => {
                   <div className="grid grid-cols-1 gap-2.5 text-sm">
                     <div className="flex justify-between py-2 border-b border-slate-50">
                       <span className="text-gray-400 font-medium">품번</span>
-                      <span id="bom-part-no" className="font-bold text-gray-800 font-mono">{nodeDetail.partNo}</span>
+                      <span id="bom-part-no" className="font-bold text-gray-800">{nodeDetail.partNo}</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-slate-50">
                       <span className="text-gray-400 font-medium">투입 부품명</span>
