@@ -81,10 +81,17 @@ const PO_MOCK_DATA = [
 
 const PoList = () => {
   const [currentStatus, setCurrentStatus] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredData = currentStatus === "ALL"
-    ? PO_MOCK_DATA
-    : PO_MOCK_DATA.filter((row) => row.status === currentStatus);
+  const filteredData = PO_MOCK_DATA.filter((row) => {
+    const matchesStatus = currentStatus === "ALL" || row.status === currentStatus;
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      row.po_id.toLowerCase().includes(query) ||
+      row.product.toLowerCase().includes(query) ||
+      row.material.toLowerCase().includes(query);
+    return matchesStatus && matchesSearch;
+  });
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -114,8 +121,9 @@ const PoList = () => {
       </div>
 
       {/* 상태 태그 필터 패널 */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
-        <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* 좌측: 발주 상태 필터 */}
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-gray-500 shrink-0">발주 상태</span>
             <div className="flex flex-wrap gap-2" id="status-filter-container">
@@ -151,6 +159,17 @@ const PoList = () => {
                 );
               })}
             </div>
+          </div>
+
+          {/* 우측: 실시간 검색 인풋 */}
+          <div className="flex items-center w-full md:w-72">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="PO ID, 제품명 또는 재질 검색..."
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition-colors"
+            />
           </div>
         </div>
       </div>
@@ -189,46 +208,54 @@ const PoList = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((row) => (
-                <tr key={row.po_id} className="border-t hover:bg-gray-50 transition-colors duration-150">
-                  <td className="pl-6 pr-3 py-4 text-center text-[#03a94d] font-bold truncate" title={row.po_id}>
-                    {row.po_id}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-900 font-medium truncate" title={row.product}>
-                    {row.product}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.material}>
-                    {row.material}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.width ?? ""}>
-                    {formatValue(row.width)}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.length ?? ""}>
-                    {formatValue(row.length)}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.weight ?? ""}>
-                    {formatValue(row.weight)}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.volume ?? ""}>
-                    {formatValue(row.volume)}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.diameter ?? ""}>
-                    {formatValue(row.diameter)}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-900 truncate" title={row.qty}>
-                    {row.qty}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-800 truncate" title={`$${row.total.toLocaleString()}`}>
-                    {row.total.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-4 text-center text-gray-500 truncate" title={row.delivery}>
-                    {row.delivery}
-                  </td>
-                  <td className="pl-3 pr-6 py-4 text-center">
-                    {getStatusBadge(row.status)}
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan="12" className="px-6 py-10 text-center text-gray-400 text-sm">
+                    검색 결과가 존재하지 않습니다.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredData.map((row) => (
+                  <tr key={row.po_id} className="border-t hover:bg-gray-50 transition-colors duration-150">
+                    <td className="pl-6 pr-3 py-4 text-center text-[#03a94d] font-bold truncate" title={row.po_id}>
+                      {row.po_id}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-900 font-medium truncate" title={row.product}>
+                      {row.product}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.material}>
+                      {row.material}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.width ?? ""}>
+                      {formatValue(row.width)}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.length ?? ""}>
+                      {formatValue(row.length)}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.weight ?? ""}>
+                      {formatValue(row.weight)}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.volume ?? ""}>
+                      {formatValue(row.volume)}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-700 truncate" title={row.diameter ?? ""}>
+                      {formatValue(row.diameter)}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-900 truncate" title={row.qty}>
+                      {row.qty}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-800 truncate" title={`$${row.total.toLocaleString()}`}>
+                      {row.total.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-4 text-center text-gray-500 truncate" title={row.delivery}>
+                      {row.delivery}
+                    </td>
+                    <td className="pl-3 pr-6 py-4 text-center">
+                      {getStatusBadge(row.status)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
