@@ -109,12 +109,12 @@ const RiskList = () => {
       {/* 3대 공급망 계층별 리스크 KPI 요약 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1차 협력사 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-blue-500 flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-[#03a94d] flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold text-blue-500">정련</p>
-            <h4 className="text-base font-black text-blue-800 mt-0.5">1차 협력사</h4>
+            <p className="text-xs font-semibold text-emerald-600">정련</p>
+            <h4 className="text-base font-black text-emerald-800 mt-0.5">1차 협력사</h4>
           </div>
-          <div className="mt-4 pt-3 border-t border-blue-100 flex items-center justify-between text-xs">
+          <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
               총 지표: <span className="font-bold text-gray-800">{t1.total}개</span>
             </div>
@@ -127,12 +127,12 @@ const RiskList = () => {
         </div>
 
         {/* 2차 협력사 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-purple-500 flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-[#0ea5e9] flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold text-purple-500">제련</p>
-            <h4 className="text-base font-black text-purple-800 mt-0.5">2차 협력사</h4>
+            <p className="text-xs font-semibold text-sky-500">제련</p>
+            <h4 className="text-base font-black text-sky-800 mt-0.5">2차 협력사</h4>
           </div>
-          <div className="mt-4 pt-3 border-t border-purple-100 flex items-center justify-between text-xs">
+          <div className="mt-4 pt-3 border-t border-sky-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
               총 지표: <span className="font-bold text-gray-800">{t2.total}개</span>
             </div>
@@ -145,12 +145,12 @@ const RiskList = () => {
         </div>
 
         {/* 3차 협력사 */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-orange-500 flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-[#8b5cf6] flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold text-orange-500">채굴</p>
-            <h4 className="text-base font-black text-orange-800 mt-0.5">3차 협력사</h4>
+            <p className="text-xs font-semibold text-violet-500">채굴</p>
+            <h4 className="text-base font-black text-violet-800 mt-0.5">3차 협력사</h4>
           </div>
-          <div className="mt-4 pt-3 border-t border-orange-100 flex items-center justify-between text-xs">
+          <div className="mt-4 pt-3 border-t border-violet-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
               총 지표: <span className="font-bold text-gray-800">{t3.total}개</span>
             </div>
@@ -185,13 +185,13 @@ const RiskList = () => {
                   if (isActive) {
                     if (opt.key === "1") {
                       btnClass =
-                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-blue-50 border border-blue-300 text-blue-700 cursor-pointer";
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-emerald-50 border border-emerald-300 text-emerald-700 cursor-pointer";
                     } else if (opt.key === "2") {
                       btnClass =
-                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-purple-50 border border-purple-300 text-purple-700 cursor-pointer";
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-sky-50 border border-sky-300 text-sky-700 cursor-pointer";
                     } else if (opt.key === "3") {
                       btnClass =
-                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-orange-50 border border-orange-300 text-orange-700 cursor-pointer";
+                        "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-violet-50 border border-violet-300 text-violet-700 cursor-pointer";
                     } else {
                       btnClass =
                         "px-4 py-1.5 rounded-full text-sm font-bold transition-colors bg-[#03a94d] text-white cursor-pointer";
@@ -305,17 +305,17 @@ const RiskList = () => {
                     <td className="pl-6 pr-3 py-4 text-center text-gray-400 truncate">{row.indicator_no}</td>
                     <td className="px-3 py-4 text-center truncate">
                       {row.tier === 1 && (
-                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs">
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-xs">
                           1차 협력사
                         </span>
                       )}
                       {row.tier === 2 && (
-                        <span className="px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs">
+                        <span className="px-2 py-0.5 rounded bg-sky-50 border border-sky-200 text-sky-700 font-bold text-xs">
                           2차 협력사
                         </span>
                       )}
                       {row.tier === 3 && (
-                        <span className="px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700 font-bold text-xs">
+                        <span className="px-2 py-0.5 rounded bg-violet-50 border border-violet-200 text-violet-700 font-bold text-xs">
                           3차 협력사
                         </span>
                       )}
