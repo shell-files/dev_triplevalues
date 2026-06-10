@@ -3,9 +3,9 @@ import time
 from datetime import datetime
 import psycopg2
 import ollama
-from dbClient import getPostgresConn
-from settings import settings, safePrint
-
+from src.utils.db import getPostgresConn
+from src.utils.settings import settings
+from src.utils.aicommon import safePrint
 def logStatus(message: str):
     """현재 시간과 함께 로그를 출력하는 헬퍼 함수"""
     currentTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -2,10 +2,10 @@
 # ────────────────────────────────────────────────────────────────────────────
 # [역할]
 #   1. Pydantic v2 Request/Response 모델 정의
-#   2. 알림 비즈니스 로직 및 SQL 실행
+#   2. 알림 비즈니스 로직 및 실제 DB 스키마(partner_id 마스터 구조) 호환 SQL 실행
 #
 # [의존성]
-#   utils/websc.py → authenticateWS (웹소켓 인증)
+#   utils/websc.py     → authenticateWS (웹소켓 인증)
 #   utils/db.py        → findAll, findOne, save
 #   utils/rediscl.py   → getRedis
 #   models/notify.py   → sendNotify, notifyType, getRelativeTime
@@ -21,13 +21,14 @@ from src.models.model import responseModel, alarmListModel, alarmReadModel, alar
 from src.models.notify import sendNotify, notifyType, getRelativeTime
 from src.utils.validatetok import validateToken
 
-# 알림 타입 전체 목록 (typeCounts 집계용)
+# 알림 타입 전체 목록 (typeCounts 집계용 - AI_AGENT 타입 추가 반영)
 allTypes = [
     notifyType.USER,
     notifyType.CHECK,
     notifyType.CHART,
     notifyType.LEAF,
     notifyType.CUBE,
+    notifyType.AI_AGENT,  # ★ AI Agent 위반 알람 대응 추가
 ]
 
 
@@ -35,50 +36,45 @@ allTypes = [
 # ■ 공통 유틸
 # ============================================================
 
-def getUserIdFromUuid(uuid: str) -> Optional[int]:
+def getUserIdFromUuid(uuid: str) -> Optional[str]:
     """
-    [역할] Redis uuid → user_id 조회 공통 함수
-    [반환] user_id(int) 또는 None (인증 실패)
-    [사용] 각 Process 함수에서 인증 처리 시 호출
+    [역할] Redis uuid → 토큰 복호화를 통해 실 유저 식별자인 partner_id(str) 조회
+    [반환] partner_id(str) 또는 None (인증 실패)
     """
     # 1. 세션 검증 및 자동 갱신 모듈 호출
-    # 이 한 줄로 Redis 조회, Access 만료 체크, Refresh 재발급, DB/Redis 업데이트가 완료됩니다.
     authResponse = validateToken(uuid)
     
-    # 인증 실패 시 (세션 만료, 리프레시 만료 등) 그대로 반환
+    # 인증 실패 시 그대로 반환
     if not authResponse["status"]:
         return authResponse
 
     # 2. 검증 통과 후 최신 UUID 획득
-    # 재발급되었다면 신규 UUID가, 유효하다면 기존 UUID가 들어있습니다.
     activeUuid = authResponse["data"]["uuid"]
 
-    # 3. 최신 UUID를 통해 유저 ID(sub) 추출
-    # Redis에서 토큰을 가져와 복호화하여 sub(userId)를 얻습니다.
+    # 3. 최신 UUID를 통해 토큰 데이터베이스(sub)에서 partner_id 추출
     tokenRes = getTokenRedis(activeUuid)
     payLoad = decryptFromJwe(tokenRes["accessToken"])
-    userId = payLoad.get("sub")
+    partnerId = payLoad.get("sub")
     
-    if not userId:
+    if not partnerId:
         return None
-    return userId
+    return str(partnerId)
 
 
-def buildTypeCounts(userId: int, companyId: int) -> dict:
+def buildTypeCounts(partnerId: str) -> dict:
     """
-    [역할] 타입별 읽지 않은 알림 개수 집계
-    [반환] {"USER": 1, "CHECK": 0, "CHART": 0, "LEAF": 0, "CUBE": 0}
+    [역할] 실제 DB 컬럼(partner_id) 기준 타입별 읽지 않은 알림 개수 집계
+    [반환] {"USER": 0, "AI_AGENT": 2, ...}
     """
     countSql = """
         SELECT type, COUNT(*) as cnt
         FROM `ALARM`
-        WHERE user_id    = ?
-          AND company_id = ?
-          AND is_read    = 0
-          AND delete_yn  = 0
+        WHERE partner_id = ?
+          AND is_read   = 0
+          AND delete_yn = 0
         GROUP BY type
     """
-    rows   = findAll(countSql, (userId, companyId))
+    rows   = findAll(countSql, (partnerId,))
     counts = {t: 0 for t in allTypes}
     for row in rows:
         if row["type"] in counts:
@@ -86,26 +82,22 @@ def buildTypeCounts(userId: int, companyId: int) -> dict:
     return counts
 
 
-def getUnreadCount(userId: int, companyId: int) -> int:
-    """[역할] 읽지 않은 전체 알림 개수 조회"""
+def getUnreadCount(partnerId: str) -> int:
+    """[역할] 실제 DB 컬럼(partner_id) 기준 읽지 않은 전체 알림 총합 조회"""
     unreadSql = """
         SELECT COUNT(*) as cnt
         FROM `ALARM`
-        WHERE user_id    = ?
-          AND company_id = ?
-          AND is_read    = 0
-          AND delete_yn  = 0
+        WHERE partner_id = ?
+          AND is_read   = 0
+          AND delete_yn = 0
     """
-    row = findOne(unreadSql, (userId, companyId))
+    row = findOne(unreadSql, (partnerId,))
     return row["cnt"] if row else 0
 
 
 def formatAlarm(row: dict) -> dict:
     """
-    [역할] DB 조회 결과 → 명세서 응답 형식 변환
-    [처리]
-      created_at  → time(상대시간) 변환  ← utils/notify.py getRelativeTime() 사용
-      meta_json   → dict 변환
+    [역할] DB 조회 결과(partner_id 구조) → 프론트엔드 명세서 응답 형식 변환
     """
     createdAt = row.get("created_at")
     if isinstance(createdAt, str):
@@ -130,21 +122,17 @@ def formatAlarm(row: dict) -> dict:
 
 def getAlarmListProcess(alarmListModel: alarmListModel, companyId: int) -> alarmResponse:
     """
-    알림 목록 조회
-
-    [처리 순서]
-    ├─ Step 1. uuid → user_id 조회
-    ├─ Step 2. 동적 WHERE 조건 생성
-    ├─ Step 3. ALARM 테이블 조회 (페이지네이션)
-    └─ Step 4. unreadCount + typeCounts 집계 반환
+    알림 목록 조회 (테이블 파라미터 구조 정정 버전)
     """
     try:
-        userId = getUserIdFromUuid(alarmListModel.uuid)
-        if not userId:
+        # Step 1. uuid → partner_id 조회
+        partnerId = getUserIdFromUuid(alarmListModel.uuid)
+        if not partnerId:
             return alarmResponse(False, "인증 정보가 유효하지 않습니다.", {})
 
-        conditions = ["user_id = ?", "company_id = ?", "delete_yn = 0"]
-        params     = [userId, companyId]
+        # Step 2. 실제 스키마 필드(partner_id) 기반 동적 WHERE 조건 생성
+        conditions = ["partner_id = ?", "delete_yn = 0"]
+        params     = [partnerId]
 
         if alarmListModel.type:
             conditions.append("type = ?")
@@ -164,6 +152,7 @@ def getAlarmListProcess(alarmListModel: alarmListModel, companyId: int) -> alarm
         offset      = (alarmListModel.page - 1) * alarmListModel.size
         params.extend([alarmListModel.size, offset])
 
+        # Step 3. ALARM 테이블 실 스키마 조회
         alarmSql = f"""
             SELECT id, type, title, content,
                    is_read, path, meta_json, created_at
@@ -174,10 +163,11 @@ def getAlarmListProcess(alarmListModel: alarmListModel, companyId: int) -> alarm
         """
         rows = findAll(alarmSql, tuple(params))
 
+        # Step 4. 집계 결과 반환
         return alarmResponse(True, "알림 목록 조회에 성공했습니다.", {
             "notifications" : [formatAlarm(row) for row in rows],
-            "unreadCount"   : getUnreadCount(userId, companyId),
-            "typeCounts"    : buildTypeCounts(userId, companyId),
+            "unreadCount"   : getUnreadCount(partnerId),
+            "typeCounts"    : buildTypeCounts(partnerId),
         })
 
     except Exception as e:
@@ -188,25 +178,19 @@ def getAlarmListProcess(alarmListModel: alarmListModel, companyId: int) -> alarm
 
 def readAlarmProcess(alarmReadModel: alarmReadModel, companyId: int) -> alarmResponse:
     """
-    알림 읽음 처리
-
-    [처리 순서]
-    ├─ Step 1. uuid → user_id 조회
-    ├─ Step 2. types 유무에 따라 전체 or 유형별 읽음 처리
-    └─ Step 3. unreadCount + typeCounts 반환
+    알림 읽음 처리 (partner_id 조건 매핑)
     """
     try:
-        userId = getUserIdFromUuid(alarmReadModel.uuid)
-        if not userId:
+        partnerId = getUserIdFromUuid(alarmReadModel.uuid)
+        if not partnerId:
             return alarmResponse(False, "인증 정보가 유효하지 않습니다.", {})
 
         conditions = [
-            "user_id    = ?",
-            "company_id = ?",
+            "partner_id = ?",
             "delete_yn  = 0",
             "is_read    = 0",
         ]
-        params = [userId, companyId]
+        params = [partnerId]
 
         if alarmReadModel.types:
             placeholders = ", ".join(["?" for _ in alarmReadModel.types])
@@ -218,8 +202,8 @@ def readAlarmProcess(alarmReadModel: alarmReadModel, companyId: int) -> alarmRes
 
         return alarmResponse(True, "알림 읽음 처리가 완료되었습니다.", {
             "uuid"        : alarmReadModel.uuid,
-            "unreadCount" : getUnreadCount(userId, companyId),
-            "typeCounts"  : buildTypeCounts(userId, companyId),
+            "unreadCount" : getUnreadCount(partnerId),
+            "typeCounts"  : buildTypeCounts(partnerId),
         })
 
     except Exception as e:
@@ -230,35 +214,32 @@ def readAlarmProcess(alarmReadModel: alarmReadModel, companyId: int) -> alarmRes
 
 def deleteAlarmProcess(alarmId: int, uuid: str, companyId: int) -> alarmResponse:
     """
-    알림 소프트 삭제
-
-    [처리 순서]
-    ├─ Step 1. uuid → user_id 조회
-    ├─ Step 2. ALARM 소프트 삭제 (delete_yn = 1)
-    └─ Step 3. 삭제 후 최신 목록 반환
+    알림 소프트 삭제 (partner_id 조건 매핑)
     """
     try:
-        userId = getUserIdFromUuid(uuid)
-        if not userId:
+        partnerId = getUserIdFromUuid(uuid)
+        if not partnerId:
             return alarmResponse(False, "인증 정보가 유효하지 않습니다.", {})
 
+        # 실제 존재하지 않는 company_id 컬럼을 배제하고 partner_id 조건으로 업데이트 수행
         save(
-            "UPDATE `ALARM` SET delete_yn = 1 WHERE id = ? AND user_id = ? AND company_id = ?",
-            (alarmId, userId, companyId)
+            "UPDATE `ALARM` SET delete_yn = 1 WHERE id = ? AND partner_id = ?",
+            (alarmId, partnerId)
         )
 
+        # 삭제 후 최신 목록 Top 20 리로드
         rows = findAll("""
             SELECT id, type, title, content,
                    is_read, path, meta_json, created_at
             FROM `ALARM`
-            WHERE user_id = ? AND company_id = ? AND delete_yn = 0
+            WHERE partner_id = ? AND delete_yn = 0
             ORDER BY created_at DESC LIMIT 20
-        """, (userId, companyId))
+        """, (partnerId,))
 
         return alarmResponse(True, "알림이 삭제되었습니다.", {
             "notifications" : [formatAlarm(row) for row in rows],
             "deletedCount"  : 1,
-            "unreadCount"   : getUnreadCount(userId, companyId),
+            "unreadCount"   : getUnreadCount(partnerId),
             "deletedId"     : alarmId,
         })
 
@@ -269,12 +250,12 @@ def deleteAlarmProcess(alarmId: int, uuid: str, companyId: int) -> alarmResponse
 
 
 async def sendAlarmProcess(alarmSendModel: alarmSendModel) -> alarmResponse:
-    """알림 전송 — models/notify.py sendNotify() 호출"""
+    """알림 직접 전송 인터페이스"""
     try:
         await sendNotify(
             notifyType = alarmSendModel.notifyType,
-            userId     = alarmSendModel.userId,
-            companyId  = alarmSendModel.companyId,
+            userId     = alarmSendModel.userId,     # notify.py 연동 시 partner_id가 전달됨
+            companyId  = alarmSendModel.companyId,  # 내부 인자 구조 호환 유지
             meta       = alarmSendModel.meta,
         )
         return alarmResponse(True, "알림 전송 완료")

@@ -235,6 +235,36 @@ async def uploadSelfAssessProcess(partnerId, file) -> dict:
                 WHERE partner_id = ? AND version = ? AND delete_yn = 0
             """
             save(deleteSql, (partnerId, oldVersion,))
+
+         # Kafka로 전송하기 위해 새로 적재된 자가진단 리스트 데이터 조회
+        try:
+            answersSql = """
+                SELECT indicator_no, answer_text, category, evidence_yn
+                FROM `SELF_ASSESS_ANSWER`
+                WHERE partner_id = ? AND version = ? AND delete_yn = 0
+            """
+            answers = findAll(answersSql, (partnerId, nextVersion))
+            
+            if answers:
+                from src.utils.kafkasv import sendSelfAssessToKafka
+                kafkaMessage = {
+                    "partner_id": partnerId,
+                    "version": nextVersion,
+                    "answers": [
+                        {
+                            "indicator_no": row["indicator_no"],
+                            "answer_text": row["answer_text"],
+                            "category": row["category"],
+                            "evidence_yn": row["evidence_yn"]
+                        }
+                        for row in answers
+                    ]
+                }
+                sendSelfAssessToKafka(kafkaMessage)
+                print(f"[Kafka Publish] partner_id={partnerId}, version={nextVersion}, answers={len(answers)}")
+        except Exception as kafka_ex:
+            print(f"[Kafka Publish Error] {kafka_ex}")   
+             
     return result
 
 # 자가진단 증빙자료는 별도 업로드 API로 관리 (evidence 파일 유형) — OCR 결과와 직접 연결된 파일이 아니므로, 자가진단 답변과 1:N 관계로 유연하게 관리

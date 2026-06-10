@@ -58,3 +58,41 @@ def delTokenRedis(uuid: str):
     except Exception as e:
         print(f"Error deleting Redis key: {e}")
         return {"status": False}
+
+# --------------------------
+# setCompanyRedis: Company Redis(client2)에 값을 저장하는 함수
+# --------------------------
+def setCompanyRedis(uuid: str, companyId: int):
+    """Redis에 uuid를 키로, 선택한 회사 저장"""
+    try:
+        client2.set(uuid, companyId)
+        return {"status": True}
+    except Exception as e:
+        print(f"Error setting Redis keys: {e}")
+        return {"status": False}
+
+# --------------------------
+# getCompanyRedis: Company Redis(client2)에서 저장된 값을 가져오는 함수
+# --------------------------
+def getCompanyRedis(uuid: str):
+    """ uuid로 회사 조회"""
+    try:
+        result = client2.get(uuid)
+        if result:
+            return {"status": True, "uuid": uuid, "token": result}
+        return {"status": False, "message": "Key not found"}
+    except Exception as e:
+        print(f"Error getting Redis value: {e}")
+        return {"status": False}
+
+# --------------------------
+# delCompanyRedis: Company Redis(client2)에 저장된 값을 삭제하는 함수
+# --------------------------
+def delCompanyRedis(uuid: str):
+    """특정 uuid 키 삭제"""
+    try:
+        client2.delete(uuid)
+        return {"status": True}
+    except Exception as e:
+        print(f"Error deleting Redis key: {e}")
+        return {"status": False}
