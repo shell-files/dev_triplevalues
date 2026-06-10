@@ -2,8 +2,12 @@ import React, { useState } from "react";
 import { Card } from "@components/Common/Card";
 import { RChip } from "@components/Common/Chip";
 import CircleIcon from "@components/Common/Icons/CircleIcon";
+/* [v1.2] 초대 모달 import */
+import InviteModal from "@admin/partners/InviteModal";
 
 const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanies, loginData }) => {
+  /* [v1.2] 초대 모달 state */
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
@@ -60,6 +64,16 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
           <h1 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보 관리</h1>
           <p className="text-sm text-gray-400 mt-1">공급망 내 파트너사의 ESG 위험 수준 및 주요 글로벌 인증 준수 현황을 실시간 관제합니다.</p>
         </div>
+        <div>
+          {/* [v1.2] 초대하기 버튼 */}
+          <button onClick={() => setShowInviteModal(true)}
+            className="px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 transition shrink-0"
+            style={{ backgroundColor: "#03a94d" }}>
+            + 초대하기
+          </button>
+        </div>
+        {/* [v1.2] 초대 모달 */}
+        <InviteModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} loginData={loginData} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

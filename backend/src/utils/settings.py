@@ -7,7 +7,7 @@ class Settings(BaseSettings):
   # kafka config
   # --------------------------
   kafka_server: str = "kafka:9092"
-  kafka_topic: str = "email"
+  kafka_topic: str = "tval_email"
   # --------------------------
   # email config
   # --------------------------
