@@ -14,12 +14,12 @@ export default defineConfig({
     proxy: {
       '/api': {
         // target: 'http://tv.weareithero.cloud',
-        target: 'http://192.168.0.103:8000',
+        target: 'http://192.168.0.104:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
         headers: {
           // 'Origin': 'http://tv.weareithero.cloud'
-          'Origin': 'http://192.168.0.103:8000'
+          'Origin': 'http://192.168.0.104:8000'
         }
       }
     }
