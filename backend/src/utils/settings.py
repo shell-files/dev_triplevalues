@@ -11,11 +11,8 @@ class Settings(BaseSettings):
   # --------------------------
   kafka_server: str = "kafka:9092"
   kafka_topic: str = "tval_email"
-<<<<<<< HEAD
-=======
   kafka_self_assess_topic: str = "tval_self_assess"
 
->>>>>>> 9dc778de56aad7e53fbf11dcdc45ebd50ee1aad2
   # --------------------------
   # email config
   # --------------------------
