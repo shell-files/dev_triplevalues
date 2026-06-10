@@ -111,8 +111,8 @@ const RiskList = () => {
         {/* 1차 협력사 */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-blue-500 flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold text-blue-500">1차 공급망</p>
-            <h4 className="text-base font-black text-blue-800 mt-0.5">1차 협력사 (합금)</h4>
+            <p className="text-xs font-semibold text-blue-500">정련</p>
+            <h4 className="text-base font-black text-blue-800 mt-0.5">1차 협력사</h4>
           </div>
           <div className="mt-4 pt-3 border-t border-blue-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
@@ -129,8 +129,8 @@ const RiskList = () => {
         {/* 2차 협력사 */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-purple-500 flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold text-purple-500">2차 공급망</p>
-            <h4 className="text-base font-black text-purple-800 mt-0.5">2차 협력사 (제련)</h4>
+            <p className="text-xs font-semibold text-purple-500">제련</p>
+            <h4 className="text-base font-black text-purple-800 mt-0.5">2차 협력사</h4>
           </div>
           <div className="mt-4 pt-3 border-t border-purple-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
@@ -147,8 +147,8 @@ const RiskList = () => {
         {/* 3차 협력사 */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-b-5 border-b-orange-500 flex flex-col justify-between">
           <div>
-            <p className="text-xs font-semibold text-orange-500">3차 공급망</p>
-            <h4 className="text-base font-black text-orange-800 mt-0.5">3차 협력사 (채굴)</h4>
+            <p className="text-xs font-semibold text-orange-500">채굴</p>
+            <h4 className="text-base font-black text-orange-800 mt-0.5">3차 협력사</h4>
           </div>
           <div className="mt-4 pt-3 border-t border-orange-100 flex items-center justify-between text-xs">
             <div className="text-gray-500 font-medium">
@@ -271,33 +271,60 @@ const RiskList = () => {
       {/* 리스크 현황 테이블 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-360px)] min-h-[350px]">
         <div className="overflow-x-auto overflow-y-auto flex-1">
-          <table className="w-full text-xs text-left" id="risk-table">
+          <table className="w-full text-sm text-center table-fixed min-w-[1000px] border-collapse text-gray-700" id="risk-table">
+            <colgroup>
+              <col className="w-[8%]" />
+              <col className="w-[12%]" />
+              <col className="w-[18%]" />
+              <col className="w-[22%]" />
+              <col className="w-[18%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <thead>
               <tr className="bg-slate-50 border-b border-gray-100 text-gray-500 font-bold">
-                <th className="px-4 py-3">No.</th>
-                <th className="px-4 py-3">협력사</th>
-                <th className="px-4 py-3">지표명</th>
-                <th className="px-4 py-3">적용 규제</th>
-                <th className="px-4 py-3">현재 데이터</th>
-                <th className="px-4 py-3">리스크 등급</th>
+                <th className="pl-6 pr-3 py-3.5 text-center truncate">No.</th>
+                <th className="px-3 py-3.5 text-center truncate">분류</th>
+                <th className="px-3 py-3.5 text-center truncate">협력사</th>
+                <th className="px-3 py-3.5 text-center truncate">지표명</th>
+                <th className="px-3 py-3.5 text-center truncate">적용 규제</th>
+                <th className="px-3 py-3.5 text-center truncate">현재 데이터</th>
+                <th className="pl-3 pr-6 py-3.5 text-center truncate">리스크 등급</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-4 py-10 text-center text-gray-400 text-sm">
+                  <td colSpan="7" className="px-6 py-10 text-center text-gray-400 text-sm">
                     검색 결과에 해당하는 리스크 현황이 없습니다.
                   </td>
                 </tr>
               ) : (
                 filteredData.map((row) => (
                   <tr key={row.indicator_no} className={getRowClass(row.risk_level)}>
-                    <td className="px-4 py-3 font-mono text-gray-400">{row.indicator_no}</td>
-                    <td className="px-4 py-3 font-bold text-gray-900">{row.company_name}</td>
-                    <td className="px-4 py-3 font-medium text-gray-700">{row.name}</td>
-                    <td className="px-4 py-3 text-gray-500">{row.regs}</td>
-                    <td className="px-4 py-3 font-mono text-gray-600">{row.actual_value}</td>
-                    <td className="px-4 py-3">
+                    <td className="pl-6 pr-3 py-4 text-center font-mono text-gray-400 truncate">{row.indicator_no}</td>
+                    <td className="px-3 py-4 text-center truncate">
+                      {row.tier === 1 && (
+                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold text-sm">
+                          1차 협력사
+                        </span>
+                      )}
+                      {row.tier === 2 && (
+                        <span className="px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 font-bold text-sm">
+                          2차 협력사
+                        </span>
+                      )}
+                      {row.tier === 3 && (
+                        <span className="px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700 font-bold text-sm">
+                          3차 협력사
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-4 text-center font-bold text-gray-900 truncate" title={row.company_name}>{row.company_name}</td>
+                    <td className="px-3 py-4 text-center font-medium text-gray-700 truncate" title={row.name}>{row.name}</td>
+                    <td className="px-3 py-4 text-center text-gray-500 truncate" title={row.regs}>{row.regs}</td>
+                    <td className="px-3 py-4 text-center font-mono text-gray-600 truncate" title={row.actual_value}>{row.actual_value}</td>
+                    <td className="pl-3 pr-6 py-4 text-center">
                       <RChip v={row.risk_level} />
                     </td>
                   </tr>
