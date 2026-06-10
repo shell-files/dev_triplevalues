@@ -13,12 +13,12 @@ export default defineConfig({
     allowedHosts: ['react', 'tv.weareithero.cloud', 'tv.myapp.com'],
     proxy: {
       '/api': {
-        target: 'http://tv.weareithero.cloud',
+        target: 'http://tval.weareithero.cloud',
         // target: 'http://192.168.0.107:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
         headers: {
-          'Origin': 'http://tv.weareithero.cloud'
+          'Origin': 'http://tval.weareithero.cloud'
           //'Origin': 'http://192.168.0.107:8000'
         }
       }
