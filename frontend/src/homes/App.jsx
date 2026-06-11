@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SidebarNav from "@components/Layout/SidebarNav";
 import HeaderNav from "@components/Layout/HeaderNav";
+import Login from "@homes/logins/Login";  // ---- 로그인/로그아웃 복구
 import MainDashboard from "@homes/admin/MainDashboard";
 import PartnerList from "@homes/admin/partners/PartnerList";
 import PartnerDetail from "@homes/admin/partners/PartnerDetail";
@@ -10,6 +11,7 @@ import RiskList from "@homes/admin/risks/RiskList";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
+import { GET, POST } from "@utils/Network"; // ---- 로그인/로그아웃 복구
 
 const PlaceholderPage = ({ title, desc }) => (
   <div className="p-6 bg-white rounded-xl border border-gray-200 shadow-sm animate-fade-in">
@@ -22,7 +24,10 @@ const PlaceholderPage = ({ title, desc }) => (
 );
 
 const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);  // ---- 로그인 상태 (1)
+  const [loginData, setLoginData] = useState(null); // -------- 로그인 상태 (2)
   const [page, setPage] = useState("dashboard");
+  const [pageKey, setPageKey] = useState(0);  // -------------- 로그인/로그아웃 복구
   const [showNotif, setShowNotif] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState("현대모비스");
@@ -30,51 +35,111 @@ const App = () => {
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
-  const unread = notifications.filter((n) => !n.read).length;
+  /* 로그인 성공 핸들러 */
+  const handleLoginSuccess = (data) => {
+    setLoginData(data);
+    const isOem = Number(data?.tier) === 0;
+    setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
+    setPage(isOem ? "dashboard" : "company_info");
+    try {
+      localStorage.setItem("esg_login", JSON.stringify({
+        ...data,
+        userRole: isOem ? "현대모비스" : (data?.tier_label || ""),
+        page: isOem ? "dashboard" : "company_info",
+      }));
+    } catch (e) {}
+    setIsLoggedIn(true);
+  };
+    
+  /* 로그아웃 핸들러 */
+  const handleLogout = () => {
+    POST("/auth/logout", { method: "POST" })
+     .then(json => {
+        setIsLoggedIn(false);
+        localStorage.removeItem("esg_login");
+        setLoginData(null);
+        setPage("dashboard");
+        setUserRole("현대모비스");
+      });
+  };
+  
+  /* 앱 마운트 시 세션 복원 */
+  useEffect(() => {
+    if (isLoggedIn) return;
+    try {
+      const saved = localStorage.getItem("esg_login");
+      if (saved) {
+        const data = JSON.parse(saved);
+        setLoginData(data);
+        setUserRole(data.userRole || "현대모비스");
+        setPage(data.page || "dashboard");
+        setIsLoggedIn(true);
+      }
+    } catch (e) {}
+  }, []);
+  
+  /* 로그인 후 협력사 목록 API 조회 */
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    POST("/company/list", { userRole })
+      .then(json => {
+        if (json.status && json.data?.companies) setApiCompanies(json.data.companies);
+        else setApiCompanies([]);
+      });
+  }, [userRole, isLoggedIn]);
+  
+  /* 로그인 전 가드 */
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
 
+  const unread = notifications.filter((n) => !n.read).length;
+  
   const handleResetPage = () => {
     setPage("dashboard");
     setSelPartner(null);
-    // setSelSupplyChain(null); // 향후 연동될 공급망 전용 상세 상태 클리어 안전장치 인프라 보존
   };
 
   const handleMenuChange = (targetPage) => {
     setPage(targetPage);
+    setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
-    // setSelSupplyChain(null); // 향후 연동될 공급망 전용 상세 상태 클리어 안전장치 인프라 보존
   };
 
+  /* 기존 레거시 구조에 로그인 세션 및 렌더링 키 결합 통합 완공 */
   const renderContent = () => {
     if (page === "dashboard") {
-      return <MainDashboard />;
+      return <MainDashboard key={pageKey} />;
     }
     
     if (page === "partner") {
-      // 2Depth 상세 관제 레코드가 존재하면 PartnerDetail을 바인딩하고, 없으면 1Depth 목록인 PartnerList를 렌더링
       if (selPartner) {
         return (
           <PartnerDetail
+            key={pageKey}
             partner={selPartner}
             partnerRegistration="시스템 자동화 트랙"
             onBack={() => setSelPartner(null)}
+            loginData={loginData}
           />
         );
       }
       return (
         <PartnerList
+          key={pageKey}
           userRole={userRole}
           partnerRegistration="시스템 자동화 트랙"
           setSelPartner={setSelPartner}
           apiCompanies={apiCompanies}
+          loginData={loginData}
         />
       );
     }
     
     const pages = {
-      // 추후 파스칼 표기법 규칙에 의거하여 만든 <SupplyChainMap /> 컴포넌트가 매핑될 예정입니다.
-      supplychainMap: <SupplyChainMap />,
-      po: <PoList />,
-      risk: <RiskList />
+      supplychainMap: <SupplyChainMap key={pageKey} />,
+      po: <PoList key={pageKey} />,
+      risk: <RiskList key={pageKey} />
     };
 
     return pages[page] || <PlaceholderPage title="준비 중인 화면" desc="선택한 메뉴의 화면 마이그레이션 스프린트 가동을 대기 중입니다." />;
@@ -92,6 +157,7 @@ const App = () => {
         userRole={userRole}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
+        // navigateTo={navigateTo}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -104,6 +170,8 @@ const App = () => {
           setNotifications={setNotifications}
           unread={unread}
           setMobileMenuOpen={setMobileMenuOpen}
+          handleLogout={handleLogout}
+          loginData={loginData}
           onResetPage={handleResetPage}
         />
         
