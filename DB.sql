@@ -430,31 +430,18 @@ CREATE TABLE `AI_AGENT_RULE` (
 DROP TABLE IF EXISTS `AI_AGENT_ALERT`;
 CREATE TABLE `AI_AGENT_ALERT` (
   alert_id          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '알림 ID (PK)',
-  rule_id           BIGINT       NOT NULL                COMMENT '룰 ID (FK)',
   partner_id        VARCHAR(20)  NOT NULL                COMMENT '협력사 코드',
   indicator_no      INT                                  COMMENT '지표 번호',
-  metric_key        VARCHAR(50)                          COMMENT '평가 키',
-  actual_value      VARCHAR(200)                         COMMENT '실제값',
-  threshold_value   VARCHAR(100)                         COMMENT '기준값',
-  deviation_pct     DECIMAL(8,2)                         COMMENT '편차 (%)',
+  rule_id           BIGINT       NOT NULL                COMMENT '룰 ID (FK)',
+  alarm_id          BIGINT                               COMMENT 'ALARM 연동 ID',
   severity          VARCHAR(20)  NOT NULL                COMMENT '심각도',
   ai_confidence     DECIMAL(5,2)                         COMMENT 'AI 신뢰도',
   ai_reasoning      TEXT                                 COMMENT 'AI 판단 근거',
   ai_recommendation TEXT                                 COMMENT 'AI 권장 조치',
-  alert_title       VARCHAR(200) NOT NULL                COMMENT '알림 제목',
-  alert_content     TEXT                                 COMMENT '알림 본문',
-  regulation        VARCHAR(100)                         COMMENT '관련 규제',
-  status            VARCHAR(20)  DEFAULT 'OPEN'          COMMENT '상태',
-  acknowledged_by   VARCHAR(20)                          COMMENT '확인 본사/원청사 코드',
-  acknowledged_at   DATETIME                             COMMENT '확인 일시',
-  resolved_by       VARCHAR(20)                          COMMENT '해소 본사/원청사 코드',
-  resolved_at       DATETIME                             COMMENT '해소 일시',
-  resolution_note   TEXT                                 COMMENT '해소 비고',
-  alarm_id          BIGINT                               COMMENT 'ALARM 연동 ID',
   detected_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '감지 시각',
-  run_id            BIGINT                               COMMENT '실행 로그 ID',
   delete_yn         TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '삭제 여부',
-  PRIMARY KEY (alert_id), KEY idx_partner (partner_id), KEY idx_severity (severity)
+  PRIMARY KEY (alert_id), KEY idx_partner (partner_id), KEY idx_indicator (indicator_no), 
+  KEY idx_rule (rule_id), KEY idx_alarm (alarm_id), KEY idx_severity (severity)
 ) ENGINE=InnoDB COMMENT='AI Agent 위반 알림';
 
 DROP TABLE IF EXISTS `AI_AGENT_RUN_LOG`;
