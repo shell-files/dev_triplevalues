@@ -419,7 +419,7 @@ CREATE TABLE `AI_AGENT_RULE` (
   notify_template text            DEFAULT NULL                                   COMMENT '알림 가이드 템플릿',
   regulation      varchar(255)    DEFAULT NULL                                   COMMENT '연계 글로벌 ESG 규제',
   action_required text            DEFAULT NULL                                   COMMENT '불합격 시 권장 조치 방안 명세',
-  active_yn       char(1)         DEFAULT 'Y'                                    COMMENT '활성화 여부',
+  active_yn       TINYINT(1)      NOT NULL DEFAULT 0                             COMMENT '활성화 여부',
   priority        int(11)         DEFAULT 50                                     COMMENT '알림 표출 우선순위 가중치',
   created_at      timestamp       NOT NULL DEFAULT current_timestamp()           COMMENT '최초 생성 일시',
   updated_at      timestamp       NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '수정 일시',
