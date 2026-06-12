@@ -1,466 +1,42 @@
 import React, { useState, useEffect } from "react";
+import { GET } from "@utils/Network";
 
-const PRODUCT_DATA_MAP = {
-  'PRD-001': {
-    name: '열차폐판',
-    poNumber: 'PO-2026-0049',
-    requests: [
-      { id: 1, item: "원산지, 구성요소", partner: "노벨리스 코리아", material: "알루미늄 코일", date: "2026-06-02", status: "checking", statusLabel: "협력사 확인중" },
-      { id: 2, item: "폭(mm), 길이(mm), 중량(kg)", partner: "케이알엠(주)", material: "P1020 잉곳", date: "2026-06-03", status: "completed", statusLabel: "회신 완료 (검증중)" }
-    ],
-    versions: {
-      'v2.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV01',
-          part: 'Al 3003-H14 판재',
-          weight: '1,250 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '5일',
-          spec: '알루미늄 코일',
-          origin: '대한민국 / 호주',
-          dim: '폭 400mm, 길이 300mm, 두께 1.5mm',
-          chem: { mn: '1.25', cu: '0.15', si: '0.60', fe: '0.70', al: '97.30' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR02',
-          part: 'P1020 재생 잉곳',
-          weight: '1,120 kg',
-          qty: '1.00 pcs/pcs',
-          leadtime: '3일',
-          spec: '알루미늄 잉곳 99.7%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.05', cu: '0.01', si: '0.10', fe: '0.15', al: '99.69' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM03',
-          part: 'Mn 정광 분말',
-          weight: '0.062 kg',
-          qty: '0.06 pcs/pcs',
-          leadtime: '14일',
-          spec: '망간 원광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.1-5.0mm 파쇄 형태',
-          chem: { mn: '48.50', cu: '0.05', si: '6.20', fe: '4.80', al: '3.50' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT04',
-          part: '보크사이트 원광',
-          weight: '0.950 kg',
-          qty: '0.92 pcs/pcs',
-          leadtime: '20일',
-          spec: 'Al2O3 보크사이트 광석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.10', cu: '0.02', si: '4.50', fe: '12.50', al: '55.20' }
-        }
-      },
-      'v1.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV00',
-          part: 'Al 3003-H14 판재',
-          weight: '1,300 kg',
-          qty: '1.05 pcs/pcs',
-          leadtime: '7일',
-          spec: '알루미늄 슬랩',
-          origin: '대한민국 / 인도네시아',
-          dim: '폭 380mm, 길이 280mm, 두께 1.5mm',
-          chem: { mn: '1.10', cu: '0.20', si: '0.70', fe: '0.85', al: '97.15' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR01',
-          part: 'P1020 잉곳',
-          weight: '1,150 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '4일',
-          spec: '알루미늄 잉곳 99.5%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.06', cu: '0.02', si: '0.12', fe: '0.20', al: '99.60' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM02',
-          part: 'Mn 정광 분말',
-          weight: '0.065 kg',
-          qty: '0.07 pcs/pcs',
-          leadtime: '15일',
-          spec: '망간 광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.5-8.0mm 파쇄 형태',
-          chem: { mn: '46.20', cu: '0.06', si: '7.10', fe: '5.20', al: '4.10' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT03',
-          part: '보크사이트 원광',
-          weight: '0.980 kg',
-          qty: '0.95 pcs/pcs',
-          leadtime: '22일',
-          spec: '보크사이트 벌크 원석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.12', cu: '0.03', si: '5.10', fe: '13.80', al: '53.50' }
-        }
-      }
-    }
-  },
-  'PRD-002': {
-    name: '휠',
-    poNumber: 'PO-2026-0050',
-    requests: [
-      { id: 1, item: "원산지, 구성요소", partner: "노벨리스 코리아", material: "알루미늄 플레이트", date: "2026-06-02", status: "checking", statusLabel: "협력사 확인중" },
-      { id: 2, item: "폭(mm), 길이(mm), 중량(kg)", partner: "케이알엠(주)", material: "P1020 재생 잉곳", date: "2026-06-03", status: "completed", statusLabel: "회신 완료 (검증중)" }
-    ],
-    versions: {
-      'v2.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV21',
-          part: 'Al 3003-H16 판재',
-          weight: '2,800 kg',
-          qty: '1.01 pcs/pcs',
-          leadtime: '6일',
-          spec: '알루미늄 플레이트',
-          origin: '대한민국 / 호주',
-          dim: '폭 500mm, 길이 500mm, 두께 3.0mm',
-          chem: { mn: '1.20', cu: '0.18', si: '0.58', fe: '0.72', al: '97.32' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR22',
-          part: 'P1020 재생 잉곳 99.7%',
-          weight: '2,500 kg',
-          qty: '1.00 pcs/pcs',
-          leadtime: '3일',
-          spec: '알루미늄 잉곳 99.7%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.05', cu: '0.01', si: '0.10', fe: '0.15', al: '99.69' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM03',
-          part: 'Mn 정광 분말',
-          weight: '0.120 kg',
-          qty: '0.10 pcs/pcs',
-          leadtime: '14일',
-          spec: '망간 원광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.1-5.0mm 파쇄 형태',
-          chem: { mn: '48.50', cu: '0.05', si: '6.20', fe: '4.80', al: '3.50' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT04',
-          part: '보크사이트 원광',
-          weight: '1.800 kg',
-          qty: '1.75 pcs/pcs',
-          leadtime: '20일',
-          spec: 'Al2O3 보크사이트 광석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.10', cu: '0.02', si: '4.50', fe: '12.50', al: '55.20' }
-        }
-      },
-      'v1.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV20',
-          part: 'Al 3003-H16 판재',
-          weight: '2,900 kg',
-          qty: '1.03 pcs/pcs',
-          leadtime: '8일',
-          spec: '알루미늄 플레이트',
-          origin: '대한민국 / 인도네시아',
-          dim: '폭 500mm, 길이 500mm, 두께 3.0mm',
-          chem: { mn: '1.15', cu: '0.22', si: '0.62', fe: '0.78', al: '97.23' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR21',
-          part: 'P1020 잉곳',
-          weight: '2,600 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '4일',
-          spec: '알루미늄 잉곳 99.5%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.06', cu: '0.02', si: '0.12', fe: '0.20', al: '99.60' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM02',
-          part: 'Mn 정광 분말',
-          weight: '0.130 kg',
-          qty: '0.11 pcs/pcs',
-          leadtime: '15일',
-          spec: '망간 광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.5-8.0mm 파쇄 형태',
-          chem: { mn: '46.20', cu: '0.06', si: '7.10', fe: '5.20', al: '4.10' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT03',
-          part: '보크사이트 원광',
-          weight: '1.900 kg',
-          qty: '1.80 pcs/pcs',
-          leadtime: '22일',
-          spec: '보크사이트 벌크 원석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.12', cu: '0.03', si: '5.10', fe: '13.80', al: '53.50' }
-        }
-      }
-    }
-  },
-  'PRD-003': {
-    name: '파이프',
-    poNumber: 'PO-2026-0051',
-    requests: [
-      { id: 1, item: "원산지, 구성요소", partner: "노벨리스 코리아", material: "알루미늄 튜브", date: "2026-06-02", status: "checking", statusLabel: "협력사 확인중" },
-      { id: 2, item: "폭(mm), 길이(mm), 중량(kg)", partner: "케이알엠(주)", material: "P1020 재생 잉곳", date: "2026-06-03", status: "completed", statusLabel: "회신 완료 (검증중)" }
-    ],
-    versions: {
-      'v2.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV31',
-          part: 'Al 3003-O 튜브',
-          weight: '0.350 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '4일',
-          spec: '알루미늄 튜브',
-          origin: '대한민국 / 호주',
-          dim: '외경 12mm, 두께 1.5mm, 길이 3000mm',
-          chem: { mn: '1.28', cu: '0.14', si: '0.62', fe: '0.68', al: '97.28' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR32',
-          part: 'P1020 재생 잉곳 99.7%',
-          weight: '0.310 kg',
-          qty: '1.00 pcs/pcs',
-          leadtime: '3일',
-          spec: '알루미늄 잉곳 99.7%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.05', cu: '0.01', si: '0.10', fe: '0.15', al: '99.69' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM03',
-          part: 'Mn 정광 분말',
-          weight: '0.015 kg',
-          qty: '0.01 pcs/pcs',
-          leadtime: '14일',
-          spec: '망간 원광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.1-5.0mm 파쇄 형태',
-          chem: { mn: '48.50', cu: '0.05', si: '6.20', fe: '4.80', al: '3.50' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT04',
-          part: '보크사이트 원광',
-          weight: '0.220 kg',
-          qty: '0.20 pcs/pcs',
-          leadtime: '20일',
-          spec: 'Al2O3 보크사이트 광석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.10', cu: '0.02', si: '4.50', fe: '12.50', al: '55.20' }
-        }
-      },
-      'v1.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV30',
-          part: 'Al 3003-O 튜브',
-          weight: '0.360 kg',
-          qty: '1.05 pcs/pcs',
-          leadtime: '5일',
-          spec: '알루미늄 튜브',
-          origin: '대한민국 / 인도네시아',
-          dim: '외경 12mm, 두께 1.5mm, 길이 3000mm',
-          chem: { mn: '1.18', cu: '0.18', si: '0.68', fe: '0.80', al: '97.16' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR31',
-          part: 'P1020 잉곳',
-          weight: '0.320 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '4일',
-          spec: '알루미늄 잉곳 99.5%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.06', cu: '0.02', si: '0.12', fe: '0.20', al: '99.60' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM02',
-          part: 'Mn 정광 분말',
-          weight: '0.016 kg',
-          qty: '0.02 pcs/pcs',
-          leadtime: '15일',
-          spec: '망간 광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.5-8.0mm 파쇄 형태',
-          chem: { mn: '46.20', cu: '0.06', si: '7.10', fe: '5.20', al: '4.10' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT03',
-          part: '보크사이트 원광',
-          weight: '0.230 kg',
-          qty: '0.21 pcs/pcs',
-          leadtime: '22일',
-          spec: '보크사이트 벌크 원석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.12', cu: '0.03', si: '5.10', fe: '13.80', al: '53.50' }
-        }
-      }
-    }
-  },
-  'PRD-004': {
-    name: '튜브',
-    poNumber: 'PO-2026-0052',
-    requests: [
-      { id: 1, item: "원산지, 구성요소", partner: "노벨리스 코리아", material: "알루미늄 튜브", date: "2026-06-02", status: "checking", statusLabel: "협력사 확인중" },
-      { id: 2, item: "폭(mm), 길이(mm), 중량(kg)", partner: "케이알엠(주)", material: "P1020 재생 잉곳", date: "2026-06-03", status: "completed", statusLabel: "회신 완료 (검증중)" }
-    ],
-    versions: {
-      'v2.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV41',
-          part: 'Al 3003-H14 튜브',
-          weight: '0.150 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '4일',
-          spec: '알루미늄 튜브',
-          origin: '대한민국 / 호주',
-          dim: '외경 8mm, 두께 1.0mm, 길이 2000mm',
-          chem: { mn: '1.22', cu: '0.16', si: '0.61', fe: '0.71', al: '97.30' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR42',
-          part: 'P1020 재생 잉곳 99.7%',
-          weight: '0.130 kg',
-          qty: '1.00 pcs/pcs',
-          leadtime: '3일',
-          spec: '알루미늄 잉곳 99.7%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.05', cu: '0.01', si: '0.10', fe: '0.15', al: '99.69' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM03',
-          part: 'Mn 정광 분말',
-          weight: '0.008 kg',
-          qty: '0.01 pcs/pcs',
-          leadtime: '14일',
-          spec: '망간 원광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.1-5.0mm 파쇄 형태',
-          chem: { mn: '48.50', cu: '0.05', si: '6.20', fe: '4.80', al: '3.50' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT04',
-          part: '보크사이트 원광',
-          weight: '0.110 kg',
-          qty: '0.10 pcs/pcs',
-          leadtime: '20일',
-          spec: 'Al2O3 보크사이트 광석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.10', cu: '0.02', si: '4.50', fe: '12.50', al: '55.20' }
-        }
-      },
-      'v1.0': {
-        novelis: {
-          title: '노벨리스 코리아',
-          partNo: 'PN-3003-NV40',
-          part: 'Al 3003-H14 튜브',
-          weight: '0.160 kg',
-          qty: '1.05 pcs/pcs',
-          leadtime: '5일',
-          spec: '알루미늄 튜브',
-          origin: '대한민국 / 인도네시아',
-          dim: '외경 8mm, 두께 1.0mm, 길이 2000mm',
-          chem: { mn: '1.15', cu: '0.21', si: '0.71', fe: '0.86', al: '97.07' }
-        },
-        krm: {
-          title: '케이알엠(주)',
-          partNo: 'PN-1020-KR41',
-          part: 'P1020 잉곳',
-          weight: '0.140 kg',
-          qty: '1.02 pcs/pcs',
-          leadtime: '4일',
-          spec: '알루미늄 잉곳 99.5%',
-          origin: '대한민국 / 러시아',
-          dim: '가로 700mm, 세로 200mm, 높이 150mm',
-          chem: { mn: '0.06', cu: '0.02', si: '0.12', fe: '0.20', al: '99.60' }
-        },
-        comilog: {
-          title: 'Comilog 가봉 광산 자산',
-          partNo: 'PN-5001-CM02',
-          part: 'Mn 정광 분말',
-          weight: '0.009 kg',
-          qty: '0.02 pcs/pcs',
-          leadtime: '15일',
-          spec: '망간 광석',
-          origin: '가봉 / 가봉',
-          dim: '입도 0.5-8.0mm 파쇄 형태',
-          chem: { mn: '46.20', cu: '0.06', si: '7.10', fe: '5.20', al: '4.10' }
-        },
-        riotinto: {
-          title: 'Rio Tinto 보크사이트 인프라',
-          partNo: 'PN-7002-RT03',
-          part: '보크사이트 원광',
-          weight: '0.120 kg',
-          qty: '0.11 pcs/pcs',
-          leadtime: '22일',
-          spec: '보크사이트 벌크 원석',
-          origin: '호주 / 호주',
-          dim: '벌크 광석 형태',
-          chem: { mn: '0.12', cu: '0.03', si: '5.10', fe: '13.80', al: '53.50' }
-        }
-      }
-    }
-  }
-};
 
 const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
   const [selectedVersion, setSelectedVersion] = useState("v2.0");
   const [selectedNode, setSelectedNode] = useState("novelis");
   const [animate, setAnimate] = useState(false);
 
-  // 대상 제품 데이터 룩업 (없을 경우 기본 열차폐판 매핑)
-  const productData = PRODUCT_DATA_MAP[productId] || PRODUCT_DATA_MAP['PRD-001'];
-  const versionData = productData.versions[selectedVersion] || productData.versions['v2.0'];
-  const nodeDetail = versionData[selectedNode] || versionData['novelis'];
+  /* [v3.0] API state — BE에서 완성된 nodeDetails 직접 수신 */
+  const [productData, setProductData] = useState(null);
+  const [nodeDetails, setNodeDetails] = useState({});
+  const [requests, setRequests] = useState([]);
 
-  // 버전 또는 노드 변경 시 차오르는 애니메이션 효과 발생
+  /* short_name → FE 노드 키 (단순 조회, 변환 로직 없음) */
+  const NODE_KEY = { novelis: "노벨리스코리아", krm: "케이알엠", comilog: "Comilog", riotinto: "Windalco" };
+
+  /* [v3.0] API 조회 — 모든 useEffect는 early return 전에 배치 */
+  useEffect(() => {
+    if (!productId) return;
+    GET(`/supplychain/products/${productId}`).then(json => {
+      if (json.status && json.data) {
+        setProductData(json.data.bom || {});
+        setNodeDetails(json.data.nodeDetails || {});
+        setRequests(json.data.requests || []);
+      }
+    });
+  }, [productId]);
+
+  /* 버전/노드 변경 시 애니메이션 */
   useEffect(() => {
     setAnimate(false);
-    const timer = setTimeout(() => {
-      setAnimate(true);
-    }, 50);
+    const timer = setTimeout(() => setAnimate(true), 50);
     return () => clearTimeout(timer);
   }, [selectedVersion, selectedNode]);
+
+  /* [v3.0] nodeDetail — BE 데이터 직접 사용 */
+  const defaultNode = { title: "-", partNo: "-", part: "-", weight: "-", qty: "-", leadtime: "-", spec: "-", origin: "-", dim: "-", chem: { mn: 0, cu: 0, si: 0, fe: 0, al: 0 } };
+  const nodeDetail = nodeDetails[NODE_KEY[selectedNode]] || defaultNode;
 
   // 화학 성분 수치에 따른 고(Red), 중(Amber), 저(Green) 리스크 분류 로직
   const getRiskLevel = (name, valueStr) => {
@@ -529,7 +105,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
           {/* 블록 1 (대상 제품군) */}
           <div class="flex flex-col">
             <span class="text-sm text-gray-400">대상 제품군</span>
-            <span class="text-lg font-bold text-gray-900 mt-0.5">{productData.name}</span>
+            <span class="text-lg font-bold text-gray-900 mt-0.5">{productData?.product || productId}</span>
           </div>
 
           {/* 세로 구분선 */}
@@ -578,7 +154,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
           {/* 공급망 정보 요청 및 응답 진행 현황 원장 테이블 */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-4 bg-slate-50/50 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-sm md:text-base font-bold text-[#03a94d]">공급망 정보 요청 및 응답 진행 현황 ({productData.poNumber})</h3>
+              <h3 className="text-sm md:text-base font-bold text-[#03a94d]">공급망 정보 요청 및 응답 진행 현황 ({productData?.bomId || productId})</h3>
               <span className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 px-2 py-0.5 rounded animate-pulse">긴급조사 진행중</span>
             </div>
             <div className="overflow-x-auto">
@@ -593,7 +169,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {productData.requests.map((req) => (
+                  {requests.map((req) => (
                     <tr key={req.id}>
                       <td className="px-4 py-3 truncate text-center">{req.item}</td>
                       <td className="px-4 py-3 truncate text-center">{req.partner}</td>

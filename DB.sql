@@ -238,7 +238,6 @@ CREATE TABLE `RM_APPROVAL` (
   approval_id       BIGINT   NOT NULL AUTO_INCREMENT COMMENT '결재 ID (PK)',
   raw_material_id   VARCHAR(30) NOT NULL             COMMENT '원자재 코드 (FK)',
   request_type      VARCHAR(20) NOT NULL DEFAULT 'NORMAL' COMMENT '유형 (NORMAL/URGENT)',
-  requester_id      BIGINT                           COMMENT '요청자 ID',
   requester_partner VARCHAR(20)                      COMMENT '요청 협력사',
   request_title     VARCHAR(200)                     COMMENT '제목',
   request_content   TEXT                             COMMENT '내용',
@@ -246,7 +245,6 @@ CREATE TABLE `RM_APPROVAL` (
   approval_yn       CHAR(1)  DEFAULT NULL            COMMENT '승인 (Y/N/NULL)',
   approval_reason   TEXT                             COMMENT '승인/반려 사유',
   approval_dt       DATETIME                         COMMENT '승인 일시',
-  approver_id       BIGINT                           COMMENT '승인자 ID',
   approver_partner  VARCHAR(20)                      COMMENT '승인 협력사',
   status            VARCHAR(20) DEFAULT 'PENDING'    COMMENT '상태',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
@@ -264,7 +262,6 @@ CREATE TABLE `RM_APPROVAL_STEP` (
   partner_id    VARCHAR(20)                      COMMENT '협력사 코드',
   status        VARCHAR(20) DEFAULT 'WAITING'    COMMENT '상태',
   approved_at   DATETIME                         COMMENT '승인 일시',
-  approved_by   BIGINT                           COMMENT '승인자 ID',
   reject_reason TEXT                             COMMENT '반려 사유',
   note          TEXT                             COMMENT '비고',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
@@ -731,8 +728,8 @@ INSERT INTO `PURCHASE_ORDER` (po_id,partner_id,product,width,length,weight,volum
 
 -- 10.4 RAW_MATERIAL + RM_TIER_TREE
 INSERT INTO `RAW_MATERIAL` (raw_id,po_id,partner_id,name,width,length,weight_kg,diameter_mm,components,origin,status,requested_at,approved_at) VALUES
-('RM-001','PO-2025-3003-001','NOV-001','Al 3003 슬라브',600,3000,1520,NULL,'Al 97.9%, Mn 1.25%, Cu 0.12%','KRM-001','APPROVED','2026-01-10','2026-01-15'),
-('RM-003','PO-2025-3003-001','KRM-001','전해망간(EMD) — 긴급',NULL,NULL,5,NULL,'Mn 99.7%','COM-001','REQUESTED','2026-01-05',NULL);
+('RM-001','PO-2025-3003-001','NOV-001','Al 3003 슬라브',600,3000,1520,NULL,'Al 97.9%, Mn 1.25%, Cu 0.12%','서울 관악구','APPROVED','2026-01-10','2026-01-15'),
+('RM-003','PO-2025-3003-001','KRM-001','전해망간(EMD) — 긴급',NULL,NULL,5,NULL,'Mn 99.7%','쏼라 쏼라','REQUESTED','2026-01-05',NULL);
 
 INSERT INTO `RM_TIER_TREE` (raw_id,tier,short_name,item_name,comp,qty_kg,sort_order) VALUES
 ('RM-001',1,'노벨리스코리아','Al 3003 슬라브','Al 97.9%+Mn 1.25%',1520,1),

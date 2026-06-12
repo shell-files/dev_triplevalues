@@ -93,11 +93,15 @@ def getCompanyDetailProcess(partnerId) -> dict:
     # 최신 버전 자가진단
     latestVer = _getLatestVersion(partnerId)
     answersSql = """
-        SELECT id, partner_type, indicator_no, category, answer_text,
-               risk_level, evidence_yn, version, created_at
-        FROM `SELF_ASSESS_ANSWER`
-        WHERE partner_id = ? AND version = ?
-        ORDER BY indicator_no ASC
+        SELECT sc.question, sc.indicator_name, sc.priority,
+               sa.id, sa.partner_type, sa.partner_id, sa.indicator_no,
+               sa.category, sa.answer_text, sa.risk_level, sa.evidence_yn,
+               sa.version, sa.created_at
+        FROM `SELF_ASSESS_ANSWER` sa
+        LEFT JOIN `SELF_ASSESS_CHECKLIST` sc
+          ON sa.indicator_no = sc.indicator_no AND sa.partner_type = sc.partner_type
+        WHERE sa.partner_id = ? AND sa.version = ?
+        ORDER BY sa.indicator_no ASC
     """
     answers = findAll(answersSql, (partnerId, latestVer))
     # 공장 목록
