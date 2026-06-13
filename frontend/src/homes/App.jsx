@@ -106,8 +106,8 @@ const App = () => {
 
   const handleMenuChange = (targetPage) => {
     setPage(targetPage);
-    setPageKey(prev => prev + 1);
-    setSelPartner(null);
+    setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
+    setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
     /* [v2.1] 새로고침 시 현재 페이지 유지 — localStorage에 page 저장 */
     try {
       const saved = localStorage.getItem("esg_login");
