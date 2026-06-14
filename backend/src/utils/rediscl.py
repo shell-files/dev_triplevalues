@@ -1,11 +1,12 @@
 from src.utils.settings import settings
 import redis
 
-# --------------------------
-# redis client로 설정
-# client1 : accesstoken
-# client2 : 미사용
-# --------------------------
+# ------------------------------------------------------------------
+# [v2.0] Redis Client 분리 저장 세션 격리 구조
+# client1 (db5) : 유저 기본 인증 액세스 토큰 (accessToken) 저장 및 검증
+# client2 (db6) : 유저가 선택하여 관제 중인 본사/원청사 식별 코드 (partner_id) 매핑
+# ------------------------------------------------------------------
+
 client1 = redis.Redis(
   host=settings.redis_host,
   port=settings.redis_port,
@@ -62,7 +63,7 @@ def delTokenRedis(uuid: str):
 # --------------------------
 # setCompanyRedis: Company Redis(client2)에 값을 저장하는 함수
 # --------------------------
-def setCompanyRedis(uuid: str, companyId: int):
+def setCompanyRedis(uuid: str, companyId: str):
     """Redis에 uuid를 키로, 선택한 회사 저장"""
     try:
         client2.set(uuid, companyId)

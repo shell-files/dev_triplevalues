@@ -17,6 +17,7 @@ from src.models.aiAgentNotify import (
 )
 from src.utils.db import findAll
 from src.utils.rediscl import getTokenRedis, getCompanyRedis  # Redis 세션 직접 조회를 위해 임포트
+from src.utils.websc import manager
 
 router = APIRouter()
 
@@ -26,29 +27,31 @@ router = APIRouter()
 
 def getPartnerIdFromUuid(uuid: str) -> Optional[str]:
     """
-    현재 프로젝트의 Redis 분리 저장 구조를 검증합니다.
+    [v2.0] Redis client1(인증 토큰) & client2(회사 식별자) 2단계 통합 검증을 수행합니다.
     """
-    # 🌟 [로컬 테스트 마스터 패스 추가]
-    # Swagger에서 uuid에 아래 값을 넣으면 Redis를 타지 않고 즉시 무조건 통과시킵니다.
-    if uuid == "test_master" or uuid == "bd7443254b74483dafd4378accc76a6b":
+    # 🌟 [로컬 개발 및 Swagger 테스트용 마스터 우회 패스]
+    if uuid in ["test_master", "bd7443254b74483dafd4378accc76a6b"]:
         print("🚀 [테스트 모드] 임시 마스터 우회 통과 - partner_id: MAIN_HQ")
-        return "MAIN_HQ"  # 현재 COMPANY 테이블에 등록되어 있는 실제 본사/원청사 코드 입력
+        return "MAIN_HQ"
         
     if not uuid:
         return None
         
-    # [단계 1] db1 세션 검증
+    # [단계 1] db5(client1)에서 현재 세션 유저의 유효한 accessToken이 활성화되어 있는지 검증
     tokenCheck = getTokenRedis(uuid)
     if not tokenCheck or not tokenCheck.get("status"):
+        print(f"❌ [AI Agent 인증 실패] client1(db5)에 해당 UUID의 활성화된 토큰 세션이 없음: {uuid}")
         return None
 
-    # [단계 2] db3 회사 식별 코드 조회
+    # [단계 2] db6(client2)에서 유저가 현재 모니터링/선택 중인 회사 식별 코드(partner_id)를 조회
     companyCheck = getCompanyRedis(uuid)
     if not companyCheck or not companyCheck.get("status"):
-        print(f"❌ [AI Agent 인증 실패] db3에 해당 UUID와 매핑된 회사(partner_id) 정보가 없음: {uuid}")
+        print(f"❌ [AI Agent 인증 실패] client2(db6)에 해당 UUID와 매핑된 회사(partner_id) 정보가 없음: {uuid}")
         return None
         
-    return companyCheck.get("token")
+    # getCompanyRedis의 리턴 포맷 {"status": True, "uuid": uuid, "token": result}에서 회사 코드 추출
+    partnerId = companyCheck.get("token")
+    return partnerId
 
 # ── POST — AI 전체 분석 실행
 @router.post("/analyze",
@@ -166,3 +169,4 @@ def listAiAgentRules(activeOnly: bool = Query(True)):
         message="룰셋 마스터 정보 조회 성공",
         data={"rules": rules, "count": len(rules)}
     )
+
