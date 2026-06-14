@@ -7,7 +7,7 @@
 from fastapi import Response, Request
 from src.utils.db import findOne, save
 from src.utils.tokenset import createUserTokens
-from src.utils.rediscl import setTokenRedis, client2
+from src.utils.rediscl import setTokenRedis, client2, setCompanyRedis
 from src.utils.kafkasv import sendToKafka
 from src.utils.settings import settings
 from src.models.model import responseModel
@@ -88,6 +88,9 @@ def loginProcess(response: Response, request: Request, loginModel):
  
         # ── accessToken Redis 저장 ──
         setTokenRedis(tokenUuid, accessToken)
+
+        # 💡 [추가] client2(db6)에 유저의 실제 소속 회사코드(partner_id) 연동 등록
+        setCompanyRedis(tokenUuid, company["partner_id"])
  
         # ── Cookie 설정 ──
         maxAge = 60 * 60 * 24 * settings.refresh_token_expire_days
