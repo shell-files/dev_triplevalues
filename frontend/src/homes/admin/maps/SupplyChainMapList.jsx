@@ -1,59 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { GET } from "@utils/Network";
 
-const PRODUCTS_MOCK = [
-  {
-    id: 'PRD-001',
-    name: '열차폐판',
-    detailName: 'Al 3003-H14 판재 1.5T 400×300mm',
-    category: '열차폐판',
-    bom: 'v3.4 (최신 2026-06-01 개정)',
-    partners: '8개사 (1차 2, 2차 4, 3차 2)',
-    status: 'EMERGENCY',
-    statusLabel: '긴급 요청'
-  },
-  {
-    id: 'PRD-002',
-    name: '휠',
-    detailName: 'Al 3003-H16 판재 3.0T 17인치(D432mm)',
-    category: '휠',
-    bom: 'v2.1 (최신 2026-04-12 개정)',
-    partners: '12개사 (1차 3, 2차 6, 3차 3)',
-    status: 'NORMAL',
-    statusLabel: '일반 관제'
-  },
-  {
-    id: 'PRD-003',
-    name: '파이프',
-    detailName: 'Al 3003-O 튜브 Ø12×1.5T L3000mm',
-    category: '파이프',
-    bom: 'v1.9 (최신 2025-11-20 개정)',
-    partners: '5개사 (1차 1, 2차 3, 3차 1)',
-    status: 'NORMAL',
-    statusLabel: '일반 관제'
-  },
-  {
-    id: 'PRD-004',
-    name: '튜브',
-    detailName: 'Al 3003-H14 튜브 Ø8×1.0T L2000mm',
-    category: '튜브',
-    bom: 'v4.0 (최신 2026-05-15 개정)',
-    partners: '14개사 (1차 4, 2차 7, 3차 3)',
-    status: 'NORMAL',
-    statusLabel: '일반 관제'
-  }
-];
+/* [v2.1] PRODUCTS_MOCK 완전 삭제 — API에서 실 데이터 조회 */
 
 const SupplyChainMapList = ({
   onViewDetail = () => { },
   onViewMaterialRequest = () => { },
   onViewRequest = () => { }
 }) => {
+  /* [v2.1] API에서 제품 목록 조회 */
+  const [products, setProducts] = useState([]);
+  useEffect(() => {
+    GET("/supplychain/products")
+      .then(json => { if (json.status && json.data?.products) setProducts(json.data.products); });
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentCategory, setCurrentCategory] = useState(null);
   const [currentStatus, setCurrentStatus] = useState("ALL");
 
   const filteredProducts = currentCategory
-    ? PRODUCTS_MOCK.filter((item) => {
+    ? products.filter((item) => {
       const matchesSearch =
         item.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
         item.detailName.toLowerCase().includes(searchQuery.trim().toLowerCase());
@@ -100,7 +67,7 @@ const SupplyChainMapList = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="검색할 제품을 입력하세요 (예: 열차폐판, 휠, AI 3003-H14 등)"
+              placeholder="검색할 제품을 입력하세요 (예: 열 차폐판, 휠, AI 3003-H14 등)"
               className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2.5 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition-colors"
             />
           </div>
@@ -112,7 +79,7 @@ const SupplyChainMapList = ({
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-gray-500 shrink-0">제품 카테고리</span>
             <div className="flex flex-wrap gap-2" id="category-filter-container">
-              {["열차폐판", "휠", "파이프", "튜브"].map((cat) => {
+              {["열 차폐판", "휠", "파이프", "튜브"].map((cat) => {
                 const isActive = cat === currentCategory;
                 return (
                   <button

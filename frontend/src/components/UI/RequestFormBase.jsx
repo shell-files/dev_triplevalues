@@ -1,19 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { GET, POST } from "@utils/Network";
 
-const poMappingData = {
-  "PO-2026-0089": {
-    company: "노벨리스코리아(주)",
-    material: "알루미늄 코일"
-  },
-  "PO-2026-0102": {
-    company: "(주)케이알엠",
-    material: "P1020 잉곳"
-  },
-  "PO-2026-0115": {
-    company: "삼우강업",
-    material: "Mn 정광"
-  }
-};
+/* [v2.0] poMappingData 더미 삭제 — API에서 PO 데이터 조회 */
 
 const SPEC_ITEMS = {
   "spec-width": "폭(mm)",
@@ -30,10 +18,32 @@ const RequestFormBase = ({
   helperTextNew = "* 신규 등록의 경우 요청 항목 선택이 불가합니다.",
   helperTextReview = "* 긴급 규제 실사를 위해 협력사에 요청할 세부 규격 제원 항목을 선택하세요.",
   submitMessage,
-  onBack = () => {}
+  onBack = () => {},
+  loginData = null,
 }) => {
+  /* [v2.0] PO 목록 API 조회 */
+  const [poList, setPoList] = useState([]);
+  const [poMappingData, setPoMappingData] = useState({});
+  useEffect(() => {
+    GET("/company/list", { userRole: "현대모비스" })
+      .then(json => {
+        /* PO 데이터는 supplychain products에서 조회 */
+      });
+    GET("/supplychain/products")
+      .then(json => {
+        if (json.status && json.data?.products) {
+          const mapping = {};
+          json.data.products.forEach(p => {
+            mapping[p.id] = { company: p.supplierId || "", material: p.name || "" };
+          });
+          setPoMappingData(mapping);
+          setPoList(json.data.products);
+        }
+      });
+  }, []);
+
   const [product, setProduct] = useState("열차폐판");
-  const [selectedPO, setSelectedPO] = useState("PO-2026-0089");
+  const [selectedPO, setSelectedPO] = useState("");
   const [requestType, setRequestType] = useState("NEW");
   const [activeSpecs, setActiveSpecs] = useState({});
   const [dueDate, setDueDate] = useState("");
@@ -86,8 +96,24 @@ const RequestFormBase = ({
       return;
     }
 
-    alert(submitMessage);
-    onBack();
+    /* [v2.0] API 요청 발송 */
+    const currentPO = poMappingData[selectedPO] || {};
+    POST("/supplychain/request", {
+      senderPartnerId: loginData?.partner_id || "HMOS-001",
+      targetPartnerIds: currentPO.company ? [currentPO.company] : [],
+      title: `[${product}] 공급망 ESG/원자재 명세 제출 요청`,
+      content: requestContent || "원자재 정보 및 ESG 지표 입력을 요청합니다.",
+      requestType: requestType === "NEW" ? "NORMAL" : "URGENT",
+      poId: selectedPO,
+      deadline: dueDate || null,
+    }).then(json => {
+      if (json.status) {
+        alert(submitMessage || json.message);
+        onBack();
+      } else {
+        alert(json.message || "요청 발송에 실패했습니다.");
+      }
+    });
   };
 
   const currentPOData = poMappingData[selectedPO] || { company: "", material: "" };
@@ -138,9 +164,9 @@ const RequestFormBase = ({
                 onChange={(e) => setSelectedPO(e.target.value)}
                 className="w-full bg-slate-50 border border-gray-200 text-sm px-4 py-3 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold transition-colors cursor-pointer"
               >
-                <option value="PO-2026-0089">PO-2026-0089</option>
-                <option value="PO-2026-0102">PO-2026-0102</option>
-                <option value="PO-2026-0115">PO-2026-0115</option>
+                <option value=""></option>
+                <option value=""></option>
+                <option value=""></option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">

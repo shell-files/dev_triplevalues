@@ -1,3 +1,7 @@
+// ────────────────────────────────────────────────────────
+// [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (localStorage.page 동기화)
+// [v2.0] 2026-06-09 — 로그인 게이트, API 연동, 더미 제거, 권한별 메뉴, pageKey
+// ────────────────────────────────────────────────────────
 import React, { useState, useEffect } from "react";
 import SidebarNav from "@components/Layout/SidebarNav";
 import HeaderNav from "@components/Layout/HeaderNav";
@@ -104,6 +108,15 @@ const App = () => {
     setPage(targetPage);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
+    /* [v2.1] 새로고침 시 현재 페이지 유지 — localStorage에 page 저장 */
+    try {
+      const saved = localStorage.getItem("esg_login");
+      if (saved) {
+        const data = JSON.parse(saved);
+        data.page = targetPage;
+        localStorage.setItem("esg_login", JSON.stringify(data));
+      }
+    } catch(e) {}
   };
 
   /* 기존 레거시 구조에 로그인 세션 및 렌더링 키 결합 통합 완공 */

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import SupplyChainMapList from "./SupplyChainMapList";
-import SupplyChainMapDetail from "./SupplyChainMapDetail";
-import SupplyChainMapRequest from "./SupplyChainMapRequest";
-import SupplyChainMapMaterialRequest from "./SupplyChainMapMaterialRequest";
+import SupplyChainMapList from "@admin/maps/SupplyChainMapList";
+import SupplyChainMapDetail from "@admin/maps/SupplyChainMapDetail";
+import SupplyChainMapRequest from "@admin/maps/SupplyChainMapRequest";
+import SupplyChainMapMaterialRequest from "@admin/maps/SupplyChainMapMaterialRequest";
 
 const SupplyChainMap = () => {
   const [currentView, setCurrentView] = useState("list");

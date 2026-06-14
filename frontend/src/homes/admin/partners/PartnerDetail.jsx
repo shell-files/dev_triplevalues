@@ -18,6 +18,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
   const [selfAssessVersions, setSelfAssessVersions] = useState([]);
   const [categorizedFiles, setCategorizedFiles] = useState({ coc: [], selfassess: [], evidence: [], cert: [] });
   const [factories, setFactories] = useState([]);
+  const [userChangedVersion, setUserChangedVersion] = useState(false);
 
   const p = partner || {};
   const pid = p.partner_id || p.id;
@@ -46,14 +47,14 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
       });
   }, [pid]);
 
-  /* [v2.1] 버전 변경 시 해당 버전 자가진단 재조회 */
+  /* [v3.0] 버전 변경 시 자가진단 재조회 — 사용자 수동 변경만 처리 (레이스 컨디션 방지) */
   useEffect(() => {
-    if (!pid || !selectedVersion) return;
+    if (!pid || !selectedVersion || !userChangedVersion) return;
     GET(`/company/${pid}/selfassess?version=${selectedVersion}`)
       .then(json => {
         if (json.status && json.data?.answers) setSelfAssessAnswers(json.data.answers);
       });
-  }, [pid, selectedVersion]);
+  }, [pid, selectedVersion, userChangedVersion]);
 
   const handleToggleCard = (id) => setOpenCards(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -196,10 +197,10 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
           <div className="space-y-3">
             <div className="w-full bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-3xs mb-4">
               <span className="text-xs font-bold text-gray-600">버전:</span>
-              <select value={selectedVersion} onChange={e => setSelectedVersion(e.target.value)}
+              <select value={selectedVersion} onChange={e => { setUserChangedVersion(true); setSelectedVersion(e.target.value); }}
                 className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-slate-400">
                 {selfAssessVersions.length > 0 ? selfAssessVersions.map((v, i) => (
-                  <option key={i} value={v.version}>v{v.version} ({v.count || 0}건 · {v.created_at?.slice(0,10) || ""})</option>
+                  <option key={i} value={v.version}>v{v.version} ({v.answer_count || v.count || 0}건 · {v.created_at?.slice(0,10) || ""})</option>
                 )) : <option value="">데이터 없음</option>}
               </select>
             </div>
@@ -217,7 +218,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {item.priority && <span className={getPriorityBadgeClass(item.priority)}>우선순위: {(item.priority || "").toUpperCase()}</span>}
-                      {item.risk_grade && <span className={getRiskGradeBadgeClass(item.risk_grade)}>평가: {item.risk_grade}</span>}
+                      {(item.risk_level || item.risk_grade) && <span className={getRiskGradeBadgeClass(item.risk_level || item.risk_grade)}>평가: {item.risk_level || item.risk_grade}</span>}
                       <span className="text-gray-400 font-bold text-sm">{isSelected ? "▲" : "▼"}</span>
                     </div>
                   </div>
@@ -226,11 +227,11 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex flex-col">
                           <span className="text-[10px] text-gray-400 font-semibold mb-1">지표명</span>
-                          <span className="text-xs font-bold text-gray-700">{item.indicator || item.category || ""}</span>
+                          <span className="text-xs font-bold text-gray-700">{item.indicator_name || item.indicator || item.category || ""}</span>
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[10px] text-gray-400 font-semibold mb-1">증빙자료 필요 여부</span>
-                          {item.evidence_required === "Y"
+                          {(item.evidence_yn || item.evidence_required) === "Y"
                             ? <span className="inline-block text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-bold">⚠️ 증빙서류 필수 제출</span>
                             : <span className="inline-block text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md font-bold">✓ 증빙서류 선택</span>
                           }
@@ -238,7 +239,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-semibold mb-1">협력사 답변</span>
-                        <textarea readOnly disabled value={item.answer || ""} className="w-full h-24 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none resize-none font-medium" />
+                        <textarea readOnly disabled value={item.answer_text || item.answer || ""} className="w-full h-24 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none resize-none font-medium" />
                       </div>
                     </div>
                   )}

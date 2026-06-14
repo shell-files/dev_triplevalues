@@ -238,7 +238,6 @@ CREATE TABLE `RM_APPROVAL` (
   approval_id       BIGINT   NOT NULL AUTO_INCREMENT COMMENT '결재 ID (PK)',
   raw_material_id   VARCHAR(30) NOT NULL             COMMENT '원자재 코드 (FK)',
   request_type      VARCHAR(20) NOT NULL DEFAULT 'NORMAL' COMMENT '유형 (NORMAL/URGENT)',
-  requester_id      BIGINT                           COMMENT '요청자 ID',
   requester_partner VARCHAR(20)                      COMMENT '요청 협력사',
   request_title     VARCHAR(200)                     COMMENT '제목',
   request_content   TEXT                             COMMENT '내용',
@@ -246,7 +245,6 @@ CREATE TABLE `RM_APPROVAL` (
   approval_yn       CHAR(1)  DEFAULT NULL            COMMENT '승인 (Y/N/NULL)',
   approval_reason   TEXT                             COMMENT '승인/반려 사유',
   approval_dt       DATETIME                         COMMENT '승인 일시',
-  approver_id       BIGINT                           COMMENT '승인자 ID',
   approver_partner  VARCHAR(20)                      COMMENT '승인 협력사',
   status            VARCHAR(20) DEFAULT 'PENDING'    COMMENT '상태',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
@@ -264,7 +262,6 @@ CREATE TABLE `RM_APPROVAL_STEP` (
   partner_id    VARCHAR(20)                      COMMENT '협력사 코드',
   status        VARCHAR(20) DEFAULT 'WAITING'    COMMENT '상태',
   approved_at   DATETIME                         COMMENT '승인 일시',
-  approved_by   BIGINT                           COMMENT '승인자 ID',
   reject_reason TEXT                             COMMENT '반려 사유',
   note          TEXT                             COMMENT '비고',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
@@ -422,7 +419,7 @@ CREATE TABLE `AI_AGENT_RULE` (
   notify_template text            DEFAULT NULL                                   COMMENT '알림 가이드 템플릿',
   regulation      varchar(255)    DEFAULT NULL                                   COMMENT '연계 글로벌 ESG 규제',
   action_required text            DEFAULT NULL                                   COMMENT '불합격 시 권장 조치 방안 명세',
-  active_yn       char(1)         DEFAULT 'Y'                                    COMMENT '활성화 여부',
+  active_yn       TINYINT(1)      NOT NULL DEFAULT 0                             COMMENT '활성화 여부',
   priority        int(11)         DEFAULT 50                                     COMMENT '알림 표출 우선순위 가중치',
   created_at      timestamp       NOT NULL DEFAULT current_timestamp()           COMMENT '최초 생성 일시',
   updated_at      timestamp       NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '수정 일시',
@@ -433,31 +430,18 @@ CREATE TABLE `AI_AGENT_RULE` (
 DROP TABLE IF EXISTS `AI_AGENT_ALERT`;
 CREATE TABLE `AI_AGENT_ALERT` (
   alert_id          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '알림 ID (PK)',
-  rule_id           BIGINT       NOT NULL                COMMENT '룰 ID (FK)',
   partner_id        VARCHAR(20)  NOT NULL                COMMENT '협력사 코드',
   indicator_no      INT                                  COMMENT '지표 번호',
-  metric_key        VARCHAR(50)                          COMMENT '평가 키',
-  actual_value      VARCHAR(200)                         COMMENT '실제값',
-  threshold_value   VARCHAR(100)                         COMMENT '기준값',
-  deviation_pct     DECIMAL(8,2)                         COMMENT '편차 (%)',
+  rule_id           BIGINT       NOT NULL                COMMENT '룰 ID (FK)',
+  alarm_id          BIGINT                               COMMENT 'ALARM 연동 ID',
   severity          VARCHAR(20)  NOT NULL                COMMENT '심각도',
   ai_confidence     DECIMAL(5,2)                         COMMENT 'AI 신뢰도',
   ai_reasoning      TEXT                                 COMMENT 'AI 판단 근거',
   ai_recommendation TEXT                                 COMMENT 'AI 권장 조치',
-  alert_title       VARCHAR(200) NOT NULL                COMMENT '알림 제목',
-  alert_content     TEXT                                 COMMENT '알림 본문',
-  regulation        VARCHAR(100)                         COMMENT '관련 규제',
-  status            VARCHAR(20)  DEFAULT 'OPEN'          COMMENT '상태',
-  acknowledged_by   VARCHAR(20)                          COMMENT '확인 본사/원청사 코드',
-  acknowledged_at   DATETIME                             COMMENT '확인 일시',
-  resolved_by       VARCHAR(20)                          COMMENT '해소 본사/원청사 코드',
-  resolved_at       DATETIME                             COMMENT '해소 일시',
-  resolution_note   TEXT                                 COMMENT '해소 비고',
-  alarm_id          BIGINT                               COMMENT 'ALARM 연동 ID',
   detected_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '감지 시각',
-  run_id            BIGINT                               COMMENT '실행 로그 ID',
   delete_yn         TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '삭제 여부',
-  PRIMARY KEY (alert_id), KEY idx_partner (partner_id), KEY idx_severity (severity)
+  PRIMARY KEY (alert_id), KEY idx_partner (partner_id), KEY idx_indicator (indicator_no), 
+  KEY idx_rule (rule_id), KEY idx_alarm (alarm_id), KEY idx_severity (severity)
 ) ENGINE=InnoDB COMMENT='AI Agent 위반 알림';
 
 DROP TABLE IF EXISTS `AI_AGENT_RUN_LOG`;
@@ -731,8 +715,8 @@ INSERT INTO `PURCHASE_ORDER` (po_id,partner_id,product,width,length,weight,volum
 
 -- 10.4 RAW_MATERIAL + RM_TIER_TREE
 INSERT INTO `RAW_MATERIAL` (raw_id,po_id,partner_id,name,width,length,weight_kg,diameter_mm,components,origin,status,requested_at,approved_at) VALUES
-('RM-001','PO-2025-3003-001','NOV-001','Al 3003 슬라브',600,3000,1520,NULL,'Al 97.9%, Mn 1.25%, Cu 0.12%','KRM-001','APPROVED','2026-01-10','2026-01-15'),
-('RM-003','PO-2025-3003-001','KRM-001','전해망간(EMD) — 긴급',NULL,NULL,5,NULL,'Mn 99.7%','COM-001','REQUESTED','2026-01-05',NULL);
+('RM-001','PO-2025-3003-001','NOV-001','Al 3003 슬라브',600,3000,1520,NULL,'Al 97.9%, Mn 1.25%, Cu 0.12%','서울 관악구','APPROVED','2026-01-10','2026-01-15'),
+('RM-003','PO-2025-3003-001','KRM-001','전해망간(EMD) — 긴급',NULL,NULL,5,NULL,'Mn 99.7%','쏼라 쏼라','REQUESTED','2026-01-05',NULL);
 
 INSERT INTO `RM_TIER_TREE` (raw_id,tier,short_name,item_name,comp,qty_kg,sort_order) VALUES
 ('RM-001',1,'노벨리스코리아','Al 3003 슬라브','Al 97.9%+Mn 1.25%',1520,1),
