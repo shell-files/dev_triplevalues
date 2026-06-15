@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { COMPANIES } from "@assets/data/masterData";
 import Kpi from "@components/Common/Kpi";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/Common/Card";
@@ -17,6 +17,75 @@ const MainDashboard = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
 
+  // ────────────────────────────────────────────────────────────
+  // 🚨 [실시간 인프라 추가] Airflow 가 밀어주는 리스크 알림 피드 상태 관리
+  // ────────────────────────────────────────────────────────────
+  const [alerts, setAlerts] = useState([
+    {
+      id: 999,
+      company: "동양알루미늄",
+      tier: "1차 협력사",
+      date: "방금 전",
+      type: "중위험",
+      msg: "기본 세션 연결 대기 중... Airflow 파이프라인이 구동되면 실시간 피드가 동적 갱신됩니다."
+    }
+  ]);
+  const [wsStatus, setWsStatus] = useState("DISCONNECTED");
+  const wsRef = useRef(null);
+
+  // 백엔드 주소 및 테스트 마스터 UUID (getPartnerIdFromUuid 우회용)
+  const BACKEND_WS_URL = "ws://localhost:8000/ws/alerts?token=bd7443254b74483dafd4378accc76a6b";
+
+  useEffect(() => {
+    // 🔌 1. 화면 진입 시 웹소켓 관제 룸 연결 (MAIN_HQ 방 진입)
+    const ws = new WebSocket(BACKEND_WS_URL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setWsStatus("CONNECTED");
+      console.log("🟢 [웹소켓] Airflow 실시간 관제 라인 연결 완료");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const rawPacket = JSON.parse(event.data);
+        console.log("📥 [웹소켓 수신]:", rawPacket);
+
+        // 💡 백엔드 aiAgent.py 최하단 분기 조건 가드 매핑
+        if (rawPacket.type === "tv" && rawPacket.data?.type === "REALTIME_COMBINED_ALERT") {
+          const combinedData = rawPacket.data.data;
+          const alarm = combinedData.alarm;     # 순수 알람 데이터
+          const aiAgent = combinedData.aiAgent; # DB 경유 변형 AI 데이터
+
+          // 🔄 2. 백엔드에서 정제하여 보낸 데이터를 대시보드 규격에 맞게 매핑
+          const newRealtimeAlert = {
+            id: alarm.id || Date.now(),
+            company: aiAgent.company_name || "알 수 없는 협력사",
+            tier: aiAgent.tier === 1 ? "1차 협력사" : aiAgent.tier === 2 ? "2차 협력사" : "3차 협력사",
+            date: "방금 전",
+            type: aiAgent.risk_level || "고위험",
+            msg: `[${aiAgent.regs}] ${aiAgent.name} -> 실제 측정값: ${aiAgent.actual_value} (${alarm.content})`
+          };
+
+          // 🚀 3. 기존 피드 맨 위에 정제된 데이터 실시간 언시프트(Unshift) 밀어넣기
+          setAlerts((prev) => [newRealtimeAlert, ...prev]);
+        }
+      } catch (err) {
+        console.error("❌ 웹소켓 패킷 파싱 에러:", err);
+      }
+    };
+
+    ws.onclose = () => {
+      setWsStatus("DISCONNECTED");
+      console.log("🔴 [웹소켓] 연결 종료");
+    };
+
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
+
+  // 오리지널 데이터 연산 로직 완벽 보존
   const certCount = COMPANIES.reduce((a, c) => a + (c.cert_count || 0), 0);
   const midRisk = COMPANIES.filter((c) => c.risk === "중위험").length;
 
@@ -26,18 +95,14 @@ const MainDashboard = () => {
     setTimeout(() => {
       setAiLoading(false);
       setAiResult(
-        "[AI 분석 완료 (2026-05-19)]\n\n[즉시 조치 (2건)]\n1. 케이알엠 FEOC 12.5% - IRA 세액공제 위험\n2. Comilog 산림파괴 리스크 - EUDR 비준수\n\n[모니터링 (3건)]\n3. Comilog TRIR 2.15 초과\n4. (주)현대글로벌 자가진단 제출 완료\n5. 실사 완료율 96%"
+        "[AI 분석 완료 (2026-04-15)]\n" +
+        "----------------------------------------\n" +
+        "1. 대상: 글로벌 알루미늄 Upstream 공급망 전체\n" +
+        "2. 탐지: FEOC 우회 지분 위반 의심 1건 (Tier-2 협력사)\n" +
+        "3. 조치 권고: 해당 공급처 대상 정밀 원산지 추적 및 자가진단 재요청"
       );
-    }, 2000);
+    }, 1200);
   };
-
-  const alerts = [
-    { id: 1, type: "고위험", tier: "2차 협력사", company: "(주)케이알엠", date: "2026-05-18", msg: "FEOC 지분율 규정 위반 우려 지표 감지 (IRA 세액공제 원천 차단 위험 우려)" },
-    { id: 2, type: "고위험", tier: "3차 협력사", company: "Comilog", date: "2026-05-17", msg: "원자재 채굴 지역 인근 산림 파괴 경보 보고 (EUDR 글로벌 환경 규제 비준수 리스크)" },
-    { id: 3, type: "중위험", tier: "3차 협력사", company: "Comilog", date: "2026-05-16", msg: "총 가동 시간 대비 산업재해 기록율 TRIR 2.15 기준치 초과 (안전보건 관리 주의 요망)" },
-    { id: 4, type: "중위험", tier: "1차 협력사", company: "(주)알루텍", date: "2026-05-15", msg: "공급망 자가진단 항목 중 내부 탄소 배출 가동 집계 실적 데이터 누락 발생 (실사 완료율 94% 정체)" },
-    { id: 5, type: "저위험", tier: "1차 협력사", company: "(주)현대글로벌", date: "2026-05-14", msg: "Scope 3 공급망 대응 환경경영시스템 ISO 14001 인증 갱신 서류 제출 완료 (정상 가동 지표 검증)" },
-  ];
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full">
