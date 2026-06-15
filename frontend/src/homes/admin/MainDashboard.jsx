@@ -57,7 +57,7 @@ const MainDashboard = () => {
 
         // 💡 단건 전송이든, 대용량 배치 전송이든 안전하게 가드 통과
         if (rawPacket.type === "tv") {
-
+          console.log("받은 데이터:", rawPacket.data);
           // 케이스 A: Airflow가 리스트(배치)로 묶어서 한 번에 보낸 경우
           if (rawPacket.data?.is_batch && Array.isArray(rawPacket.data.data)) {
             const newAlerts = rawPacket.data.data.map((packet) => {
