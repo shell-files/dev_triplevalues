@@ -7,7 +7,7 @@
 from fastapi import Response, Request
 from src.utils.db import findOne, save
 from src.utils.tokenset import createUserTokens
-from src.utils.rediscl import setTokenRedis, client2
+from src.utils.rediscl import setTokenRedis, client1
 from src.utils.kafkasv import sendToKafka
 from src.utils.settings import settings
 from src.models.model import responseModel
@@ -34,14 +34,14 @@ def loginProcess(response: Response, request: Request, loginModel):
                 return responseModel(False, "인증 코드를 입력해 주세요.")
  
             # Redis에서 인증 코드 조회
-            storedCode = client2.get(f"auth_code:{email}")
+            storedCode = client1.get(f"auth_code:{email}")
             if not storedCode:
                 return responseModel(False, "인증 코드가 만료되었습니다. 다시 발송해 주세요.")
             if storedCode != authCode:
                 return responseModel(False, "인증코드가 맞지 않습니다.")
  
             # 검증 성공 시 Redis에서 코드 삭제 (일회성)
-            client2.delete(f"auth_code:{email}")
+            client1.delete(f"auth_code:{email}")
  
         # ── [v1.2] 원청사 로그인: tier=0 검증 (타 협력사 계정 차단) ──
         if loginType == "oem":
@@ -140,7 +140,7 @@ def sendAuthCodeProcess(authCodeModel):
         code = str(random.randint(100000, 999999))
 
         # 3. Redis에 저장 (TTL 300초 = 5분)
-        client2.setex(f"auth_code:{email}", 300, code)
+        client1.setex(f"auth_code:{email}", 300, code)
 
         print("authCode: ", code)
 

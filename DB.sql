@@ -444,28 +444,6 @@ CREATE TABLE `AI_AGENT_ALERT` (
   KEY idx_rule (rule_id), KEY idx_alarm (alarm_id), KEY idx_severity (severity)
 ) ENGINE=InnoDB COMMENT='AI Agent 위반 알림';
 
-DROP TABLE IF EXISTS `AI_AGENT_RUN_LOG`;
-CREATE TABLE `AI_AGENT_RUN_LOG` (
-  run_id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '실행 ID (PK)',
-  triggered_by     BIGINT                               COMMENT '실행자 ID',
-  trigger_type     VARCHAR(30)  DEFAULT 'MANUAL'        COMMENT '실행 유형',
-  scope            VARCHAR(30)                          COMMENT '범위',
-  scope_target     VARCHAR(50)                          COMMENT '대상',
-  rules_evaluated  INT          DEFAULT 0               COMMENT '평가 룰 수',
-  alerts_generated INT          DEFAULT 0               COMMENT '생성 알림 수',
-  critical_count   INT          DEFAULT 0               COMMENT 'Critical 수',
-  fail_count       INT          DEFAULT 0               COMMENT 'Fail 수',
-  warn_count       INT          DEFAULT 0               COMMENT 'Warn 수',
-  ai_model         VARCHAR(50)                          COMMENT 'AI 모델',
-  ai_summary       TEXT                                 COMMENT 'AI 요약',
-  started_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '시작 시각',
-  ended_at         DATETIME                             COMMENT '종료 시각',
-  duration_ms      INT                                  COMMENT '소요 시간 (ms)',
-  status           VARCHAR(20)  DEFAULT 'RUNNING'       COMMENT '상태',
-  error_message    TEXT                                 COMMENT '에러 메시지',
-  PRIMARY KEY (run_id)
-) ENGINE=InnoDB COMMENT='AI Agent 실행 로그';
-
 -- ══════════════════════════════════════════════════════════
 -- S9. 자가진단 OCR (2) — ★ risk_level DEFAULT '평가중'
 -- ══════════════════════════════════════════════════════════
