@@ -29,7 +29,7 @@ async def alarmWebSocket(
     await manager.connect(partnerId, websocket)
     
     # 해당 관제 룸 전체 사용자들에게 시스템 입장 브로드캐스트 발송
-    await manager.broadcast_to_room(partnerId, {
+    await manager.broadcastToRoom(partnerId, {
         "type": "SYSTEM",
         "sender": "System",
         "message": f"[{partnerId}] 관제 콘솔 실시간 채널에 연결되었습니다."
@@ -73,7 +73,7 @@ async def alarmWebSocket(
             manager.disconnect(partnerId, websocket)
             
             # 같은 관제 그룹 사용자들에게 퇴장 메시지 발송
-            await manager.broadcast_to_room(partnerId, {
+            await manager.broadcastToRoom(partnerId, {
                 "type": "SYSTEM",
                 "sender": "System",
                 "message": f"[{partnerId}] 관제 채널 연결이 해제되었습니다."

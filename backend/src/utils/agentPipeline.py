@@ -472,7 +472,7 @@ def executeComplianceAudit(partnerCode: str, supplierAnswers: dict):
         from src.utils.websc import manager
         async def sendWsAlerts():
             if manager.isConnected(partnerCode):
-                await manager.broadcast_to_room(partnerCode, wsMessage)
+                await manager.broadcastToRoom(partnerCode, wsMessage)
         try:
             asyncio.get_event_loop().run_until_complete(sendWsAlerts())
         except:

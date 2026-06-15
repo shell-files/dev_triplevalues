@@ -267,7 +267,7 @@ async def airflowTriggerEndpoint(
         }
 
         # 모듈화한 전역 socket_manager 인스턴스를 통해 대상 React 브라우저 그룹으로 전송
-        await manager.broadcast_to_room(room_id=request.company_id, data={
+        await manager.broadcastToRoom(room_id=request.company_id, data={
                 "type": "tv",  # 현재 수신부 로직의 if data.get('type') == 'tv' 분기를 태우기 위해 설정
                 "sender": "Airflow_Agent",
                 "data": perfect_combined_data  # 💡 여기에 responseModel 결과물이 안전하게 안착합니다.

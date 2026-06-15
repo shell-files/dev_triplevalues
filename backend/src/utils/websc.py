@@ -50,7 +50,7 @@ class ConnectionManager:
                 print(f"[WS 룸 폭파] 룸 ID: {partnerId}에 더 이상 세션이 없어 방을 완전 메모리에서 삭제합니다.")
 
     # ── ★ 핵심: 특정 관제 룸(partner_id)의 모든 클라이언트들에게 브로드캐스트 전송
-    async def broadcast_to_room(self, partnerId: str, data: dict):
+    async def broadcastToRoom(self, partnerId: str, data: dict):
         """
         [역할] 지정된 특정 관제 룸(partnerId)에 접속해 있는 모든 대시보드 브라우저에 실시간 데이터 투하
         """
@@ -69,31 +69,8 @@ class ConnectionManager:
                     print(f"[WS 룸 전송 에러] partner_id={partnerId}, error={e}")
                     # 실패한 연결은 안전하게 풀에서 추출
                     self.disconnect(partnerId, connection)
+
     
-    # # ── 특정 협력사에게 전송
-    # async def sendToPartner(self, partnerId: str, data: dict):
-    #     """
-    #     [역할] 특정 협력사 1곳에게 알림 전송
-    #     [v2.0] user_id → partner_id 변경
-    #     [FK] partner_id → COMPANY.partner_id
-    #     """
-    #     websocket = self.connections.get(partnerId)
-    #     if websocket:
-    #         try:
-    #             await websocket.send_text(
-    #                 json.dumps(data, ensure_ascii=False)
-    #             )
-    #         except Exception as e:
-    #             print(f"[WS 전송 실패] partner_id={partnerId} error={e}")
-    #             self.connections.pop(partnerId, None)
-
-    # ── [레거시/호환용 서포트] 특정 협력사 연결 리스트의 최신 소켓 혹은 전체에 전송
-    async def sendToPartner(self, partnerId: str, data: dict):
-        """
-        [v2.0 호환용] 단일 대상 함수 호출 시, 해당 방 전체에 메시지를 전송하도록 하위 호환 매핑
-        """
-        await self.broadcast_to_room(partnerId, data)
-
     # ── 복수 협력사에게 전송
     async def sendToPartners(self, partnerIds: list[str], data: dict):
         """
@@ -102,7 +79,7 @@ class ConnectionManager:
         [사용 예시] 특정 공급망 계층(1차/2차/3차)의 모든 협력사에게 전송
         """
         for partnerId in partnerIds:
-            await self.broadcast_to_room(partnerId, data)
+            await self.broadcastToRoom(partnerId, data)
 
     # ── 전체 브로드캐스트
     async def broadcast(self, data: dict):
@@ -110,7 +87,7 @@ class ConnectionManager:
         [역할] 시스템 점검 등 전역(모든 룸, 모든 세션)에 실시간 공지 브로드캐스트 수행
         """
         for partnerId in list(self.connections.keys()):
-            await self.broadcast_to_room(partnerId, data)
+            await self.broadcastToRoom(partnerId, data)
 
     # ── 연결 여부 확인
     def isConnected(self, partnerId: str) -> bool:
