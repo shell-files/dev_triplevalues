@@ -15,8 +15,9 @@ from src.models.aiAgentNotify import (
     resolveAiAgentAlert,
     getAiAgentRunLogList,
 )
-from src.utils.db import findAll
+from src.utils.db import findAll, findOne
 from src.utils.rediscl import getTokenRedis, getCompanyRedis  # Redis 세션 직접 조회를 위해 임포트
+
 from src.utils.websc import manager
 
 router = APIRouter()
@@ -99,7 +100,7 @@ def listAlertsEndpoint(
     severity: Optional[str] = Query(None, description="위험 심각도 필터 (CRITICAL/HIGH/MEDIUM/LOW)"),
     status: Optional[str] = Query("OPEN", description="알림 상태 필터 (OPEN/ACKNOWLEDGED/RESOLVED)"),
     limit: int = Query(50, ge=1, le=100)
-):
+    ):
     alerts = getAiAgentAlertList(partnerId=partnerId, severity=severity, status=status, limit=limit)
     return aiAgentResponse(
         status=True,
@@ -170,3 +171,118 @@ def listAiAgentRules(activeOnly: bool = Query(True)):
         data={"rules": rules, "count": len(rules)}
     )
 
+
+from datetime import datetime
+import asyncio
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+
+
+# =====================================================================
+# 🛸 [Airflow 연동 전용] Pydantic 요청 스키마 정의
+# =====================================================================
+
+class AirflowCombinedPayload(BaseModel):
+    company_id: str         # 웹소켓 룸 ID로 활용할 원청사 식별 코드 (예: MAIN_HQ, hyundai_mobis_hq)
+    alarm_data: Dict[str, Any]       # 알람 테이블에서 온 순수 데이터 (백엔드 재가공 없이 패스스루)
+    ai_agent_payload: Dict[str, Any] # 에이아이에이전트얼럿 테이블 기반 데이터 (partner_id, indicator_no 등 포함)
+
+# =====================================================================
+# 🚀 POST — Airflow 자가진단 분석 완료 시그널 수신 (통합 관제 웹소켓 트리거)
+# =====================================================================
+
+@router.post("/airflow-trigger",
+    summary="[Airflow 전용] 자가진단 분석 결과 수신 및 실시간 관제 트리거",
+    description="Airflow 백엔드로부터 알람 및 AI 얼럿 원시 데이터를 묶음으로 수신하여 가공 후, 관제 화면으로 웹소켓 브로드캐스트를 수행합니다.")
+async def airflowTriggerEndpoint(
+    request: AirflowCombinedPayload,
+    x_airflow_token: Optional[str] = Header(None, alias="X-Airflow-Token", description="Airflow 내부망 연동 인증 키")
+):
+    from fastapi import status, HTTPException
+    # 1. 🔐 Airflow 전용 시크릿 토큰 보안 검증 (예시 하드코딩, 실제로는 환경변수 처리 권장)
+    AIRFLOW_SECRET = "airflow_secret_secure_key_2026"
+    if not x_airflow_token or x_airflow_token != AIRFLOW_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증 실패: 유효한 Airflow 시스템 토큰이 헤더에 누락되었거나 일치하지 않습니다."
+        )
+
+    try:
+        # 2. 🟢 알람 테이블 데이터 파싱 (재가공 없이 프론트엔드로 즉시 토스할 수 있도록 준비)
+        ready_alarm_data = request.alarm_data
+
+        # 3. 🟡 AI 에이전트 얼럿 데이터 가공 (비동기 DB 경유 및 조합 처리)
+        # Airflow가 준 payload에서 핵심 식별자 추출
+        partner_id = request.ai_agent_payload.get("partner_id")
+        indicator_no = request.ai_agent_payload.get("indicator_no")
+
+        if not partner_id or not indicator_no:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="필수 인자(partner_id 또는 indicator_no)가 ai_agent_payload 내에 누락되었습니다."
+            )
+
+        # [비동기 DB 조회 수행] 프로젝트 내의 db utils 또는 ORM을 활용하여 상세 정보를 채웁니다.
+        # 기존 프로젝트 sql 패턴에 맞춰 가상 쿼리 예시 작성
+        company_sql = f"SELECT company_name, tier FROM `COMPANY` WHERE partner_id = '{partner_id}'"
+        rule_sql = f"SELECT rule_name, regulation, severity FROM `AI_AGENT_RULE` WHERE indicator_no = {indicator_no} LIMIT 1"
+        
+        # 메인 프로젝트의 DB 조회 유틸리티 함수를 사용한다고 가정
+        company_info = findOne(company_sql) or {"company_name": f"협력사_{partner_id}", "tier": "미지정"}
+        rule_info = findOne(rule_sql) or {"rule_name": "공급망 자가진단 위반 우려", "regulation": "CSDDD", "severity": "HIGH"}
+
+        # 프론트엔드 React 컴포넌트(MainDashboard, RiskList) 양식에 완벽히 동기화되도록 데이터 적재 구조 가공
+        now_date = datetime.now().strftime("%Y-%m-%d")
+        
+        ready_ai_data = {
+            # ① MainDashboard.jsx 리스크 실시간 알림 피드용 포맷
+            "dashboardAlert": {
+                "id": f"ai_alert_{partner_id}_{indicator_no}_{int(datetime.now().timestamp())}",
+                "type": rule_info.get("severity") or "고위험",
+                "company": company_info.get("company_name"),
+                "tier": company_info.get("tier") or "협력사",
+                "date": now_date,
+                "msg": f"AI 분석 결과: {company_info.get('company_name')}의 자가진단 항목 중 {rule_info.get('rule_name')} 지표가 감지되었습니다. ({rule_info.get('regulation')} 규제 위반 위험)"
+            },
+            # ② RiskList.jsx 관제 테이블 테이블 행(Row) 추가용 포맷
+            "tableRow": {
+                "indicator_no": indicator_no,
+                "company_name": company_info.get("company_name"),
+                "tier": 2 if "2차" in str(company_info.get("tier")) else 1, # 단순 티어 정수 변환 예시
+                "name": rule_info.get("rule_name"),
+                "regs": rule_info.get("regulation"),
+                "actual_value": "자가진단 점수 미흡 또는 기준치 초과",
+                "risk_level": rule_info.get("severity") or "고위험"
+            }
+        }
+
+        # 4. 🚀 하나로 완성된 통합 묶음 데이터를 웹소켓 룸으로 원샷 브로드캐스트
+        perfect_combined_data = {
+            "type": "REALTIME_COMBINED_ALERT",
+            "sender": "Airflow_Agent",
+            "data": {
+                "alarm": ready_alarm_data,  # 재가공 없는 순수 알람 데이터
+                "aiAgent": ready_ai_data    # DB 경유하여 완벽 변형된 AI 데이터
+            }
+        }
+
+        # 모듈화한 전역 socket_manager 인스턴스를 통해 대상 React 브라우저 그룹으로 전송
+        await manager.broadcast_to_room(room_id=request.company_id, data={
+                "type": "tv",  # 현재 수신부 로직의 if data.get('type') == 'tv' 분기를 태우기 위해 설정
+                "sender": "Airflow_Agent",
+                "data": perfect_combined_data  # 💡 여기에 responseModel 결과물이 안전하게 안착합니다.
+            })
+        
+        # (테스트 확인용 로그 프린트)
+        print(f"🎯 [실시간 관제] {request.company_id} 룸으로 알람 및 AI 리스크 팩 밀어내기 완료")
+
+        return {
+            "status": True,
+            "message": f"Airflow 데이터 수집 및 '{request.company_id}' 관제 화면 실시간 전송 성공"
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Airflow Webhook 처리 중 백엔드 서버 내부 에러 발생: {str(e)}"
+        )
