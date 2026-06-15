@@ -171,11 +171,11 @@ def listAiAgentRules(activeOnly: bool = Query(True)):
         data={"rules": rules, "count": len(rules)}
     )
 
-
+import time
 from datetime import datetime
 import asyncio
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 
 # =====================================================================
@@ -293,8 +293,15 @@ async def airflowTriggerEndpoint(
         }
         batch_dashboard_alerts.append(perfect_combined_data)
 
+        # 6. 🚀 [수정] request.company_id ➔ request.partner_id로 바인딩 전면 교체
+        target_room = request.partner_id
+        
+        # 💡 [검증 로그] 웹소켓 전송 전, 룸에 실제 활성화된 커넥션이 있는지 미리 체크
+        is_room_active = manager.isConnected(target_room)
+        print(f"🔍 [웹소켓 검증] 대상 룸 '{target_room}' 활성화 여부: {is_room_active}")
+
         # 모듈화한 전역 socket_manager 인스턴스를 통해 대상 React 브라우저 그룹으로 전송
-        await manager.broadcastToRoom(room_id=request.company_id, data={
+        await manager.broadcastToRoom(room_id=request.target_room, data={
                 "type": "tv",  # 현재 수신부 로직의 if data.get('type') == 'tv' 분기를 태우기 위해 설정
                 "sender": "Airflow_Agent",
                 "is_batch": True,
@@ -302,11 +309,11 @@ async def airflowTriggerEndpoint(
             })
         
         # (테스트 확인용 로그 프린트)
-        print(f"🎯 [실시간 관제] {request.company_id} 룸으로 대용량 알람 {len(batch_dashboard_alerts)}건 원샷 전송 성공")
+        print(f"🎯 [실시간 관제] {target_room} 룸으로 대용량 알람 {len(batch_dashboard_alerts)}건 원샷 전송 성공")
 
         return {
             "status": True,
-            "message": f"Airflow 데이터 수집 및 '{request.company_id}' 관제 화면 실시간 전송 성공"
+            "message": f"Airflow 데이터 수집 및 '{target_room}' 관제 화면 실시간 전송 성공"
         }
 
     except Exception as e:

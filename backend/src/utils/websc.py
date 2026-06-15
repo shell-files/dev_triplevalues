@@ -116,7 +116,7 @@ async def authenticateWS(websocket: WebSocket, token: str) -> str | None:
     """
     # [로컬 마스터/개발 테스트 패스스루 가드라인]
     if token in ["test_master", "bd7443254b74483dafd4378accc76a6b"]:
-        return "MAIN_HQ"
+        return "HMOS-001"
 
     # [단계 1] db5(client1) 세션 인증 토큰 유효성 검증
     tokenCheck = getTokenRedis(token)
