@@ -1,5 +1,6 @@
 // ────────────────────────────────────────────────────────
-// [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (localStorage.page 동기화)
+// [v2.2] 2026-06-15 - 초대 URL 자동 로그인 (invite/{partnerId} 감지)
+// [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (sessionStorage.page 동기화)
 // [v2.0] 2026-06-09 — 로그인 게이트, API 연동, 더미 제거, 권한별 메뉴, pageKey
 // ────────────────────────────────────────────────────────
 import React, { useState, useEffect } from "react";
@@ -46,7 +47,7 @@ const App = () => {
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
     setPage(isOem ? "dashboard" : "company_info");
     try {
-      localStorage.setItem("esg_login", JSON.stringify({
+      sessionStorage.setItem("esg_login", JSON.stringify({
         ...data,
         userRole: isOem ? "현대모비스" : (data?.tier_label || ""),
         page: isOem ? "dashboard" : "company_info",
@@ -60,18 +61,41 @@ const App = () => {
     POST("/auth/logout", { method: "POST" })
      .then(json => {
         setIsLoggedIn(false);
-        localStorage.removeItem("esg_login");
+        sessionStorage.removeItem("esg_login");
         setLoginData(null);
         setPage("dashboard");
         setUserRole("현대모비스");
       });
   };
   
-  /* 앱 마운트 시 세션 복원 */
+  /* [v2.2] 앱 마운트 시 - 초대 URL 감지 + 세션 복원 */
   useEffect(() => {
     if (isLoggedIn) return;
+
+    /* 초대 URL 감지: /invite/{partnerId} */
+    const urlPath = window.location.pathname;
+    const inviteMatch = urlPath.match(/\/invite\/([A-Za-z0-9\-]+)/);
+    if (inviteMatch) {
+      const partnerId = inviteMatch[1];
+      POST(`/auth/invite-login/${partnerId}`)
+        .then(res => {
+          if (res.status && res.data?.accessType === "free_pass") {
+            handleLoginSuccess(res.data);
+            window.history.replaceState({}, "", "/");
+          } else if (res.data?.accessType === "require_auth") {
+            alert(res.message || "등록이 완료된 기업입니다. 2차 인증 후 로그인해 주세요.");
+            window.history.replaceState({}, "", "/");
+          } else {
+            alert(res.message || "유효하지 않은 초대 링크입니다.");
+            window.history.replaceState({}, "", "/");
+          }
+        });
+      return;
+    }
+
+    /* 일반 세션 복원 */
     try {
-      const saved = localStorage.getItem("esg_login");
+      const saved = sessionStorage.getItem("esg_login");
       if (saved) {
         const data = JSON.parse(saved);
         setLoginData(data);
@@ -108,13 +132,13 @@ const App = () => {
     setPage(targetPage);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
-    /* [v2.1] 새로고침 시 현재 페이지 유지 — localStorage에 page 저장 */
+    /* [v2.1] 새로고침 시 현재 페이지 유지 — sessionStorage에 page 저장 */
     try {
-      const saved = localStorage.getItem("esg_login");
+      const saved = sessionStorage.getItem("esg_login");
       if (saved) {
         const data = JSON.parse(saved);
         data.page = targetPage;
-        localStorage.setItem("esg_login", JSON.stringify(data));
+        sessionStorage.setItem("esg_login", JSON.stringify(data));
       }
     } catch(e) {}
   };

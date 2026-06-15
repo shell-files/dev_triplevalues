@@ -1,5 +1,6 @@
 # src/models/auth.py
 # ────────────────────────────────────────────────────────
+# [v1.3] 2026-06-12 - 세션 쿠키 변경 (브라우저 종료 시 자동 로그아웃)
 # [v1.1] 2026-06-04 — UserModel→dict 수정 (JSON 직렬화 오류 해결)
 # [v1.0] 2026-06-04 — 원청사/N차 협력사 로그인, 2차 인증(Kafka/Redis), JWT 토큰 관리
 # ────────────────────────────────────────────────────────
@@ -89,8 +90,7 @@ def loginProcess(response: Response, request: Request, loginModel):
         # ── accessToken Redis 저장 ──
         setTokenRedis(tokenUuid, accessToken)
  
-        # ── Cookie 설정 ──
-        maxAge = 60 * 60 * 24 * settings.refresh_token_expire_days
+        # ── Cookie 설정 (세션 쿠키 — 브라우저 닫으면 자동 삭제) ──
         cookieDomain = _getDomain(request)
         response.set_cookie(
             key=settings.cookie_key,
@@ -98,7 +98,7 @@ def loginProcess(response: Response, request: Request, loginModel):
             domain=cookieDomain,
             httponly=True,
             samesite="lax",
-            max_age=maxAge,
+            # [v1.3] max_age 제거 → 세션 쿠키 (브라우저 종료 시 자동 삭제)
         )
  
         return responseModel(True, "로그인에 성공했습니다.", {
@@ -180,7 +180,6 @@ def logoutProcess(response: Response, request: Request):
         tokenUuid = request.cookies.get(settings.cookie_key, "")
         if tokenUuid:
             # Redis에서 토큰 삭제
-            from src.utils.rediscl import client1
             client1.delete(tokenUuid)
             # TOKEN 테이블에서 논리 삭제
             save("UPDATE `TOKEN` SET delete_yn = 1 WHERE uuid = ? AND delete_yn = 0", (tokenUuid,))
@@ -245,12 +244,12 @@ def inviteAutoLoginProcess(response, request, partnerId):
         # accessToken Redis 저장
         setTokenRedis(tokenUuid, accessToken)
  
-        # Cookie 설정
-        maxAge = 60 * 60 * 24 * settings.refresh_token_expire_days
+        # Cookie 설정 (세션 쿠키 — 브라우저 종료 시 자동 삭제)
         cookieDomain = _getDomain(request)
         response.set_cookie(
             key=settings.cookie_key, value=tokenUuid,
-            domain=cookieDomain, httponly=True, samesite="lax", max_age=maxAge,
+            domain=cookieDomain, httponly=True, samesite="lax",
+            # [v1.3] max_age 제거 → 세션 쿠키
         )
  
         return responseModel(True, "최초 접속 — 자동 로그인 완료", {
