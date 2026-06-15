@@ -106,11 +106,20 @@ const MainDashboard = () => {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full">
-      <div>
-        <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">대시보드</h2>
-        <p className="text-sm text-gray-400 mt-0.5">현대모비스 Scope 3 공급망 및 글로벌 ESG 규제(CSRD, CSDDD, Net-Zero 2045) 대응 통합 관제 시스템입니다.</p>
+      {/* 💡 상단 타이틀 영역: 기존 구조를 유지하면서 우측에 실시간 소켓 상태 배지를 조화롭게 배치 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">대시보드</h2>
+          <p className="text-sm text-gray-400 mt-0.5">현대모비스 Scope 3 공급망 및 글로벌 ESG 규제(CSRD, CSDDD, Net-Zero 2045) 대응 통합 관제 시스템입니다.</p>
+        </div>
+        {/* 🟢 기존 Tailwind 디자인 스타일에 부합하는 웹소켓 연결 상태 배지 인디케이터 */}
+        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 self-start sm:self-center shrink-0 select-none">
+          <span className={`w-2 h-2 rounded-full ${wsStatus === "CONNECTED" ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></span>
+          <span className="text-xs font-bold text-gray-600">Airflow 관제 피드 소켓: {wsStatus}</span>
+        </div>
       </div>
 
+      {/* KPI 영역 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <Kpi label="공급망 등록 기업" value={(COMPANIES.length || 0) + "개사"} sub="1차 2개, 2차 2개, 3차 5개" icon={<Company color="#03a94d" />} accent="bg-[#03a94d]/10" />
         <Kpi label="인증 완료 기업" value={certCount + "개 인증"} sub="공급망 전체 보유 인증 합계" icon={<Auth color="#03a94d" />} accent="bg-[#03a94d]/10" />
@@ -118,7 +127,9 @@ const MainDashboard = () => {
         <Kpi label="Net-Zero 목표" value="2045년" sub="Green Supply 로드맵" icon={<Goal color="#03a94d" />} accent="bg-[#03a94d]/10" />
       </div>
 
+      {/* 메인 보드 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 왼쪽 1칸: 기존 관제 요약맵 및 AI Agent 로그 터미널 */}
         <div className="lg:col-span-1">
           <Card className="p-5 flex flex-col h-[calc(100vh-290px)] min-h-[420px]">
             <CardHeader className="shrink-0 mb-2">
@@ -155,6 +166,7 @@ const MainDashboard = () => {
           </Card>
         </div>
 
+        {/* 오른쪽 2칸: 원래 공유해주신 고유 레이아웃 비율(lg:col-span-2) 및 원본 스타일 100% 보존 */}
         <div className="lg:col-span-2">
           <Card className="p-5 flex flex-col h-[calc(100vh-290px)] min-h-[420px]">
             <CardHeader className="shrink-0 mb-2">
@@ -171,7 +183,6 @@ const MainDashboard = () => {
                     ? "border-amber-400 bg-amber-50/40"
                     : "border-[#03a94d]/40 bg-[#03a94d]/5";
 
-                // 위험 등급 스케일에 완벽히 부합하도록 선언형 컴포넌트 분기 및 16진수 색상 코드 직접 매핑 주입
                 const renderIcon = () => {
                   if (isHigh) return <AlertCircle color="#ef4444" className="w-5 h-5 shrink-0 mt-0.5 select-none" />;
                   if (isMid) return <AlertCircle color="#f59e0b" className="w-5 h-5 shrink-0 mt-0.5 select-none" />;
