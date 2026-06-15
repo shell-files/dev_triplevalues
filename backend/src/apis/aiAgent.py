@@ -182,10 +182,18 @@ from typing import Optional, Dict, Any
 # 🛸 [Airflow 연동 전용] Pydantic 요청 스키마 정의
 # =====================================================================
 
+# Airflow가 한 번에 뿜어주는 개별 알람 데이터 스펙
+class AirflowItem(BaseModel):
+    partner_id: str
+    indicator_no: int
+    type: str = "tv"
+    title: str
+    content: str
+    risk_level: str
+
 class AirflowCombinedPayload(BaseModel):
-    company_id: str         # 웹소켓 룸 ID로 활용할 원청사 식별 코드 (예: MAIN_HQ, hyundai_mobis_hq)
-    alarm_data: Dict[str, Any]       # 알람 테이블에서 온 순수 데이터 (백엔드 재가공 없이 패스스루)
-    ai_agent_payload: Dict[str, Any] # 에이아이에이전트얼럿 테이블 기반 데이터 (partner_id, indicator_no 등 포함)
+    partner_id: str         # 웹소켓 룸 ID로 활용할 원청사 식별 코드 (예: MAIN_HQ, hyundai_mobis_hq)
+    alerts: List[AirflowItem]  # 🚀 대량의 알람 리스트가 한 번에 들어옴
 
 # =====================================================================
 # 🚀 POST — Airflow 자가진단 분석 완료 시그널 수신 (통합 관제 웹소켓 트리거)
@@ -208,15 +216,18 @@ async def airflowTriggerEndpoint(
         )
 
     try:
-        # 2. 🟢 알람 테이블 데이터 파싱 (재가공 없이 프론트엔드로 즉시 토스할 수 있도록 준비)
-        ready_alarm_data = request.alarm_data
+        if not request.alerts:
+            return {"status": True, "message": "처리할 알람 데이터가 없습니다."}
+        # 2. ⚡ 대량 조회를 위한 파라미터 Set 유니크 추출 (중복 제거)
+        partner_ids = list(set([item.partner_id for item in request.alerts]))
+        indicator_nos = list(set([item.indicator_no for item in request.alerts]))
 
-        # 3. 🟡 AI 에이전트 얼럿 데이터 가공 (비동기 DB 경유 및 조합 처리)
-        # Airflow가 준 payload에서 핵심 식별자 추출
-        partner_id = request.ai_agent_payload.get("partner_id")
-        indicator_no = request.ai_agent_payload.get("indicator_no")
+        # 3. 🔍 [핵심 최적화] 복수 데이터를 단 1번의 쿼리로 통틀어 긁어오기 (findAll 사용)
+        # SQL IN 절 컴파일을 위한 플레이스홀더(?, ?, ?) 생성
+        p_placeholders = ", ".join(["?"] * len(partner_ids))
+        i_placeholders = ", ".join(["?"] * len(indicator_nos))
 
-        if not partner_id or not indicator_no:
+        if not partner_ids or not indicator_nos:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="필수 인자(partner_id 또는 indicator_no)가 ai_agent_payload 내에 누락되었습니다."
@@ -224,57 +235,74 @@ async def airflowTriggerEndpoint(
 
         # [비동기 DB 조회 수행] 프로젝트 내의 db utils 또는 ORM을 활용하여 상세 정보를 채웁니다.
         # 기존 프로젝트 sql 패턴에 맞춰 가상 쿼리 예시 작성
-        company_sql = f"SELECT company_name, tier FROM `COMPANY` WHERE partner_id = '{partner_id}'"
-        rule_sql = f"SELECT rule_name, regulation, severity FROM `AI_AGENT_RULE` WHERE indicator_no = {indicator_no} LIMIT 1"
+        company_sql = f"SELECT partner_id,company_name, tier FROM `COMPANY` WHERE partner_id IN ({p_placeholders})"
+        rule_sql = f"SELECT rule_name, action_required, severity FROM `AI_AGENT_RULE` WHERE indicator_no IN ({i_placeholders})"
         
-        # 메인 프로젝트의 DB 조회 유틸리티 함수를 사용한다고 가정
-        company_info = findOne(company_sql) or {"company_name": f"협력사_{partner_id}", "tier": "미지정"}
-        rule_info = findOne(rule_sql) or {"rule_name": "공급망 자가진단 위반 우려", "regulation": "CSDDD", "severity": "HIGH"}
+        # DB 원샷 조회 실행
+        db_companies = findAll(company_sql, tuple(partner_ids)) or []
+        db_rules = findAll(rule_sql, tuple(indicator_nos)) or []
 
-        # 프론트엔드 React 컴포넌트(MainDashboard, RiskList) 양식에 완벽히 동기화되도록 데이터 적재 구조 가공
+        # 4. 🚀 O(1) 초고속 조회를 위해 메모리 상에서 딕셔너리 맵(Map) 변환
+        company_map = {row["partner_id"]: row for row in db_companies}
+        rule_map = {int(row["indicator_no"]): row for row in db_rules}
+
+       # 5. 🔄 루프를 돌며 메모리 내 맵에서 매핑하여 최종 패킷 리스트 빌드
         now_date = datetime.now().strftime("%Y-%m-%d")
+        timestamp_ms = int(time.time() * 1000)
         
-        ready_ai_data = {
-            # ① MainDashboard.jsx 리스크 실시간 알림 피드용 포맷
-            "dashboardAlert": {
-                "id": f"ai_alert_{partner_id}_{indicator_no}_{int(datetime.now().timestamp())}",
-                "type": rule_info.get("severity") or "고위험",
-                "company": company_info.get("company_name"),
-                "tier": company_info.get("tier") or "협력사",
-                "date": now_date,
-                "msg": f"AI 분석 결과: {company_info.get('company_name')}의 자가진단 항목 중 {rule_info.get('rule_name')} 지표가 감지되었습니다. ({rule_info.get('regulation')} 규제 위반 위험)"
-            },
-            # ② RiskList.jsx 관제 테이블 테이블 행(Row) 추가용 포맷
-            "tableRow": {
-                "indicator_no": indicator_no,
-                "company_name": company_info.get("company_name"),
-                "tier": 2 if "2차" in str(company_info.get("tier")) else 1, # 단순 티어 정수 변환 예시
-                "name": rule_info.get("rule_name"),
-                "regs": rule_info.get("regulation"),
-                "actual_value": "자가진단 점수 미흡 또는 기준치 초과",
-                "risk_level": rule_info.get("severity") or "고위험"
-            }
-        }
+        # 프론트엔드로 날려줄 결합 데이터 배열 초기화
+        batch_dashboard_alerts = []
+
+        for idx, item in enumerate(request.alerts):
+            # 맵에서 꺼내고, 없으면 안전하게 Fallback 가드 처리
+            c_info = company_map.get(item.partner_id, {"company_name": f"협력사_{item.partner_id}", "tier": "미지정"})
+            r_info = rule_map.get(item.indicator_no, {"rule_name": "공급망 규제 위반 우려", "regulation": "ESG", "severity": item.risk_level})
 
         # 4. 🚀 하나로 완성된 통합 묶음 데이터를 웹소켓 룸으로 원샷 브로드캐스트
         perfect_combined_data = {
-            "type": "REALTIME_COMBINED_ALERT",
+            "type": "tv",
             "sender": "Airflow_Agent",
             "data": {
-                "alarm": ready_alarm_data,  # 재가공 없는 순수 알람 데이터
-                "aiAgent": ready_ai_data    # DB 경유하여 완벽 변형된 AI 데이터
+                "alarm": {
+                    "id": timestamp_ms + idx,
+                    "partner_id": item.partner_id,
+                    "type": item.type,
+                    "title": item.title,
+                    "content": item.content
+                },  # 재가공 없는 순수 알람 데이터
+                "aiAgent": {
+                        "dashboardAlert": {
+                            "id": f"ai_alert_{item.partner_id}_{item.indicator_no}_{timestamp_ms}_{idx}",
+                            "type": r_info.get("severity") or item.risk_level,
+                            "company": c_info.get("company_name"),
+                            "tier": c_info.get("tier") or "협력사",
+                            "date": now_date,
+                            "msg": f"[{item.title}] {item.content}" # Airflow가 빌드해 준 문자열 그대로 바인딩
+                        },
+                        "tableRow": {
+                            "indicator_no": item.indicator_no,
+                            "company_name": c_info.get("company_name"),
+                            "tier": 2 if "2차" in str(c_info.get("tier")) else 1,
+                            "name": r_info.get("rule_name"),
+                            "regs": r_info.get("regulation"),
+                            "actual_value": "Airflow 실시간 탐지값",
+                            "risk_level": r_info.get("severity") or item.risk_level
+                        }
+                    }
             }
         }
+        batch_dashboard_alerts.append(perfect_combined_data)
 
         # 모듈화한 전역 socket_manager 인스턴스를 통해 대상 React 브라우저 그룹으로 전송
         await manager.broadcastToRoom(room_id=request.company_id, data={
                 "type": "tv",  # 현재 수신부 로직의 if data.get('type') == 'tv' 분기를 태우기 위해 설정
                 "sender": "Airflow_Agent",
-                "data": perfect_combined_data  # 💡 여기에 responseModel 결과물이 안전하게 안착합니다.
+                "is_batch": True,
+                "data": batch_dashboard_alerts  # 💡 여기에 responseModel 결과물이 안전하게 안착합니다.
             })
         
         # (테스트 확인용 로그 프린트)
-        print(f"🎯 [실시간 관제] {request.company_id} 룸으로 알람 및 AI 리스크 팩 밀어내기 완료")
+        print(f"🎯 [실시간 관제] {request.company_id} 룸으로 대용량 알람 {len(batch_dashboard_alerts)}건 원샷 전송 성공")
 
         return {
             "status": True,

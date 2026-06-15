@@ -51,24 +51,43 @@ const MainDashboard = () => {
         const rawPacket = JSON.parse(event.data);
         console.log("📥 [웹소켓 수신]:", rawPacket);
 
-        // 💡 백엔드 aiAgent.py 최하단 분기 조건 가드 매핑
-        if (rawPacket.type === "tv" && rawPacket.data?.type === "REALTIME_COMBINED_ALERT") {
-          const combinedData = rawPacket.data.data;
-          const alarm = combinedData.alarm;     # 순수 알람 데이터
-          const aiAgent = combinedData.aiAgent; # DB 경유 변형 AI 데이터
+        // 💡 단건 전송이든, 대용량 배치 전송이든 안전하게 가드 통과
+        if (rawPacket.type === "tv") {
 
-          // 🔄 2. 백엔드에서 정제하여 보낸 데이터를 대시보드 규격에 맞게 매핑
-          const newRealtimeAlert = {
-            id: alarm.id || Date.now(),
-            company: aiAgent.company_name || "알 수 없는 협력사",
-            tier: aiAgent.tier === 1 ? "1차 협력사" : aiAgent.tier === 2 ? "2차 협력사" : "3차 협력사",
-            date: "방금 전",
-            type: aiAgent.risk_level || "고위험",
-            msg: `[${aiAgent.regs}] ${aiAgent.name} -> 실제 측정값: ${aiAgent.actual_value} (${alarm.content})`
-          };
+          // 케이스 A: Airflow가 리스트(배치)로 묶어서 한 번에 보낸 경우
+          if (rawPacket.data?.is_batch && Array.isArray(rawPacket.data.data)) {
+            const newAlerts = rawPacket.data.data.map((packet) => {
+              const dashboardAlert = packet.data.aiAgent.dashboardAlert;
+              return {
+                id: dashboardAlert.id,
+                company: dashboardAlert.company || "알 수 없는 협력사",
+                tier: dashboardAlert.tier,
+                date: "방금 전",
+                type: dashboardAlert.type,
+                msg: dashboardAlert.msg
+              };
+            });
 
-          // 🚀 3. 기존 피드 맨 위에 정제된 데이터 실시간 언시프트(Unshift) 밀어넣기
-          setAlerts((prev) => [newRealtimeAlert, ...prev]);
+            // 🚀 기존 피드 맨 위에 새로운 알람 배열 전체를 한 번에 결합 (풀림 현상 방지)
+            setAlerts((prev) => [...newAlerts, ...prev]);
+          }
+
+          // 케이스 B: 기존 스타일의 단건 알림인 경우 (예외 가드 보존)
+          else if (rawPacket.data?.type === "REALTIME_COMBINED_ALERT") {
+            const combinedData = rawPacket.data.data;
+            const dashboardAlert = combinedData.aiAgent.dashboardAlert;
+
+            const newRealtimeAlert = {
+              id: dashboardAlert.id || Date.now(),
+              company: dashboardAlert.company || "알 수 없는 협력사",
+              tier: dashboardAlert.tier,
+              date: "방금 전",
+              type: dashboardAlert.type,
+              msg: dashboardAlert.msg
+            };
+
+            setAlerts((prev) => [newRealtimeAlert, ...prev]);
+          }
         }
       } catch (err) {
         console.error("❌ 웹소켓 패킷 파싱 에러:", err);
