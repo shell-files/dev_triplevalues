@@ -3,7 +3,7 @@
 # [역할] HTTP/WebSocket 요청 수신 후 models/alarm.py에 위임
 #        웹소켓 인증/ping/pong은 utils/websc.py 모듈 사용
 # ────────────────────────────────────────────────────────────────────────────
-
+from pprint import pprint
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Header, Query
 from src.utils.websc import manager, authenticateWS, handlePingPong  # 모듈 import
 from src.models.alarm import getAlarmListProcess, readAlarmProcess, deleteAlarmProcess, sendAlarmProcess
@@ -16,12 +16,21 @@ router = APIRouter()
 @router.websocket("/ws")
 async def alarmWebSocket(
     websocket  : WebSocket,
-    token      : str = Query(..., description="Bearer Access Token"),
+    token      : str = Query(...),
 ):
-    # 1. utils/websc.py — 보안 토큰 기반 회사 식별자(partnerId) 인증 처리
-    # 💡 이 partnerId가 곧 프론트엔드가 진입할 고유의 관제 방 ID(room_id)가 됩니다.
+    print(f"DEBUG: [alarm.py] 웹소켓 진입 성공, 토큰: {token}")
+    # 1. 연결 요청 수락 (가장 중요)
+    await websocket.accept()
+
+    # 2. 인증 처리
     partnerId = await authenticateWS(websocket, token)
+
+    # 만약 인증이 실패한다면, 테스트를 위해 하드코딩된 partnerId를 부여할 수도 있습니다.
+    if not partnerId and token == "3fc1aaa0f88a4c61ba25f41ac42d33a4":
+        partnerId = "HMOS-001" # 테스트용 ID 강제 지정
+
     if not partnerId:
+        print(f"[!] 웹소켓 인증 실패: 토큰 {token}에 대한 partnerId를 찾을 수 없습니다.")
         return
 
     # 2. 💡 [변경] 수락 및 룸 기반 세션 매니저 등록 프로세스 가동

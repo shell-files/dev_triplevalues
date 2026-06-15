@@ -34,11 +34,15 @@ const MainDashboard = () => {
   const wsRef = useRef(null);
 
   // 백엔드 주소 및 테스트 마스터 UUID (getPartnerIdFromUuid 우회용)
-  const BACKEND_WS_URL = "ws://localhost:8000/ws/alerts?token=bd7443254b74483dafd4378accc76a6b";
+  const token = "3fc1aaa0f88a4c61ba25f41ac42d33a4"
+  // const WS_URL = `ws://localhost:8000/ws?token=${token}`;
+  // ⚡ [수정] localhost 대신 실제 아이피를 사용하고 포트를 8001로 변경
+  const WS_URL = `ws://${window.location.hostname}:8001/ws?token=${token}`;
+
 
   useEffect(() => {
     // 🔌 1. 화면 진입 시 웹소켓 관제 룸 연결 (MAIN_HQ 방 진입)
-    const ws = new WebSocket(BACKEND_WS_URL);
+    const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {

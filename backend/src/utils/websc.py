@@ -33,7 +33,7 @@ class ConnectionManager:
         if partnerId not in self.connections:
             self.connections[partnerId] = []
 
-        self.connections[partnerId] = websocket
+        self.connections[partnerId].append(websocket)
         print(f"[WS 연결 등록] 룸 ID: {partnerId} | 현재 세션 수: {len(self.connections[partnerId])}")
 
     # ── 연결 해제
@@ -114,8 +114,9 @@ async def authenticateWS(websocket: WebSocket, token: str) -> str | None:
     [역할] 웹소켓 연결 요청 시 전달된 UUID(token) 기반 2단계 Redis 교차 검증
            Redis client1(토큰 검증) -> client2(회사 식별자 조회) 후 partner_id 반환
     """
+    print(f"DEBUG: 서버가 받은 토큰은 -> {token}")
     # [로컬 마스터/개발 테스트 패스스루 가드라인]
-    if token in ["test_master", "bd7443254b74483dafd4378accc76a6b"]:
+    if token in ["test_master", "3fc1aaa0f88a4c61ba25f41ac42d33a4"]:
         return "HMOS-001"
 
     # [단계 1] db5(client1) 세션 인증 토큰 유효성 검증
