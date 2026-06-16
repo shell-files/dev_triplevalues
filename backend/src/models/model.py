@@ -176,5 +176,5 @@ class InviteModel(BaseModel):
 
 class dashboardAlertsRiskModel(BaseModel):
     """대쉬보드 알림 모델"""
-    uuid  : str                  = Field(None,  description="Redis uuid — partner_id 조회용")
+    uuid  : Optional[str]        = Field(None,  description="Redis uuid — partner_id 조회용")
     types : Optional[List[str]]  = Field(None, description="읽음 처리할 유형 리스트. null/빈배열 → 전체")
