@@ -1,4 +1,5 @@
 // ────────────────────────────────────────────────────────
+// [v2.3] 2026-06-16 - sessionStorage 완전 제거, BE 세션 관리 (GET /auth/me) - 초대 URL 자동 로그인 (invite/{partnerId} 감지)
 // [v2.2] 2026-06-15 - 초대 URL 자동 로그인 (invite/{partnerId} 감지)
 // [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (sessionStorage.page 동기화)
 // [v2.0] 2026-06-09 — 로그인 게이트, API 연동, 더미 제거, 권한별 메뉴, pageKey
@@ -16,7 +17,7 @@ import RiskList from "@homes/admin/risks/RiskList";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
-import { GET, POST } from "@utils/Network"; // ---- 로그인/로그아웃 복구
+import { GET, POST, PUT } from "@utils/Network"; // ---- 로그인/로그아웃 복구
 
 const PlaceholderPage = ({ title, desc }) => (
   <div className="p-6 bg-white rounded-xl border border-gray-200 shadow-sm animate-fade-in">
@@ -46,13 +47,11 @@ const App = () => {
     const isOem = Number(data?.tier) === 0;
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
     setPage(isOem ? "dashboard" : "company_info");
-    try {
-      sessionStorage.setItem("esg_login", JSON.stringify({
-        ...data,
-        userRole: isOem ? "현대모비스" : (data?.tier_label || ""),
-        page: isOem ? "dashboard" : "company_info",
-      }));
-    } catch (e) {}
+    /* [v2.4] tokenUuid를 document.cookie에 저장 (랜덤 UUID만, 민감 데이터 아님) */
+    if (data?.tokenUuid) {
+      document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
+    }
+    
     setIsLoggedIn(true);
   };
     
@@ -61,14 +60,15 @@ const App = () => {
     POST("/auth/logout", { method: "POST" })
      .then(json => {
         setIsLoggedIn(false);
-        sessionStorage.removeItem("esg_login");
+        /* [v2.4] 쿠키 삭제 */
+        document.cookie = "esg_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         setLoginData(null);
         setPage("dashboard");
         setUserRole("현대모비스");
       });
   };
   
-  /* [v2.2] 앱 마운트 시 - 초대 URL 감지 + 세션 복원 */
+  /* [v2.3] 앱 마운트 시 - 초대 URL 감지 + BE 세션 조회 (sessionStorage 미사용) */
   useEffect(() => {
     if (isLoggedIn) return;
 
@@ -93,17 +93,16 @@ const App = () => {
       return;
     }
 
-    /* 일반 세션 복원 */
-    try {
-      const saved = sessionStorage.getItem("esg_login");
-      if (saved) {
-        const data = JSON.parse(saved);
-        setLoginData(data);
-        setUserRole(data.userRole || "현대모비스");
-        setPage(data.page || "dashboard");
+    /* [v2.3] BE 세션 조회 — httpOnly 쿠키 기반 (sessionStorage 미사용) */
+    GET("/auth/me").then(res => {
+      if (res.status && res.data?.isLoggedIn) {
+        setLoginData(res.data);
+        const isOem = Number(res.data?.tier) === 0;
+        setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
+        setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
         setIsLoggedIn(true);
       }
-    } catch (e) {}
+    });
   }, []);
   
   /* 로그인 후 협력사 목록 API 조회 */
@@ -132,15 +131,8 @@ const App = () => {
     setPage(targetPage);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
-    /* [v2.1] 새로고침 시 현재 페이지 유지 — sessionStorage에 page 저장 */
-    try {
-      const saved = sessionStorage.getItem("esg_login");
-      if (saved) {
-        const data = JSON.parse(saved);
-        data.page = targetPage;
-        sessionStorage.setItem("esg_login", JSON.stringify(data));
-      }
-    } catch(e) {}
+    /* [v2.3] BE에 현재 페이지 저장 (새로고침 복원용) */
+    PUT("/auth/page", { page: targetPage });
   };
 
   /* 기존 레거시 구조에 로그인 세션 및 렌더링 키 결합 통합 완공 */

@@ -169,30 +169,30 @@ CREATE TABLE `INVITE` (
 
 -- ══════════════════════════════════════════════════════════
 -- S3. PO 관리 (1)
+-- [v2.0] 공급망 트리 + PO 개편 (2026-06-15)
 -- ══════════════════════════════════════════════════════════
 
 DROP TABLE IF EXISTS `PURCHASE_ORDER`;
 CREATE TABLE `PURCHASE_ORDER` (
-  id          BIGINT        NOT NULL AUTO_INCREMENT COMMENT 'PO 내부 ID (PK)',
-  po_id       VARCHAR(30)   NOT NULL                COMMENT 'PO 번호 — PO_LIST.id',
-  partner_id  VARCHAR(20)   NOT NULL                COMMENT '협력사 코드',
-  product     VARCHAR(200)  NOT NULL                COMMENT '제품명',
-  width       DECIMAL(10,2)                         COMMENT '폭 (mm)',
-  length      DECIMAL(10,2)                         COMMENT '길이 (mm)',
-  weight      DECIMAL(10,2)                         COMMENT '중량',
-  volume      DECIMAL(10,2)                         COMMENT '부피 (L)',
-  diameter    DECIMAL(10,2)                         COMMENT '지름 (mm)',
-  material    VARCHAR(100)                          COMMENT '재질',
-  qty         DECIMAL(12,2) NOT NULL                COMMENT '수량 (ton)',
-  unit_price  DECIMAL(12,2)                         COMMENT '단가 (USD)',
-  total       DECIMAL(15,2)                         COMMENT '총액 (USD)',
-  delivery    DATE                                  COMMENT '납기일',
-  status      VARCHAR(20)   DEFAULT 'PENDING'       COMMENT '상태',
-  delete_yn   TINYINT(1)    NOT NULL DEFAULT 0      COMMENT '삭제 여부',
-  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-  PRIMARY KEY (id), UNIQUE KEY uq_po (po_id), KEY idx_partner (partner_id)
-) ENGINE=InnoDB COMMENT='발주서 — PO_LIST 매핑';
+  `id`                  BIGINT        NOT NULL AUTO_INCREMENT COMMENT 'PO 식별 ID (PK)',
+  `po_id`               VARCHAR(50)   NOT NULL COMMENT '실제 주문 번호 (UNIQUE)',
+  `sender_company_id`   VARCHAR(20)   NOT NULL COMMENT '발주처 기업 코드 (FK)',
+  `receiver_company_id` VARCHAR(20)   NOT NULL COMMENT '수주처 기업 코드 (FK)',
+  `raw_id`              VARCHAR(30)   NOT NULL COMMENT '대상 원자재 코드 (FK)',
+  `qty`                 DECIMAL(12,2) NOT NULL COMMENT '구매 수량 (중량/ton)',
+  `unit_price`          DECIMAL(12,2) NOT NULL COMMENT '구매 단가',
+  `total`               DECIMAL(15,2) NOT NULL COMMENT '총 가격 (수량 * 단가)',
+  `delivery`            DATE          NOT NULL COMMENT '납품일 / 납기일',
+  `status`              VARCHAR(20)   DEFAULT 'PENDING' COMMENT '주문 상태',
+  `delete_yn`           TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '삭제 여부',
+  `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_po` (`po_id`),
+  KEY `idx_sender` (`sender_company_id`),
+  KEY `idx_receiver` (`receiver_company_id`),
+  KEY `idx_raw` (`raw_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='PO 관리';
 
 -- ══════════════════════════════════════════════════════════
 -- S4. 원자재 · 결재 (4)
@@ -200,25 +200,25 @@ CREATE TABLE `PURCHASE_ORDER` (
 
 DROP TABLE IF EXISTS `RAW_MATERIAL`;
 CREATE TABLE `RAW_MATERIAL` (
-  id           BIGINT        NOT NULL AUTO_INCREMENT COMMENT '원자재 ID (PK)',
-  raw_id       VARCHAR(30)   NOT NULL                COMMENT '원자재 코드 — RAW_MATERIALS.id',
-  po_id        VARCHAR(30)                           COMMENT 'PO 번호',
-  partner_id   VARCHAR(20)                           COMMENT '협력사 코드',
-  name         VARCHAR(200)  NOT NULL                COMMENT '원자재명',
-  width        DECIMAL(10,2)                         COMMENT '폭 (mm)',
-  length       DECIMAL(10,2)                         COMMENT '길이 (mm)',
-  weight_kg    DECIMAL(10,2)                         COMMENT '중량 (kg)',
-  diameter_mm  DECIMAL(10,2)                         COMMENT '지름 (mm)',
-  components   TEXT                                  COMMENT '구성 요소 (성분 비율)',
-  origin       VARCHAR(200)                          COMMENT '원산지',
-  status       VARCHAR(20)   DEFAULT 'DRAFT'         COMMENT '상태',
-  requested_at DATETIME                              COMMENT '요청일',
-  approved_at  DATETIME                              COMMENT '승인일',
-  delete_yn    TINYINT(1)    NOT NULL DEFAULT 0      COMMENT '삭제 여부',
-  created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  updated_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-  PRIMARY KEY (id), UNIQUE KEY uq_raw (raw_id), KEY idx_po (po_id)
-) ENGINE=InnoDB COMMENT='원자재 — RAW_MATERIALS 매핑';
+  `id`           BIGINT        NOT NULL AUTO_INCREMENT COMMENT '내부 ID (PK)',
+  `raw_id`       VARCHAR(30)   NOT NULL COMMENT '원자재 코드 (UNIQUE)',
+  `partner_id`   VARCHAR(20)   NOT NULL COMMENT '소유 협력사 코드 (FK)',
+  `name`         VARCHAR(200)  NOT NULL COMMENT '원자재명',
+  `width`        DECIMAL(10,2) COMMENT '폭 (mm)',
+  `length`       DECIMAL(10,2) COMMENT '길이 (mm)',
+  `weight_kg`    DECIMAL(10,2) COMMENT '중량 (kg)',
+  `components`   TEXT          COMMENT '화학 성분 비율 JSON',
+  `origin`       VARCHAR(200)  NOT NULL COMMENT '원산지',
+  `status`       VARCHAR(20)   DEFAULT 'DRAFT' COMMENT '상태 (DRAFT/REQUESTED/APPROVED)',
+  `requested_at` DATETIME      COMMENT '요청일',
+  `approved_at`  DATETIME      COMMENT '승인일',
+  `delete_yn`    TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '삭제 여부',
+  `created_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_raw` (`raw_id`),
+  KEY `idx_partner` (`partner_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='원자재 마스터';
 
 DROP TABLE IF EXISTS `RM_TIER_TREE`;
 CREATE TABLE `RM_TIER_TREE` (
@@ -274,36 +274,71 @@ CREATE TABLE `RM_APPROVAL_STEP` (
 
 DROP TABLE IF EXISTS `BOM`;
 CREATE TABLE `BOM` (
-  id          BIGINT        NOT NULL AUTO_INCREMENT COMMENT 'BOM ID (PK)',
-  bom_id      VARCHAR(30)   NOT NULL                COMMENT 'BOM 코드',
-  category    VARCHAR(50)                           COMMENT '제품군',
-  product     VARCHAR(200)  NOT NULL                COMMENT '제품명',
-  item_no     VARCHAR(50)                           COMMENT '품번',
-  item_name   VARCHAR(200)                          COMMENT '품목명',
-  qty         DECIMAL(12,3)                         COMMENT '수량',
-  unit        VARCHAR(20)                           COMMENT '단위',
-  weight_g    DECIMAL(10,2)                         COMMENT '중량 (g)',
-  supplier_id VARCHAR(20)                           COMMENT '공급사 코드',
-  lead_time   INT                                   COMMENT '리드타임 (일)',
-  price       DECIMAL(12,2)                         COMMENT '단가',
-  components  VARCHAR(500)                          COMMENT '구성 요소',
-  status      VARCHAR(20)   DEFAULT 'ACTIVE'        COMMENT '상태',
-  delete_yn   TINYINT(1)    NOT NULL DEFAULT 0      COMMENT '삭제 여부',
-  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  PRIMARY KEY (id), UNIQUE KEY uq_bom (bom_id)
-) ENGINE=InnoDB COMMENT='BOM — BOM_LIST 매핑';
+  `id`          BIGINT        NOT NULL AUTO_INCREMENT COMMENT '내부 ID (PK)',
+  `bom_id`      VARCHAR(30)   NOT NULL COMMENT 'BOM 관리 코드 (UNIQUE)',
+  `category`    VARCHAR(50)   COMMENT '제품군',
+  `product`     VARCHAR(200)  NOT NULL COMMENT '완제품명',
+  `item_no`     VARCHAR(50)   COMMENT '품번',
+  `item_name`   VARCHAR(200)  COMMENT '품목명',
+  `qty`         DECIMAL(12,3) COMMENT '기본 소요량',
+  `unit`        VARCHAR(20)   COMMENT '단위',
+  `weight_g`    DECIMAL(10,2) COMMENT '단위 중량 (g)',
+  `supplier_id` VARCHAR(20)   COMMENT '기본 공급사 코드 (FK)',
+  `lead_time`   INT           COMMENT '리드타임 (일)',
+  `price`       DECIMAL(12,2) COMMENT '단가',
+  `components`  VARCHAR(500)  COMMENT '구성 요소',
+  `status`      VARCHAR(20)   DEFAULT 'ACTIVE' COMMENT '상태',
+  `delete_yn`   TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '삭제 여부',
+  `created_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bom` (`bom_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='BOM 마스터';
 
 DROP TABLE IF EXISTS `BOM_TIER_TREE`;
 CREATE TABLE `BOM_TIER_TREE` (
-  id         BIGINT      NOT NULL AUTO_INCREMENT COMMENT '트리 ID (PK)',
-  bom_id     VARCHAR(30) NOT NULL                COMMENT 'BOM 코드 (FK)',
-  tier       TINYINT     NOT NULL                COMMENT '차수',
-  short_name VARCHAR(50)                         COMMENT '약어명',
-  item_name  VARCHAR(200)                        COMMENT '품목명',
-  qty_kg     DECIMAL(12,4)                       COMMENT '수량 (kg)',
-  sort_order INT         DEFAULT 0               COMMENT '정렬 순서',
-  PRIMARY KEY (id), KEY idx_bom (bom_id)
-) ENGINE=InnoDB COMMENT='BOM 공급망 트리';
+  `id`            BIGINT        NOT NULL AUTO_INCREMENT COMMENT '트리 노드 ID (PK)',
+  `bom_id`        VARCHAR(30)   NOT NULL COMMENT 'BOM 코드 (FK)',
+  `tier`          TINYINT       NOT NULL COMMENT '차수 (1~3)',
+  `partner_id`    VARCHAR(20)   NOT NULL COMMENT '협력사 코드 (FK)',
+  `raw_id`        VARCHAR(30)   NOT NULL COMMENT '원자재 코드 (FK)',
+  `po_id`         VARCHAR(50)   NOT NULL COMMENT 'PO 번호 (FK)',
+  `item_name`     VARCHAR(200)  COMMENT '스냅샷 품목명',
+  `qty_kg`        DECIMAL(12,4) COMMENT '투입/소요량 (kg)',
+  `sort_order`    INT           DEFAULT 0 COMMENT '정렬 순서',
+  `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_bom_tier` (`bom_id`, `tier`),
+  KEY `idx_partner_raw` (`partner_id`, `raw_id`),
+  KEY `idx_po_trace` (`po_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='BOM 공급망 트리';
+
+-- ══════════════════════════════════════════════════════════
+-- 공급망 관련 PO, BOM, 원자재 더미 데이터
+-- ══════════════════════════════════════════════════════════
+
+INSERT INTO `BOM` (bom_id, category, product, item_no, item_name, qty, unit, weight_g, supplier_id, status) VALUES
+('BOM-001', '열 차폐판', '열 차폐판 Al 3003', 'HTS-3003-H14', 'Al 3003-H14 판재 1.5T', 1.000, 'EA', 495.00, 'NOV-001', 'ACTIVE');
+
+INSERT INTO `RAW_MATERIAL` (raw_id, partner_id, name, width, length, weight_kg, components, origin, status, requested_at, approved_at) VALUES
+('RM-NOV-001', 'NOV-001', 'Al 3003 슬라브',       600, 3000, 1520, 'Al 97.9%, Mn 1.25%, Cu 0.12%, Si 0.28%, Fe 0.45%', '서울 관악구', 'APPROVED', '2026-01-10', '2026-01-15'),
+('RM-KRM-001', 'KRM-001', 'P1020 잉곳 + EMD',     NULL, NULL, 1580, 'Al 99.7%, Mn 0.3%',   '울산 남구',   'APPROVED', '2026-01-12', '2026-01-18'),
+('RM-WIN-001', 'WIN-001', '알루미나(Al2O3)',        NULL, NULL, 2930, 'Al2O3 99.4%',         'Jamaica',     'APPROVED', '2026-01-15', '2026-01-22'),
+('RM-COM-001', 'COM-001', 'Mn 정광(MnO2)',         NULL, NULL,   62, 'MnO2 82%, Fe 5%',     'Gabon',       'APPROVED', '2026-01-15', '2026-01-22'),
+('RM-COD-001', 'COD-001', '황동광(Cu)',             NULL, NULL,    6, 'Cu 28%, Fe 30%',      'Chile',       'APPROVED', '2026-01-15', '2026-01-22');
+
+INSERT INTO `PURCHASE_ORDER` (po_id, sender_company_id, receiver_company_id, raw_id, qty, unit_price, total, delivery, status) VALUES
+('PO-OEM-NOV-001', 'HMOS-001', 'NOV-001', 'RM-NOV-001', 45.00, 3150, 141750, '2026-03-28', 'COMPLETED'),
+('PO-NOV-KRM-001', 'NOV-001',  'KRM-001', 'RM-KRM-001', 47.00, 2800, 131600, '2026-03-20', 'COMPLETED'),
+('PO-KRM-WIN-001', 'KRM-001',  'WIN-001', 'RM-WIN-001', 88.00, 420,  36960,  '2026-03-10', 'COMPLETED'),
+('PO-KRM-COM-001', 'KRM-001',  'COM-001', 'RM-COM-001',  5.50, 1200,  6600,  '2026-03-10', 'COMPLETED'),
+('PO-KRM-COD-001', 'KRM-001',  'COD-001', 'RM-COD-001',  0.80, 8500,  6800,  '2026-03-10', 'COMPLETED');
+
+INSERT INTO `BOM_TIER_TREE` (bom_id, tier, partner_id, raw_id, po_id, item_name, qty_kg, sort_order) VALUES
+('BOM-001', 1, 'NOV-001', 'RM-NOV-001', 'PO-OEM-NOV-001', 'Al 3003-H14 판재 1.5T',  0.4950, 1),
+('BOM-001', 2, 'KRM-001', 'RM-KRM-001', 'PO-NOV-KRM-001', 'P1020 잉곳 + EMD',        0.5120, 2),
+('BOM-001', 3, 'WIN-001', 'RM-WIN-001', 'PO-KRM-WIN-001', '알루미나(Al2O3)',          0.9560, 3),
+('BOM-001', 3, 'COM-001', 'RM-COM-001', 'PO-KRM-COM-001', 'Mn 정광(MnO2)',            0.0610, 4),
+('BOM-001', 3, 'COD-001', 'RM-COD-001', 'PO-KRM-COD-001', '황동광(Cu)',                0.0060, 5);
 
 -- ══════════════════════════════════════════════════════════
 -- S6. ESG 지표 · 자가진단 · 실사 (3) — ★ forest_risk 삭제
@@ -686,16 +721,7 @@ INSERT INTO `NODE_HISTORY` (partner_id,record_date,scope1,scope2,feoc_ratio,trir
 ('COD-001','2026-05-15',112000,0,0.00,1.42,'중위험','칠레 Calama','황동광(Cu)',6,'Cu 28%',NULL,NULL,NULL);
 
 -- 10.3 PURCHASE_ORDER
-INSERT INTO `PURCHASE_ORDER` (po_id,partner_id,product,width,length,weight,volume,diameter,material,qty,unit_price,total,delivery,status) VALUES
-('PO-2025-3003-001','NOV-001','Al 3003-H14 판재',1000,2000,1.2,2.4,NULL,'Al-Mn 합금',45.0,3150,141750,'2025-03-28','COMPLETED'),
-('PO-2026-3003-001','NOV-001','Al 3003-H16 박판',1000,NULL,0.5,NULL,NULL,'Al-Mn 합금',55.0,3020,166100,'2026-04-05','CONFIRMED'),
-('PO-2026-3003-002','NSM-001','Al 3003-H14 판재',1500,3000,1.5,6.75,NULL,'Al-Mn 합금',42.0,3180,133560,'2026-07-30','PENDING');
-
 -- 10.4 RAW_MATERIAL + RM_TIER_TREE
-INSERT INTO `RAW_MATERIAL` (raw_id,po_id,partner_id,name,width,length,weight_kg,diameter_mm,components,origin,status,requested_at,approved_at) VALUES
-('RM-001','PO-2025-3003-001','NOV-001','Al 3003 슬라브',600,3000,1520,NULL,'Al 97.9%, Mn 1.25%, Cu 0.12%','서울 관악구','APPROVED','2026-01-10','2026-01-15'),
-('RM-003','PO-2025-3003-001','KRM-001','전해망간(EMD) — 긴급',NULL,NULL,5,NULL,'Mn 99.7%','쏼라 쏼라','REQUESTED','2026-01-05',NULL);
-
 INSERT INTO `RM_TIER_TREE` (raw_id,tier,short_name,item_name,comp,qty_kg,sort_order) VALUES
 ('RM-001',1,'노벨리스코리아','Al 3003 슬라브','Al 97.9%+Mn 1.25%',1520,1),
 ('RM-001',2,'케이알엠','P1020 잉곳','Al 99.7%',1570,2),
@@ -717,17 +743,6 @@ INSERT INTO `RM_APPROVAL_STEP` (approval_id,step_order,tier_level,partner_id,sta
 (2,4,0,'HMOS-001','WAITING',NULL);
 
 -- 10.6 BOM + BOM_TIER_TREE
-INSERT INTO `BOM` (bom_id,category,product,item_no,item_name,qty,unit,weight_g,supplier_id,lead_time,price,components,status) VALUES
-('BOM-001','열 차폐판','Al 3003-H14 판재 1.5T 400×300mm','HSP-400-300-001','Al 3003-H14 판재 1.5T',1.02,'pcs/pcs',491,'NOV-001',14,280,'Al 97.9%, Mn 1.25%, Cu 0.12%','ACTIVE'),
-('BOM-003','휠','Al 3003-H16 판재 3.0T 17인치','WHL-17-001','Al 3003-H16 판재 3.0T',2.15,'pcs/pcs',1347,'NOV-001',21,850,'Al 97.8%, Mn 1.32%, Cu 0.15%','ACTIVE');
-
-INSERT INTO `BOM_TIER_TREE` (bom_id,tier,short_name,item_name,qty_kg,sort_order) VALUES
-('BOM-001',1,'노벨리스코리아','Al 3003-H14 판재 1.5T',0.4950,1),
-('BOM-001',2,'케이알엠','P1020 잉곳+EMD',0.5120,2),
-('BOM-001',3,'Windalco','알루미나(Al₂O₃)',0.9560,3),
-('BOM-001',3,'Comilog','Mn 정광(MnO₂)',0.0610,4),
-('BOM-001',3,'Codelco','황동광(Cu)',0.0060,5);
-
 -- 10.7 ESG_INDICATOR
 INSERT INTO `ESG_INDICATOR` (indicator_no,tier_scope,cat,name,priority,regs,actual_value,status) VALUES
 (1,'3차 협력사 (채굴)','인권·노동','아동·강제노동 Zero','Critical',JSON_ARRAY('CSDDD','UFLPA'),'확인서 완비','pass'),

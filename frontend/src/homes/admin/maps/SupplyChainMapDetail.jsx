@@ -3,7 +3,7 @@ import { GET } from "@utils/Network";
 
 
 const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
-  const [selectedVersion, setSelectedVersion] = useState("v2.0");
+  const [selectedVersion, setSelectedVersion] = useState("");
   const [selectedNode, setSelectedNode] = useState("novelis");
   const [animate, setAnimate] = useState(false);
 
@@ -11,6 +11,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
   const [productData, setProductData] = useState(null);
   const [nodeDetails, setNodeDetails] = useState({});
   const [requests, setRequests] = useState([]);
+  const [versions, setVersions] = useState([]);
 
   /* short_name → FE 노드 키 (단순 조회, 변환 로직 없음) */
   const NODE_KEY = { novelis: "노벨리스코리아", krm: "케이알엠", comilog: "Comilog", riotinto: "Windalco" };
@@ -23,6 +24,8 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
         setProductData(json.data.bom || {});
         setNodeDetails(json.data.nodeDetails || {});
         setRequests(json.data.requests || []);
+        setVersions(json.data.versions || []);
+        if (json.data.versions?.length > 0) setSelectedVersion(json.data.versions[0].version);
       }
     });
   }, [productId]);
@@ -101,36 +104,37 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
       {/* 제품 개요 및 버전 관리 인터페이스 (b-1 사양) */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6 w-full">
         {/* [좌측 정보 그룹] */}
-        <div class="flex flex-wrap items-center gap-8 md:gap-16">
+        <div className="flex flex-wrap items-center gap-8 md:gap-16">
           {/* 블록 1 (대상 제품군) */}
-          <div class="flex flex-col">
-            <span class="text-sm text-gray-400">대상 제품군</span>
-            <span class="text-lg font-bold text-gray-900 mt-0.5">{productData?.product || productId}</span>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-400">대상 제품군</span>
+            <span className="text-lg font-bold text-gray-900 mt-0.5">{productData?.product || productId}</span>
           </div>
 
           {/* 세로 구분선 */}
-          <div class="w-px h-10 bg-gray-200 hidden sm:block"></div>
+          <div className="w-px h-10 bg-gray-200 hidden sm:block"></div>
 
           {/* 블록 2 (버전 히스토리 선택) */}
-          <div class="flex flex-col">
-            <span class="text-sm text-gray-400 mb-1">버전 히스토리 선택</span>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-400 mb-1">버전 히스토리 선택</span>
             <select
               id="version-select"
               value={selectedVersion}
               onChange={(e) => setSelectedVersion(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="v2.0">v2.0 (2026-05-15 부터 2026-12-31) [최신]</option>
-              <option value="v1.0">v1.0 (2025-01-01 부터 2026-05-14)</option>
+              {versions.length > 0 ? versions.map((v, i) => (
+                <option key={i} value={v.version}>{v.label || v.version}</option>
+              )) : <option value="">데이터 없음</option>}
             </select>
           </div>
         </div>
 
         {/* [우측 독립 블록] */}
-        <div class="flex flex-col sm:items-end">
-          <span class="text-sm text-gray-400 mb-1">BOM 검증 상태</span>
+        <div className="flex flex-col sm:items-end">
+          <span className="text-sm text-gray-400 mb-1">BOM 검증 상태</span>
           <div id="bom-status-badge-container">
-            {selectedVersion === "v2.0" ? (
+            {productData?.status === "ACTIVE" ? (
               <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                 활성

@@ -1,8 +1,10 @@
 # src/models/auth.py
 # ────────────────────────────────────────────────────────
+# [v1.4] 2026-06-16 - sessionStorage 제거, BE 세션 관리 (GET /auth/me)
 # [v1.3] 2026-06-12 - 세션 쿠키 변경 (브라우저 종료 시 자동 로그아웃)
-# [v1.1] 2026-06-04 — UserModel→dict 수정 (JSON 직렬화 오류 해결)
-# [v1.0] 2026-06-04 — 원청사/N차 협력사 로그인, 2차 인증(Kafka/Redis), JWT 토큰 관리
+# [v1.2] 2026-06-08 - 초대 링크 자동 로그인 (is_registered=0 → 프리패스)
+# [v1.1] 2026-06-04 - UserModel→dict 수정 (JSON 직렬화 오류 해결)
+# [v1.0] 2026-06-04 - 원청사/N차 협력사 로그인, 2차 인증(Kafka/Redis), JWT 토큰 관리
 # ────────────────────────────────────────────────────────
 
 from fastapi import Response, Request
@@ -98,8 +100,20 @@ def loginProcess(response: Response, request: Request, loginModel):
             domain=cookieDomain,
             httponly=True,
             samesite="lax",
-            # [v1.3] max_age 제거 → 세션 쿠키 (브라우저 종료 시 자동 삭제)
+            path="/",
         )
+ 
+        # [v1.4] 세션 데이터 Redis 직접 저장 (GET /auth/me에서 JWE 복호화 없이 조회)
+        import json as _json
+        sessionData = {
+            "partner_id": company["partner_id"],
+            "company_name": company["company_name"],
+            "tier": company["tier"],
+            "tier_label": company.get("tier_label", ""),
+            "email": email,
+            "page": "dashboard" if int(company.get("tier", 1)) == 0 else "company_info",
+        }
+        client1.set(f"session:{tokenUuid}", _json.dumps(sessionData, ensure_ascii=False))
  
         return responseModel(True, "로그인에 성공했습니다.", {
             "partner_id": company["partner_id"],
@@ -111,8 +125,8 @@ def loginProcess(response: Response, request: Request, loginModel):
  
     except Exception as e:
         return responseModel(False, f"로그인 처리 중 오류가 발생했습니다: {str(e)}")
-
-
+ 
+ 
 # --------------------------
 # 2차 인증 코드 발송 함수 (N차 협력사 전용)
 # --------------------------
@@ -125,7 +139,7 @@ def sendAuthCodeProcess(authCodeModel):
     """
     try:
         email = authCodeModel.email
-
+ 
         # 1. COMPANY 테이블에서 이메일 확인
         checkSql = """
             SELECT partner_id, company_name
@@ -135,15 +149,15 @@ def sendAuthCodeProcess(authCodeModel):
         company = findOne(checkSql, (email,))
         if not company:
             return responseModel(False, "등록되지 않은 이메일입니다.")
-
+ 
         # 2. 6자리 난수 인증 코드 생성
         code = str(random.randint(100000, 999999))
-
+ 
         # 3. Redis에 저장 (TTL 300초 = 5분)
         client1.setex(f"auth_code:{email}", 300, code)
-
+ 
         print("authCode: ", code)
-
+ 
         # 4. Kafka를 통해 이메일 발송
         kafkaData = {
             "type": 5,
@@ -152,13 +166,13 @@ def sendAuthCodeProcess(authCodeModel):
             "companyName": company["company_name"],
         }
         sendToKafka(kafkaData)
-
+ 
         return responseModel(True, "인증 코드가 이메일로 발송되었습니다.")
-
+ 
     except Exception as e:
         return responseModel(False, f"인증 코드 발송 중 오류가 발생했습니다: {str(e)}")
-
-
+ 
+ 
 # --------------------------
 # 내부 헬퍼: 쿠키 도메인 추출
 # --------------------------
@@ -168,8 +182,8 @@ def _getDomain(request: Request):
     if hostname and hostname.endswith(settings.domain):
         return f".{settings.domain}"
     return None
-
-
+ 
+ 
 # --------------------------
 # 로그아웃 처리 함수 (Redis + Cookie 초기화)
 # --------------------------
@@ -179,11 +193,14 @@ def logoutProcess(response: Response, request: Request):
         # Cookie에서 tokenUuid 추출
         tokenUuid = request.cookies.get(settings.cookie_key, "")
         if tokenUuid:
-            # Redis에서 토큰 삭제
+            # Redis에서 토큰 + 세션 삭제
+            from src.utils.rediscl import client1
             client1.delete(tokenUuid)
+            client1.delete(f"session:{tokenUuid}")
+            client1.delete(f"page:{tokenUuid}")
             # TOKEN 테이블에서 논리 삭제
             save("UPDATE `TOKEN` SET delete_yn = 1 WHERE uuid = ? AND delete_yn = 0", (tokenUuid,))
-
+ 
         # Cookie 삭제
         cookieDomain = _getDomain(request)
         response.delete_cookie(
@@ -195,8 +212,8 @@ def logoutProcess(response: Response, request: Request):
     except Exception as e:
         return responseModel(False, f"로그아웃 처리 중 오류: {str(e)}")
     
-
-
+ 
+ 
 # --------------------------
 # [v1.2] 초대 링크 자동 로그인 (is_registered=0 → 프리패스)
 # --------------------------
@@ -249,8 +266,20 @@ def inviteAutoLoginProcess(response, request, partnerId):
         response.set_cookie(
             key=settings.cookie_key, value=tokenUuid,
             domain=cookieDomain, httponly=True, samesite="lax",
-            # [v1.3] max_age 제거 → 세션 쿠키
+            path="/",
         )
+ 
+        # [v1.4] 세션 데이터 Redis 직접 저장
+        import json as _json
+        sessionData = {
+            "partner_id": company["partner_id"],
+            "company_name": company["company_name"],
+            "tier": company["tier"],
+            "tier_label": company.get("tier_label", ""),
+            "email": company.get("email", ""),
+            "page": "company_info",
+        }
+        client1.set(f"session:{tokenUuid}", _json.dumps(sessionData, ensure_ascii=False))
  
         return responseModel(True, "최초 접속 — 자동 로그인 완료", {
             "accessType": "free_pass",
@@ -263,3 +292,60 @@ def inviteAutoLoginProcess(response, request, partnerId):
  
     except Exception as e:
         return responseModel(False, f"초대 링크 처리 중 오류: {str(e)}")
+ 
+# --------------------------
+# [v1.4] 세션 조회 (FE 마운트 시 호출 — sessionStorage 대체)
+# --------------------------
+def getSessionProcess(request: Request):
+    """
+    httpOnly 쿠키의 tokenUuid → Redis session:{uuid} 직접 조회
+    JWE 복호화 없이 단순 Redis GET으로 세션 데이터 반환 (안정성 확보)
+    """
+    try:
+        # [v1.5] X-Token-UUID 헤더 우선, httpOnly 쿠키 폴백
+        tokenUuid = request.headers.get("X-Token-UUID", "") or request.cookies.get(settings.cookie_key, "")
+        if not tokenUuid:
+            return responseModel(False, "", {"isLoggedIn": False})
+ 
+        # Redis에서 세션 데이터 직접 조회
+        import json as _json
+        sessionRaw = client1.get(f"session:{tokenUuid}")
+        if not sessionRaw:
+            return responseModel(False, "", {"isLoggedIn": False})
+ 
+        sessionData = _json.loads(sessionRaw)
+        currentPage = client1.get(f"page:{tokenUuid}") or sessionData.get("page", "dashboard")
+ 
+        return responseModel(True, "", {
+            "isLoggedIn": True,
+            "partner_id": sessionData.get("partner_id", ""),
+            "company_name": sessionData.get("company_name", ""),
+            "tier": sessionData.get("tier", 0),
+            "tier_label": sessionData.get("tier_label", ""),
+            "email": sessionData.get("email", ""),
+            "page": currentPage,
+        })
+ 
+    except Exception as e:
+        return responseModel(False, f"세션 조회 오류: {str(e)}", {"isLoggedIn": False})
+ 
+ 
+# --------------------------
+# [v1.4] 현재 페이지 저장 (새로고침 시 복원용)
+# --------------------------
+def savePageProcess(request: Request, pageData: dict):
+    """메뉴 이동 시 현재 페이지를 Redis에 저장 (세션 쿠키 기반)"""
+    try:
+        # [v1.5] X-Token-UUID 헤더 우선
+        tokenUuid = request.headers.get("X-Token-UUID", "") or request.cookies.get(settings.cookie_key, "")
+        if not tokenUuid:
+            return responseModel(False, "세션이 없습니다.")
+ 
+        page = pageData.get("page", "dashboard")
+        # Redis에 현재 페이지 저장 (TTL 24시간)
+        client1.setex(f"page:{tokenUuid}", 86400, page)
+ 
+        return responseModel(True, "")
+    except Exception as e:
+        return responseModel(False, f"페이지 저장 오류: {str(e)}")
+ 

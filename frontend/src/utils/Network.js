@@ -1,6 +1,11 @@
 import axios from 'axios'
 
 /**
+ * [v1.2] 설정 초기화
+ * - baseURL: BE 서버 직접 호출
+ * - withCredentials: CORS 쿠키 전송
+ * - X-Token-UUID: 세션 식별용 헤더 자동 첨부 (document.cookie에서 읽기)
+ * 
  * 설정 초기화 함수
  * 토큰이 존재할 경우 Authorization 헤더를 자동으로 추가합니다.
  */
@@ -16,6 +21,13 @@ const initConfig = (type) => {
   // if (token) {
   //   headers["Authorization"] = `Bearer ${token}`;
   // }
+
+  /* [v1.2] document.cookie에서 tokenUuid 읽어 헤더에 자동 첨부 */
+  const tokenUuid = document.cookie.split('; ').find(c => c.startsWith('esg_token='))?.split('=')[1];
+  if (tokenUuid) {
+    headers["X-Token-UUID"] = tokenUuid;
+  }
+
 	return {
 		baseURL,
 		withCredentials: true,
