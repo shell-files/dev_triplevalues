@@ -3,7 +3,7 @@
 # [v1.0] 2026-06-09 — 공급망 요청/승인/반려 + BOM 자동 생성 + ALARM 연동
 # ────────────────────────────────────────────────────────
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from src.models.supplychain import (
     getProductListProcess,
     getProductDetailProcess,

@@ -175,4 +175,4 @@ async def sendNotify(
         await manager.broadcast(message)
     else:
         # 2. partner 타겟 지정 실시간 정밀 전송 (websc.py의 정형화된 아규먼트 구조인 partnerId 매핑)
-        await manager.broadcastToRoom(partnerId, message)
+        await manager.sendToPartner(partnerId, message)

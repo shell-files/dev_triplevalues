@@ -24,6 +24,12 @@ from src.utils.ocrs import extractChecklistProcess
 def registerCompanyProcess(model) -> dict:
     certFields = [model.cmrt, model.emat, model.iso14001, model.iso45001, model.iatf, model.rba, model.rmap]
     certCount = sum(1 for v in certFields if v == "Y")
+
+    sql = "SELECT * FROM `COMPANY` WHERE partner_id = ? AND delete_yn = 0"
+    company = findOne(sql, (model.partnerId,))
+    if not company:
+        return responseModel(False, "기업 정보를 찾을 수 없습니다.")
+    
     sql = """
         UPDATE `COMPANY` 
         SET 
@@ -47,7 +53,6 @@ def registerCompanyProcess(model) -> dict:
 
     if result:
         return responseModel(True, "기업 정보가 등록되었습니다.", {"partnerId": model.partnerId})
-    return responseModel(False, "기업 정보 등록 실패")
 
 
 def updateCompanyProcess(partnerId, model) -> dict:
@@ -152,6 +157,8 @@ def getCompanyListProcess(model) -> dict:
         ORDER BY tier ASC, company_name ASC
     """
     rows = findAll(sql, tuple(params))
+    if len(rows) == 0:
+        return responseModel(False, "조회된 데이터가 없습니다.")
     return responseModel(True, "조회 성공", {"companies": rows or [], "count": len(rows or [])})
 
 

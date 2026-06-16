@@ -1,11 +1,12 @@
 # src/apis/auth.py
 # ────────────────────────────────────────────────────────
+# [v1.4] 2026-06-16 - GET /me 세션 조회 + PUT /page 페이지 저장 추가
 # [v1.0] 2026-06-04 — 원청사/N차 협력사 로그인 분기, 2차 인증 코드 발송
 # ────────────────────────────────────────────────────────
 
 from fastapi import APIRouter, Response, Request
 from src.models.model import EsgLoginModel, AuthCodeModel
-from src.models.auth import loginProcess, sendAuthCodeProcess, logoutProcess, inviteAutoLoginProcess
+from src.models.auth import loginProcess, sendAuthCodeProcess, logoutProcess, inviteAutoLoginProcess, getSessionProcess, savePageProcess
 
 router = APIRouter()
 
@@ -48,3 +49,23 @@ def logout(response: Response, request: Request):
     description="is_registered=0이면 프리패스, 1이면 2차 인증 필수 반환")
 def inviteLogin(response: Response, request: Request, partnerId: str):
     return inviteAutoLoginProcess(response, request, partnerId)
+
+
+# --------------------------
+# [v1.4] 세션 조회 — FE 마운트 시 호출 (sessionStorage 대체)
+# --------------------------
+@router.get("/me",
+    summary="현재 세션 조회",
+    description="httpOnly 쿠키 기반 로그인 상태 + 사용자 정보 반환")
+def getSession(request: Request):
+    return getSessionProcess(request)
+
+
+# --------------------------
+# [v1.4] 현재 페이지 저장 — 메뉴 이동 시 호출 (새로고침 복원용)
+# --------------------------
+@router.put("/page",
+    summary="현재 페이지 저장",
+    description="메뉴 이동 시 Redis에 현재 페이지 상태 저장")
+def savePage(request: Request, pageData: dict):
+    return savePageProcess(request, pageData)
