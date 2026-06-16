@@ -168,3 +168,13 @@ class InviteModel(BaseModel):
     tier:           int = Field(..., description="초대 대상 차수 (1/2/3)")
     parentId:       str = Field(..., description="초대사의 partner_id (자동 바인딩)")
     roleCode:       str = Field(..., description="초대사의 role_code (OEM/TIER1/TIER2)")
+
+
+# ────────────────────────────────────────────────────────
+# 대쉬 보드 모델 
+# ────────────────────────────────────────────────────────
+
+class dashboardAlertsRiskModel(BaseModel):
+    """대쉬보드 알림 모델"""
+    uuid  : Optional[str]        = Field(None,  description="Redis uuid — partner_id 조회용")
+    types : Optional[List[str]]  = Field(None, description="읽음 처리할 유형 리스트. null/빈배열 → 전체")
