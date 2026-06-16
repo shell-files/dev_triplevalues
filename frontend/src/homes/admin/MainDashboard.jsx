@@ -20,13 +20,41 @@ const MainDashboard = () => {
   const [aiResult, setAiResult] = useState(null);
   const [selectedAlertId, setSelectedAlertId] = useState(null);
 
+
   // 실시간 알림 피드 상태 관리
   const [alerts, setAlerts] = useState([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
 
+  const [companyStats, setCompanyStats] = useState({
+    tier1Count: 0,
+    tier2Count: 0,
+    tier3Count: 0,
+    totalExceptZero: 0
+  });
+
   // KPI 마스터 데이터 집계
   const certCount = COMPANIES.reduce((a, c) => a + (c.cert_count || 0), 0);
   const midRisk = COMPANIES.filter((c) => c.risk === "중위험").length;
+
+  // 공급망 기업 통계 API 호출 함수
+  const fetchCompanyStats = async () => {
+    try {
+      const currentTokenUuid = document.cookie
+        .split('; ')
+        .find(c => c.startsWith('esg_token='))
+        ?.split('=')[1] || "";
+
+      // 백엔드 getCompanytotalCountProcess 모델과 연동
+      const res = await GET("/dashboard/companies/count");
+
+      // 백엔드 responseModel 규격(True, "메시지", data)에 맞춘 바인딩
+      if (res && res.status && res.data) {
+        setCompanyStats(res.data);
+      }
+    } catch (error) {
+      console.error("공급망 티어 통계 조회 실패:", error);
+    }
+  };
 
   // 1. 실시간 알림 피드 API 호출 (컴포넌트 마운트 시 가동)
   const fetchAlerts = async () => {
@@ -40,7 +68,7 @@ const MainDashboard = () => {
 
       // 2. 백엔드 dashboardAlertsRiskModel 규격에 맞춰 uuid 파라미터를 객체로 전달합니다.
       // Network.js의 GET 함수 구조가 GET(url, params) 형태이므로 두 번째 인자로 넘겨줍니다.
-      const res = await GET("/aiagent/dashboard/alerts", {
+      const res = await GET("/dashboard/alerts", {
         uuid: currentTokenUuid
       });
 
@@ -58,6 +86,7 @@ const MainDashboard = () => {
 
   useEffect(() => {
     fetchAlerts();
+    fetchCompanyStats();
   }, []);
 
   // 2. 피드 아이템 클릭 시 실행: 모달 대신 좌측 AI 관제 콘솔 화면에 상세 내용 주입
@@ -67,7 +96,7 @@ const MainDashboard = () => {
     setSelectedAlertId(alertId); // 클릭시 아이디 저장
 
     try {
-      const res = await GET(`/aiagent/dashboard/alerts/${alertId}`);
+      const res = await GET(`/dashboard/alerts/${alertId}`);
       if (res && res.status && res.data) {
         const detail = res.data;
 
@@ -110,7 +139,7 @@ ${detail.aiRecommendation || " 조치 사항이 준비 중입니다."}`;
 
     setAiLoading(true);
     try {
-      const res = await POST(`/aiagent/dashboard/alerts/${selectedAlertId}/resolve`);
+      const res = await POST(`/dashboard/alerts/${selectedAlertId}/resolve`);
       console.log("백엔드가 돌려준 실제 데이터 모양:", res);
 
       // 1. 응답 데이터를 통째로 글자로 변환하여 백엔드 검증 문구가 있는지 확인 (치트키 💡)
@@ -147,8 +176,14 @@ ${detail.aiRecommendation || " 조치 사항이 준비 중입니다."}`;
         <p className="text-sm text-gray-400 mt-0.5">현대모비스 Scope 3 공급망 및 글로벌 ESG 규제(CSRD, CSDDD, Net-Zero 2045) 대응 통합 관제 시스템입니다.</p>
       </div>
 
+      {/* KPI 영역 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        <Kpi label="공급망 등록 기업" value={(COMPANIES.length || 0) + "개사"} sub="1차 2개, 2차 2개, 3차 5개" icon={<Company color="#03a94d" />} accent="bg-[#03a94d]/10" />
+        <Kpi label="공급망 등록 기업"
+          value={(companyStats.totalExceptZero || 0) + "개사"}
+          sub={`1차 ${companyStats?.tier1Count || 0}, 2차 ${companyStats?.tier2Count || 0}, 3차 ${companyStats?.tier3Count || 0}`}
+          icon={<Company color="#03a94d" />}
+          accent="bg-[#03a94d]/10"
+        />
         <Kpi label="인증 완료 기업" value={certCount + "개 인증"} sub="공급망 전체 보유 인증 합계" icon={<Auth color="#03a94d" />} accent="bg-[#03a94d]/10" />
         <Kpi label="리스크 관리" value={midRisk + "개사"} sub="중위험 (실사 지표 기준)" icon={<Risk color="#03a94d" />} accent="bg-[#03a94d]/10" />
         <Kpi label="Net-Zero 목표" value="2045년" sub="Green Supply 로드맵" icon={<Goal color="#03a94d" />} accent="bg-[#03a94d]/10" />

@@ -1,0 +1,49 @@
+# src/apis/aiAgent.py
+# ────────────────────────────────────────────────────────────────────────────
+# [역할] AI Agent HTTP API 엔드포인트 (v2.0 회사 중심 partner_id 체계 완전 동기화)
+# ────────────────────────────────────────────────────────────────────────────
+
+from fastapi import APIRouter, Query, Header, HTTPException, Depends
+from typing import Optional
+from src.models.model import(
+    dashboardAlertsRiskModel
+)
+from src.models.dashboard import (
+    getDashboardAlertsProcess,
+    getAlertDetailProcess,
+    resolveDashboardAlertProcess,
+    getCompanytotalCountProcess
+)
+
+router = APIRouter()
+
+@router.get("/alerts",
+            summary="대시보드 피드",
+            description="대시보드 alerts 피드 조회")
+def getDashboardAlerts(params: dashboardAlertsRiskModel= Depends()):
+    return getDashboardAlertsProcess(params)
+
+@router.get("/alerts/{alertId}",
+            summary="대시보드 alerts 상세 조회",
+            description="특정 alertId에 대한 상세 데이터 조회")
+def getAlertDetail(alertId: int):
+    result = getAlertDetailProcess(alertId)
+    if not result or (hasattr(result, "status") and not result.status):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"해당 알림 번호({alertId})의 상세 판독 리포트를 찾을 수 없습니다."
+        )
+    return result
+
+@router.post("/alerts/{alertId}/resolve",
+            summary="대시보드 alerts 확인 완료 처리",
+            description="특정 alertId에 대한 확인 완료 처리")
+def resolveDashboardAlert(alertId: int):
+    return resolveDashboardAlertProcess(alertId)
+
+@router.get("/companies/count",
+            summary="대시보드 회사 티어별 통계",
+            description="대시보드 회사 티어별 통계 조회")
+def getCompanytotalCount(params: dashboardAlertsRiskModel= Depends()):
+    return getCompanytotalCountProcess(params)
+

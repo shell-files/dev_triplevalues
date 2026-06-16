@@ -10,7 +10,7 @@ from src.utils.aicommon import safePrint
 import src.utils.db as db
 
 # agentPipeline.py 모듈로부터 수치 정제 엔진 및 독립 분리된 두 함수 임포트
-from src.utils.agentPipeline import (
+from src.utils.agentpipeline import (
     buildSupplierAnswers, 
     executeComplianceAudit, 
     generateSelfAssessReport

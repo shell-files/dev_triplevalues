@@ -127,3 +127,40 @@ def resolveDashboardAlertProcess(alertId: int):
     result = save(update_sql, (alertId,))
         
     return responseModel(True,"조치 완료 처리되었습니다.")
+
+def getCompanytotalCountProcess(params):
+    """
+    COMPANY 테이블에서 기업들의 티어별(1, 2, 3) 개수 및 
+    0을 제외한 전체 개수를 집계하여 반환
+    """
+
+    countCompanySql = """
+    SELECT 
+    COUNT(CASE WHEN tier = 1 THEN 1 END) AS tier1count,
+    COUNT(CASE WHEN tier = 2 THEN 1 END) AS tier2count,
+    COUNT(CASE WHEN tier = 3 THEN 1 END) AS tier3count,
+    COUNT(CASE WHEN tier <> 0 THEN 1 END) AS totalexceptzero
+    FROM COMPANY
+    WHERE delete_yn = 0
+    """
+
+    results = findAll(countCompanySql)
+
+    processedData = {
+        "tier1Count": 0,
+        "tier2Count": 0,
+        "tier3Count": 0,
+        "totalExceptZero": 0
+    }
+
+    if results and len(results) > 0:
+        row = results[0] # 첫 번째 결과 행 가져오기
+        processedData = {
+            "tier1Count": row.get("tier1count") or row.get("TIER1COUNT") or 0,
+            "tier2Count": row.get("tier2count") or row.get("TIER2COUNT") or 0,
+            "tier3Count": row.get("tier3count") or row.get("TIER3COUNT") or 0,
+            "totalExceptZero": row.get("totalexceptzero") or row.get("TOTALEXCEPTZERO") or 0
+        }
+
+    return responseModel(True, "회사 티어별 통계 조회 성공", processedData)
+
