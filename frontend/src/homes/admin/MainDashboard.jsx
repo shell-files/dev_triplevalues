@@ -20,7 +20,6 @@ const MainDashboard = () => {
   const [aiResult, setAiResult] = useState(null);
   const [selectedAlertId, setSelectedAlertId] = useState(null);
 
-
   // 실시간 알림 피드 상태 관리
   const [alerts, setAlerts] = useState([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
@@ -36,9 +35,9 @@ const MainDashboard = () => {
     totalCertCount: 0
   });
 
-  // KPI 마스터 데이터 집계
-  const certCount = COMPANIES.reduce((a, c) => a + (c.cert_count || 0), 0);
-  const midRisk = COMPANIES.filter((c) => c.risk === "중위험").length;
+  const [midRiskStats, setMidRiskStats] = useState({
+    midRiskCount: 0
+  });
 
   // 공급망 기업 통계 API 호출 함수
   const fetchCompanyStats = async () => {
@@ -80,6 +79,23 @@ const MainDashboard = () => {
     }
   };
 
+  const fetchMidRiskStats = async () => {
+    try {
+      const currentTokenUuid = document.cookie
+        .split('; ')
+        .find(c => c.startsWith('esg_token='))
+        ?.split('=')[1] || "";
+
+
+      const res = await GET("/dashboard/companies/midrisk");
+      if (res && res.status && res.data) {
+        setMidRiskStats(res.data);
+      }
+    } catch (error) {
+      console.error("중위험 기업 수 조회 실패:", error);
+    }
+  };
+
   // 1. 실시간 알림 피드 API 호출 (컴포넌트 마운트 시 가동)
   const fetchAlerts = async () => {
     setAlertsLoading(true);
@@ -112,6 +128,7 @@ const MainDashboard = () => {
     fetchAlerts();
     fetchCompanyStats();
     fetchVerificationStats();
+    fetchMidRiskStats();
   }, []);
 
   // 2. 피드 아이템 클릭 시 실행: 모달 대신 좌측 AI 관제 콘솔 화면에 상세 내용 주입
@@ -216,8 +233,20 @@ ${detail.aiRecommendation || " 조치 사항이 준비 중입니다."}`;
           icon={<Auth color="#03a94d" />}
           accent="bg-[#03a94d]/10"
         />
-        <Kpi label="리스크 관리" value={midRisk + "개사"} sub="중위험 (실사 지표 기준)" icon={<Risk color="#03a94d" />} accent="bg-[#03a94d]/10" />
-        <Kpi label="Net-Zero 목표" value="2045년" sub="Green Supply 로드맵" icon={<Goal color="#03a94d" />} accent="bg-[#03a94d]/10" />
+        <Kpi
+          label="리스크 관리"
+          value={(midRiskStats.midRiskCount || 0) + "개사"}
+          sub="중위험 (실사 지표 기준)"
+          icon={<Risk color="#03a94d" />}
+          accent="bg-[#03a94d]/10"
+        />
+        <Kpi
+          label="Net-Zero 목표"
+          value="2045년"
+          sub="Green Supply 로드맵"
+          icon={<Goal color="#03a94d" />}
+          accent="bg-[#03a94d]/10"
+        />
       </div>
 
       {/* 메인 콘텐츠 그리드 */}

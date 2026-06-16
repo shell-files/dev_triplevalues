@@ -185,3 +185,24 @@ def getCompanyVerificationCompleteCountProcess(params):
         processedData = {"totalCertCount": row.get("totalCertCount") or row.get("TOTALCERTCOUNT") or 0}
 
     return responseModel(True, "회사 인증 완료 회사 수 조회 성공", processedData)
+
+def getCompanyMidRiskCountProcess(params):
+    """
+    COMPANY 테이블에서 기업들의 리스크 중위험 개수 집계하여 반환
+    """
+
+    countCompanyRiskSql = """
+    SELECT 
+    COUNT(*) AS midRiskCount
+    FROM COMPANY
+    WHERE risk_level = '중위험' AND delete_yn = 0 AND id <> 1
+    """
+
+    results = findAll(countCompanyRiskSql)
+
+    row = results[0] 
+    processedData = {
+        "midRiskCount": row.get("midRiskCount") or row.get("MIDRISKCOUNT") or 0
+    }
+
+    return responseModel(True, "회사 리스크 수준별 통계 조회 성공", processedData)
