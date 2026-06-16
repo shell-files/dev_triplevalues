@@ -12,7 +12,8 @@ from src.models.dashboard import (
     getDashboardAlertsProcess,
     getAlertDetailProcess,
     resolveDashboardAlertProcess,
-    getCompanytotalCountProcess
+    getCompanytotalCountProcess,
+    getCompanyVerificationCompleteCountProcess
 )
 
 router = APIRouter()
@@ -46,4 +47,10 @@ def resolveDashboardAlert(alertId: int):
             description="대시보드 회사 티어별 통계 조회")
 def getCompanytotalCount(params: dashboardAlertsRiskModel= Depends()):
     return getCompanytotalCountProcess(params)
+
+@router.get("/companies/verification",
+            summary="대시보드 회사 인증 완료 회사 수",
+            description="대시보드 회사 인증 완료 회사 수 조회")
+def getCompanyVerificationCompleteCount(params: dashboardAlertsRiskModel= Depends()):
+    return getCompanyVerificationCompleteCountProcess(params)
 

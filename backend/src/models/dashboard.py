@@ -164,3 +164,24 @@ def getCompanytotalCountProcess(params):
 
     return responseModel(True, "회사 티어별 통계 조회 성공", processedData)
 
+def getCompanyVerificationCompleteCountProcess(params):
+    """
+    COMPANY 테이블에서 기업들의 인증 완료 회사 수 조회
+    """
+
+    countCompanyVerificationCompleteSql = """
+    SELECT 
+    SUM(COALESCE(cert_count, 0)) AS totalCertCount
+    FROM COMPANY
+    WHERE id <> 1
+    """
+
+    results = findAll(countCompanyVerificationCompleteSql)
+
+    processedData = {"totalCertCount": 0}
+
+    if results and len(results) > 0:
+        row = results[0] 
+        processedData = {"totalCertCount": row.get("totalCertCount") or row.get("TOTALCERTCOUNT") or 0}
+
+    return responseModel(True, "회사 인증 완료 회사 수 조회 성공", processedData)

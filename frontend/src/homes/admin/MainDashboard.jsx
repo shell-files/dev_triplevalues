@@ -32,6 +32,10 @@ const MainDashboard = () => {
     totalExceptZero: 0
   });
 
+  const [verificationStats, setVerificationStats] = useState({
+    totalCertCount: 0
+  });
+
   // KPI 마스터 데이터 집계
   const certCount = COMPANIES.reduce((a, c) => a + (c.cert_count || 0), 0);
   const midRisk = COMPANIES.filter((c) => c.risk === "중위험").length;
@@ -53,6 +57,26 @@ const MainDashboard = () => {
       }
     } catch (error) {
       console.error("공급망 티어 통계 조회 실패:", error);
+    }
+  };
+
+  // 공급망 기업 인증 완료 회사 수 API 호출 함수
+  const fetchVerificationStats = async () => {
+    try {
+      const currentTokenUuid = document.cookie
+        .split('; ')
+        .find(c => c.startsWith('esg_token='))
+        ?.split('=')[1] || "";
+
+      // 백엔드 getCompanyVerificationCompleteCountProcess 모델과 연동
+      const res = await GET("/dashboard/companies/verification");
+
+      // 백엔드 responseModel 규격(True, "메시지", data)에 맞춘 바인딩
+      if (res && res.status && res.data) {
+        setVerificationStats(res.data);
+      }
+    } catch (error) {
+      console.error("공급망 기업 인증 완료 회사 수 조회 실패:", error);
     }
   };
 
@@ -87,6 +111,7 @@ const MainDashboard = () => {
   useEffect(() => {
     fetchAlerts();
     fetchCompanyStats();
+    fetchVerificationStats();
   }, []);
 
   // 2. 피드 아이템 클릭 시 실행: 모달 대신 좌측 AI 관제 콘솔 화면에 상세 내용 주입
@@ -184,7 +209,13 @@ ${detail.aiRecommendation || " 조치 사항이 준비 중입니다."}`;
           icon={<Company color="#03a94d" />}
           accent="bg-[#03a94d]/10"
         />
-        <Kpi label="인증 완료 기업" value={certCount + "개 인증"} sub="공급망 전체 보유 인증 합계" icon={<Auth color="#03a94d" />} accent="bg-[#03a94d]/10" />
+        <Kpi
+          label="인증 완료 기업"
+          value={(verificationStats.totalCertCount || 0) + "개"}
+          sub="공급망 전체 보유 인증 합계"
+          icon={<Auth color="#03a94d" />}
+          accent="bg-[#03a94d]/10"
+        />
         <Kpi label="리스크 관리" value={midRisk + "개사"} sub="중위험 (실사 지표 기준)" icon={<Risk color="#03a94d" />} accent="bg-[#03a94d]/10" />
         <Kpi label="Net-Zero 목표" value="2045년" sub="Green Supply 로드맵" icon={<Goal color="#03a94d" />} accent="bg-[#03a94d]/10" />
       </div>
