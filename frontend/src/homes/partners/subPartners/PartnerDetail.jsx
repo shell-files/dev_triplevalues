@@ -120,7 +120,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs flex items-center gap-1.5 cursor-pointer transition"
+          className="text-sm bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs flex items-center gap-1.5 cursor-pointer transition"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

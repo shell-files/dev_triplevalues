@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@components/Common/Card";
 import CircleIcon from "@components/Common/Icons/CircleIcon";
 import { POST } from "@utils/Network";
+import InviteModal from "@partners/subPartners/InviteModal";
 
 const PartnerList = ({ loginData, setSelPartner }) => {
   const [companies, setCompanies] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   useEffect(() => {
     if (!loginData?.partner_id) return;
@@ -74,7 +76,7 @@ const PartnerList = ({ loginData, setSelPartner }) => {
         </div>
         <div>
           <button
-            onClick={() => {}}
+            onClick={() => setShowInviteModal(true)}
             className="px-4 py-2 text-sm font-bold text-white rounded-lg hover:bg-[#02823b] transition shrink-0 bg-[#03a94d] shadow-sm cursor-pointer"
           >
             + 초대하기
@@ -87,7 +89,7 @@ const PartnerList = ({ loginData, setSelPartner }) => {
         {/* KPI 카드 */}
         <Card className="p-5 flex items-center justify-between bg-white border border-gray-100 shadow-sm rounded-xl">
           <div>
-            <p className="text-sm text-gray-400 font-medium">전체 협력사 수</p>
+            <p className="text-xs text-gray-400 font-semibold">전체 협력사 수</p>
             <p className="text-2xl font-black text-gray-900 mt-1">
               {loading ? "-" : `${companies.length}개사`}
             </p>
@@ -133,9 +135,9 @@ const PartnerList = ({ loginData, setSelPartner }) => {
                     <CircleIcon className="w-5 h-5" color={theme.color} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 text-base">{g(c, "short")}</span>
+                        <span className="font-bold text-gray-900 text-sm">{g(c, "short")}</span>
                       </div>
-                      <p className="text-sm text-gray-400 mt-1">코드: {g(c, "id")}</p>
+                      <p className="text-xs text-gray-400 mt-1">코드: {g(c, "id")}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -159,6 +161,12 @@ const PartnerList = ({ loginData, setSelPartner }) => {
           </div>
         )}
       </div>
+
+      <InviteModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        loginData={loginData}
+      />
     </div>
   );
 };
