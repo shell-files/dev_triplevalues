@@ -4,7 +4,7 @@
 // [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (sessionStorage.page 동기화)
 // [v2.0] 2026-06-09 — 로그인 게이트, API 연동, 더미 제거, 권한별 메뉴, pageKey
 // ────────────────────────────────────────────────────────
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SidebarNav from "@components/Layout/SidebarNav";
 import HeaderNav from "@components/Layout/HeaderNav";
 import Login from "@homes/logins/Login";  // ---- 로그인/로그아웃 복구
