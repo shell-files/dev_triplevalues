@@ -5,10 +5,10 @@ const CompanyInfo = () => {
   const [viewState, setViewState] = useState("welcome");
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-5">
+    <div className="w-full max-w-6xl mx-auto px-6 py-5 min-h-[calc(100vh-140px)] flex flex-col justify-center items-center font-['Pretendard']">
       {viewState === "welcome" && (
         <div id="company-welcome-section" className="w-full flex items-center justify-center py-12">
-          <Card className="p-8 text-center max-w-2xl mx-auto my-12 space-y-6">
+          <Card className="p-12 text-center max-w-3xl w-full mx-auto my-12 space-y-6">
             <div className="flex flex-col items-center justify-center">
               {/* 연한 그린 배경의 단정한 원형 레이어 */}
               <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-[#03a94d] mb-4">
@@ -34,7 +34,7 @@ const CompanyInfo = () => {
 
             {/* 안내 본문 단 */}
             <p className="text-sm text-gray-600 leading-relaxed max-w-lg mx-auto">
-              ESG 플랫폼 시스템을 안전하게 이용하시기 위해 최초 1회 기업 정보 등록 및 인증 증빙 서류 제출이 필요합니다.
+              ESG 플랫폼 시스템을 안전하게 이용하시기 위해<br className="hidden md:block" /> 최초 1회 기업 정보 등록 및 인증 증빙 서류 제출이 필요합니다.
             </p>
 
             {/* 핵심 액션 단추 배치 */}
