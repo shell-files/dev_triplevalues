@@ -17,6 +17,7 @@ import RiskList from "@homes/admin/risks/RiskList";
 import CompanyInfo from "@partners/companys/CompanyInfo";
 import PartnerListSupplier from "@partners/subPartners/PartnerList";
 import PartnerDetailSupplier from "@partners/subPartners/PartnerDetail";
+import RawMaterialList from "@partners/materials/RawMaterialList";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -44,6 +45,8 @@ const App = () => {
   const [notifications, setNotifications] = useState([]);
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
+  const [selMaterial, setSelMaterial] = useState(null);
+  const [materialMode, setMaterialMode] = useState("list"); // 'list', 'form', 'verify', 'detail'
 
   const [isConnected, setIsConnected] = useState(false);
   const ws = useRef(null); // WebSocket 객체
@@ -101,6 +104,8 @@ const App = () => {
         setLoginData(null);
         setPage("dashboard");
         setUserRole("현대모비스");
+        setSelMaterial(null);
+        setMaterialMode("list");
         setIsLoading(false);
       });
   };
@@ -185,6 +190,8 @@ const App = () => {
   const handleResetPage = () => {
     setPage("dashboard");
     setSelPartner(null);
+    setSelMaterial(null);
+    setMaterialMode("list");
   };
 
   const handleMenuChange = (targetPage) => {
@@ -193,6 +200,8 @@ const App = () => {
     setShowNotif(false);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
+    setSelMaterial(null);
+    setMaterialMode("list");
     /* [v2.3] BE에 현재 페이지 저장 (새로고침 복원용) */
     PUT("/auth/page", { page: targetPage });
   };
@@ -243,6 +252,81 @@ const App = () => {
           key={pageKey}
           loginData={loginData}
           setSelPartner={setSelPartner}
+        />
+      );
+    }
+
+    if (page === "partner_rawmat") {
+      if (materialMode !== "list" && selMaterial) {
+        const onBack = () => {
+          setSelMaterial(null);
+          setMaterialMode("list");
+        };
+
+        if (materialMode === "form") {
+          return (
+            <div className="p-6 space-y-4 bg-slate-50 min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard']">
+              <div>
+                <button onClick={onBack} className="text-sm bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                  목록으로 돌아가기
+                </button>
+              </div>
+              <PlaceholderPage 
+                title={`원자재 규제 정보 입력 폼 (${selMaterial.material_name})`} 
+                desc="상위 차수 제출용 원자재 규제 정보 입력 폼(2Depth-B) 영역입니다. (추후 실제 입력 폼 컴포넌트 연동 예정)" 
+              />
+            </div>
+          );
+        }
+        if (materialMode === "verify") {
+          return (
+            <div className="p-6 space-y-4 bg-slate-50 min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard']">
+              <div>
+                <button onClick={onBack} className="text-sm bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                  목록으로 돌아가기
+                </button>
+              </div>
+              <PlaceholderPage 
+                title={`하위 협력사 제출 자료 검증 (${selMaterial.material_name})`} 
+                desc="하위 협력사 제출 건 검증 패널(2Depth-A) 영역입니다. (추후 실제 검증 컴포넌트 연동 예정)" 
+              />
+            </div>
+          );
+        }
+        if (materialMode === "detail") {
+          return (
+            <div className="p-6 space-y-4 bg-slate-50 min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard']">
+              <div>
+                <button onClick={onBack} className="text-sm bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                  목록으로 돌아가기
+                </button>
+              </div>
+              <PlaceholderPage 
+                title={`원자재 규제 정보 상세 (${selMaterial.material_name})`} 
+                desc="원자재 규제 정보 읽기 전용 상세 영역입니다. (추후 실제 상세 컴포넌트 연동 예정)" 
+              />
+            </div>
+          );
+        }
+      }
+
+      return (
+        <RawMaterialList
+          key={pageKey}
+          loginData={loginData}
+          onSelectMaterial={(item, mode) => {
+            setSelMaterial(item);
+            setMaterialMode(mode);
+          }}
         />
       );
     }
