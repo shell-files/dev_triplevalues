@@ -114,6 +114,7 @@ def loginProcess(response: Response, request: Request, loginModel):
             "page": "dashboard" if int(company.get("tier", 1)) == 0 else "company_info",
         }
         client1.set(f"session:{tokenUuid}", _json.dumps(sessionData, ensure_ascii=False))
+        client1.setex(f"page:{tokenUuid}", 86400, "dashboard" if int(company.get("tier", 1)) == 0 else "company_info")
  
         return responseModel(True, "로그인에 성공했습니다.", {
             "partner_id": company["partner_id"],

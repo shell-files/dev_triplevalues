@@ -37,7 +37,7 @@ const App = () => {
   const [showNotif, setShowNotif] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState("현대모비스");
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const [notifications, setNotifications] = useState(null);
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
@@ -135,7 +135,7 @@ const App = () => {
         const isOem = Number(res.data?.tier) === 0;
         setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
         setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
-        handleConnectChat(data?.partner_id || undefined);
+        handleConnectChat(res.data?.partner_id || undefined);
         setIsLoggedIn(true);
       }
     });
@@ -152,6 +152,7 @@ const App = () => {
   }, [userRole, isLoggedIn]);
   
   /* 로그인 전 가드 */
+  console.log(isLoggedIn)
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
