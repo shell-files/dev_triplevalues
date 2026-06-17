@@ -49,7 +49,7 @@ const CompanyDetail = ({
     const s = status || "가동";
     if (s === "가동") {
       return (
-        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
+        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[12px]">
           가동
         </span>
       );
@@ -86,7 +86,7 @@ const CompanyDetail = ({
     const isY = val === "Y";
     return (
       <span
-        className={`inline-block text-[10px] px-2 py-0.5 rounded font-bold border text-center ${
+        className={`inline-block text-[12px] px-2 py-0.5 rounded font-bold border text-center ${
           isY
             ? "bg-emerald-50 text-emerald-700 border-emerald-100"
             : "bg-red-50 text-red-600 border-red-100"
@@ -283,12 +283,12 @@ const CompanyDetail = ({
       </div>
 
       {/* 상단 액션 바 */}
-      <div className="flex items-center justify-between border-b border-gray-150 pb-4">
+      <div className="flex items-center justify-between border-l-10 border-emerald-500 pl-5 pb-4">
         <div>
           <h3 className="text-lg font-bold text-gray-900">
             {savedData?.formData?.companyName || "기등록 협력사 정보"}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-sm text-gray-400 mt-1">
             대표자명: {savedData?.formData?.ceoName || "-"} | 사업자등록번호:{" "}
             {savedData?.formData?.bizNo || "-"}
           </p>
@@ -303,7 +303,7 @@ const CompanyDetail = ({
       </div>
 
       {/* 3대 서브 탭 내비게이션 */}
-      <div className="flex border-b border-gray-200 text-sm overflow-x-auto select-none">
+      <div className="flex border-b border-gray-200 text-base overflow-x-auto select-none">
         {[
           ["info", "기업정보"],
           ["files", "제출서류"],
@@ -334,7 +334,7 @@ const CompanyDetail = ({
                 <CardTitle className="text-sm font-bold text-gray-900">기본 기업 정보</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   {[
                     ["기업명", savedData?.formData?.companyName],
                     ["대표자명", savedData?.formData?.ceoName],
@@ -362,7 +362,7 @@ const CompanyDetail = ({
                 <CardTitle className="text-sm font-bold text-gray-900">ESG 주요 지표 데이터</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   {[
                     ["Scope 1 (tCO2e)", formatNum(savedData?.formData?.scope1)],
                     ["Scope 2 (tCO2e)", formatNum(savedData?.formData?.scope2)],
@@ -377,7 +377,7 @@ const CompanyDetail = ({
                       className="flex items-center justify-between p-3 bg-slate-50/50 border border-gray-100 rounded-xl"
                     >
                       <span className="text-gray-400 font-semibold">{label}</span>
-                      <span className="font-mono font-bold text-gray-800">{val}</span>
+                      <span className="font-bold text-gray-800">{val}</span>
                     </div>
                   ))}
                 </div>
@@ -392,7 +392,7 @@ const CompanyDetail = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   {[
                     ["ISO 14001 (환경경영인증)", savedData?.certs?.iso14001],
                     ["ISO 45001 (안전보건인증)", savedData?.certs?.iso45001],
@@ -463,10 +463,10 @@ const CompanyDetail = ({
             <Card className="p-6 bg-white space-y-6">
               {/* 가중합산 요약 보드 */}
               <div>
-                <div className="font-bold text-[#03a94d] text-sm mb-2">
+                <div className="font-bold text-[#03a94d] text-base mb-2">
                   ESG 가중합산 요약 (공장별 이용 비율 반영)
                 </div>
-                <div className="grid grid-cols-4 border-b border-gray-200 pb-4 text-xs gap-4">
+                <div className="grid grid-cols-4 border-b border-gray-200 pb-4 text-sm gap-4">
                   {[
                     ["Scope 1", `${formatNum(savedData?.formData?.scope1)} tCO2e`],
                     ["Scope 2", `${formatNum(savedData?.formData?.scope2)} tCO2e`],
@@ -483,7 +483,7 @@ const CompanyDetail = ({
 
               {/* 공장 목록 조회 및 인라인 에디팅 토글 */}
               <div>
-                <div className="border-b border-gray-900 pb-2 mb-4 font-bold text-gray-900 text-sm">
+                <div className="border-l-5 border-emerald-500 pl-2 pb-2 mb-4 font-bold text-gray-900 text-base">
                   공장 목록 ({factories.length}개)
                 </div>
                 <div className="space-y-4">
@@ -690,7 +690,7 @@ const CompanyDetail = ({
                             </div>
                             <div className="flex items-center gap-3">
                               {renderOperationStatusBadge(f.operation_status)}
-                              <div className="flex gap-1.5 ml-2 border-l border-gray-150 pl-3">
+                              <div className="flex gap-1.5 ml-2 pl-3">
                                 <button
                                   type="button"
                                   onClick={() => startEdit(f)}
@@ -709,7 +709,7 @@ const CompanyDetail = ({
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
+                          <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-sm">
                             {[
                               ["이용 비율", `${f.utilization_rate || 0}%`],
                               ["Scope 1", `${formatNum(f.scope1_emissions)} tCO2e`],

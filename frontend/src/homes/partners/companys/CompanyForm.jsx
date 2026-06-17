@@ -100,14 +100,14 @@ const CompanyForm = ({
       <form id="frm-company-info" className="space-y-6" onSubmit={handleSubmit}>
         {/* 카드 1: 기본 정보 및 ESG 성과 지표 입력 */}
         <Card className="p-6">
-          <CardHeader className="border-b border-gray-100 pb-3 mb-4">
-            <CardTitle className="text-base text-gray-900">기본 정보 및 ESG 성과 지표 입력</CardTitle>
+          <CardHeader className="border-b border-gray-300 pb-3 mb-4">
+            <CardTitle className="text-base text-gray-900 ">기본 정보 및 ESG 성과 지표 입력</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 좌측: 기본 기업 정보 */}
               <div className="space-y-4">
-                <h4 className="text-base font-bold text-[#03a94d] uppercase tracking-wider">기본 기업 정보</h4>
+                <h4 className="border-l-5 border-emerald-500 text-sm pl-2 font-bold text-gray-900 uppercase tracking-wider">기본 기업 정보</h4>
                 <div>
                   <label className="text-xs font-bold text-gray-600 block mb-1">기업명 *</label>
                   <input
@@ -200,8 +200,8 @@ const CompanyForm = ({
               </div>
 
               {/* 우측: 핵심 ESG 지표 */}
-              <div className="space-y-4 md:border-l md:pl-6 md:border-gray-100">
-                <h4 className="text-base font-bold text-[#03a94d] uppercase tracking-wider">핵심 ESG 지표</h4>
+              <div className="space-y-4 md:border-l md:pl-6 md:border-gray-300">
+                <h4 className="border-l-5 border-emerald-500 pl-2 text-sm font-bold text-gray-900 uppercase tracking-wider">핵심 ESG 지표</h4>
                 <div>
                   <label className="text-xs font-bold text-gray-600 block mb-1">
                     Scope 1 배출량 (tCO2e) *
@@ -263,7 +263,7 @@ const CompanyForm = ({
 
         {/* 카드 2: 글로벌 인증 준수 현황 */}
         <Card className="p-6">
-          <CardHeader className="border-b border-gray-100 pb-3 mb-4">
+          <CardHeader className="border-b border-gray-300 pb-3 mb-4">
             <CardTitle className="text-base text-gray-900">글로벌 인증 준수 현황</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -273,7 +273,7 @@ const CompanyForm = ({
                   key={key}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100"
                 >
-                  <span className="text-xs font-bold text-gray-700">
+                  <span className="text-sm font-bold text-gray-700">
                     {key === "iso14001"
                       ? "ISO 14001 (환경경영인증)"
                       : key === "iso45001"
@@ -292,7 +292,7 @@ const CompanyForm = ({
                     *
                   </span>
                   <div className="flex gap-4 mt-2 sm:mt-0">
-                    <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                    <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
                       <input
                         type="radio"
                         name={key}
@@ -304,7 +304,7 @@ const CompanyForm = ({
                       />
                       취득/이행 (Y)
                     </label>
-                    <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                    <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
                       <input
                         type="radio"
                         name={key}
@@ -322,7 +322,7 @@ const CompanyForm = ({
             </div>
 
             <div className="border-t border-gray-100 mt-5 pt-4">
-              <label className="text-xs font-bold text-gray-600 block mb-1">
+              <label className="text-sm font-bold text-gray-600 block mb-1">
                 글로벌 인증 증빙서류 업로드 *
               </label>
               <p className="text-xs text-gray-400 mb-3 leading-normal font-medium">
@@ -373,7 +373,7 @@ const CompanyForm = ({
 
         {/* 카드 3: 자가진단 및 증빙 자료 제출 */}
         <Card className="p-6">
-          <CardHeader className="border-b border-gray-150 pb-3 mb-4">
+          <CardHeader className="border-b border-gray-300 pb-3 mb-4">
             <CardTitle className="text-base text-gray-900">자가진단 및 증빙 자료 제출</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -381,14 +381,14 @@ const CompanyForm = ({
               공급망 내 ESG 규제 리스크 방지를 위해 협력사의 자가진단 및 증빙자료 제출을 필수로 지정하고
               있습니다. 양식을 다운로드하여 작성 후 업로드해주십시오.
             </p>
-            <div className="p-4 bg-slate-50 rounded-xl border border-gray-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-gray-800">1차 협력사용 자가진단 파일.xlsx</p>
+                <p className="text-sm font-bold text-[#03a94d]">1차 협력사용 자가진단 파일.xlsx</p>
                 <p className="text-[11px] text-gray-400 font-medium">Excel 양식 파일</p>
               </div>
               <button
                 type="button"
-                className="text-xs px-3.5 py-2 border border-gray-250 bg-white hover:bg-gray-100 rounded-lg font-bold text-gray-700 transition cursor-pointer"
+                className="text-xs px-3.5 py-2 border border-gray-250 bg-white hover:bg-[#03a94d] hover:text-white rounded-lg font-bold text-gray-700 transition cursor-pointer"
                 onClick={() => alert("1차 협력사용 자가진단 파일.xlsx 양식 파일 다운로드가 완료되었습니다.")}
               >
                 양식 다운로드
@@ -396,7 +396,7 @@ const CompanyForm = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-600 block mb-1">
+              <label className="text-sm font-bold text-gray-600 block mb-1">
                 자가진단 완료 서류 업로드 *
               </label>
               <div className="border border-gray-200 rounded-lg p-2 bg-white flex items-center gap-3">
@@ -420,7 +420,7 @@ const CompanyForm = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-600 block mb-1">
+              <label className="text-sm font-bold text-gray-600 block mb-1">
                 증빙자료 업로드 (다중 선택 가능) *
               </label>
               <div className="border border-gray-200 rounded-lg p-2 bg-white flex items-center gap-3">
@@ -468,7 +468,7 @@ const CompanyForm = ({
 
         {/* 카드 4: 협력사 행동강령 준수 서약 및 동의 */}
         <Card className="p-6">
-          <CardHeader className="border-b border-gray-150 pb-3 mb-4">
+          <CardHeader className="border-b border-gray-300 pb-3 mb-4">
             <CardTitle className="text-base text-gray-900">협력사 행동강령 준수 서약 및 동의</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -476,14 +476,14 @@ const CompanyForm = ({
               공급망 내 ESG 규제 리스크 방지를 위해 협력사의 행동강령 서약 제출을 필수로 지정하고
               있습니다. 양식을 다운로드하여 날인 후 업로드해주십시오.
             </p>
-            <div className="p-4 bg-slate-50 rounded-xl border border-gray-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-gray-800">현대모비스 협력사 행동강령 양식</p>
+                <p className="text-sm font-bold text-[#03a94d]">현대모비스 협력사 행동강령 양식</p>
                 <p className="text-[11px] text-gray-400 font-medium">CoC_Agreement_Form.pdf (1.2MB)</p>
               </div>
               <button
                 type="button"
-                className="text-xs px-3.5 py-2 border border-gray-250 bg-white hover:bg-gray-100 rounded-lg font-bold text-gray-700 transition cursor-pointer"
+                className="text-xs px-3.5 py-2 border border-gray-250 bg-white hover:bg-[#03a94d] hover:text-white rounded-lg font-bold text-gray-700 transition cursor-pointer"
                 onClick={() => alert("행동강령 서약서 양식 파일 다운로드가 완료되었습니다.")}
               >
                 양식 다운로드
@@ -491,7 +491,7 @@ const CompanyForm = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-600 block mb-1">
+              <label className="text-sm font-bold text-gray-600 block mb-1">
                 행동강령 서약서 파일 업로드 *
               </label>
               <div className="border border-gray-200 rounded-lg p-2 bg-white flex items-center gap-3">
