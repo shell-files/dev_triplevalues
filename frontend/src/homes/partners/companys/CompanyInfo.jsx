@@ -7,12 +7,13 @@ const CompanyInfo = () => {
   const [viewState, setViewState] = useState("welcome");
   const [savedData, setSavedData] = useState(null);
 
-  // 공장 목록 상태 신설 (기본 샘플 레코드 1개 포함)
+  // 공장 목록 상태 (기본 샘플 레코드 1개 포함 및 가동상태 명시)
   const [factories, setFactories] = useState([
     {
       id: 1,
       factory_name: "울산 제1공장",
       address: "울산광역시 북구 산업로 100",
+      operation_status: "가동",
       utilization_rate: 60,
       scope1_emissions: 52000,
       scope2_emissions: 28000,
@@ -119,6 +120,18 @@ const CompanyInfo = () => {
     setFactories((prev) => [...prev, newFactory]);
   };
 
+  // 공장 삭제 핸들러
+  const handleDeleteFactory = (id) => {
+    setFactories((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  // 공장 수정 핸들러
+  const handleUpdateFactory = (updatedFactory) => {
+    setFactories((prev) =>
+      prev.map((f) => (f.id === updatedFactory.id ? updatedFactory : f))
+    );
+  };
+
   // 자식 폼 컴포넌트에게 내릴 파일 상태 팩
   const fileStates = {
     selfAssessFileName,
@@ -163,6 +176,8 @@ const CompanyInfo = () => {
           savedData={savedData}
           factories={factories}
           onAddFactory={handleAddFactory}
+          onDeleteFactory={handleDeleteFactory}
+          onUpdateFactory={handleUpdateFactory}
           onNavigateToRegister={() => setViewState("register")}
         />
       )}

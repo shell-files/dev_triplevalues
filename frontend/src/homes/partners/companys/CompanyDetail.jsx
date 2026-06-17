@@ -1,14 +1,37 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/Common/Card";
 
-const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegister }) => {
+const CompanyDetail = ({
+  savedData,
+  factories,
+  onAddFactory,
+  onDeleteFactory,
+  onUpdateFactory,
+  onNavigateToRegister,
+}) => {
   const [activeTab, setActiveTab] = useState("info");
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // 현재 인라인 수정 중인 공장의 ID
+  const [editingFactoryId, setEditingFactoryId] = useState(null);
+
+  // 수정 중인 공장 임시 데이터 상태
+  const [editFactoryData, setEditFactoryData] = useState({
+    factory_name: "",
+    address: "",
+    operation_status: "가동",
+    utilization_rate: "",
+    scope1_emissions: "",
+    scope2_emissions: "",
+    feoc_raw_material_ratio: "",
+    trir_safety_rate: "",
+  });
 
   // 새 공장 입력을 위한 로컬 상태
   const [newFactory, setNewFactory] = useState({
     factory_name: "",
     address: "",
+    operation_status: "가동",
     utilization_rate: "",
     scope1_emissions: "",
     scope2_emissions: "",
@@ -19,6 +42,44 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
   const formatNum = (val) => {
     if (val === undefined || val === null || val === "") return "-";
     return Number(val).toLocaleString();
+  };
+
+  // 가동 상태에 따른 뱃지 렌더링 헬퍼
+  const renderOperationStatusBadge = (status) => {
+    const s = status || "가동";
+    if (s === "가동") {
+      return (
+        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
+          가동
+        </span>
+      );
+    }
+    if (s === "정지") {
+      return (
+        <span className="bg-amber-50 text-amber-600 border border-amber-200 font-bold px-2 py-0.5 rounded text-[11px]">
+          정지
+        </span>
+      );
+    }
+    if (s === "폐쇄") {
+      return (
+        <span className="bg-red-50 text-red-600 border border-red-200 font-bold px-2 py-0.5 rounded text-[11px]">
+          폐쇄
+        </span>
+      );
+    }
+    if (s === "정비") {
+      return (
+        <span className="bg-blue-50 text-blue-600 border border-blue-200 font-bold px-2 py-0.5 rounded text-[11px]">
+          정비
+        </span>
+      );
+    }
+    return (
+      <span className="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[11px]">
+        {s}
+      </span>
+    );
   };
 
   const renderCertBadge = (val) => {
@@ -38,7 +99,7 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
 
   // 모의 파일 다운로드 핸들러
   const handleMockDownload = (fileName) => {
-    alert(`${fileName} 파일 다운로드가 완료되었습니다.`);
+    alert(fileName + " 파일 다운로드가 완료되었습니다.");
   };
 
   // 서류 목록 렌더링 헬퍼
@@ -151,6 +212,7 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
     setNewFactory({
       factory_name: "",
       address: "",
+      operation_status: "가동",
       utilization_rate: "",
       scope1_emissions: "",
       scope2_emissions: "",
@@ -158,6 +220,58 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
       trir_safety_rate: "",
     });
     setShowAddForm(false);
+  };
+
+  // 공장 삭제 핸들러 호출
+  const handleDeleteClick = (id, name) => {
+    if (confirm("정말로 " + name + " 공장을 삭제하시겠습니까?")) {
+      onDeleteFactory(id);
+      // 수정 모드 상태에서 삭제되는 경우 수정 모드 해제
+      if (editingFactoryId === id) {
+        setEditingFactoryId(null);
+      }
+    }
+  };
+
+  // 공장 수정 모드 개시
+  const startEdit = (factory) => {
+    setEditingFactoryId(factory.id);
+    setEditFactoryData({
+      ...factory,
+      utilization_rate: factory.utilization_rate ?? "",
+      scope1_emissions: factory.scope1_emissions ?? "",
+      scope2_emissions: factory.scope2_emissions ?? "",
+      feoc_raw_material_ratio: factory.feoc_raw_material_ratio ?? "",
+      trir_safety_rate: factory.trir_safety_rate ?? "",
+    });
+  };
+
+  // 공장 수정 모드 취소
+  const cancelEdit = () => {
+    setEditingFactoryId(null);
+  };
+
+  // 공장 수정 완료 제출
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+
+    if (!editFactoryData.factory_name || !editFactoryData.address || !editFactoryData.utilization_rate) {
+      alert("공장명, 소재지, 이용 비율은 필수 입력값입니다.");
+      return;
+    }
+
+    onUpdateFactory({
+      ...editFactoryData,
+      utilization_rate: Number(editFactoryData.utilization_rate),
+      scope1_emissions: editFactoryData.scope1_emissions ? Number(editFactoryData.scope1_emissions) : "",
+      scope2_emissions: editFactoryData.scope2_emissions ? Number(editFactoryData.scope2_emissions) : "",
+      feoc_raw_material_ratio: editFactoryData.feoc_raw_material_ratio
+        ? Number(editFactoryData.feoc_raw_material_ratio)
+        : "",
+      trir_safety_rate: editFactoryData.trir_safety_rate ? Number(editFactoryData.trir_safety_rate) : "",
+    });
+
+    setEditingFactoryId(null);
   };
 
   return (
@@ -361,45 +475,251 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
                 </div>
               </div>
 
-              {/* 공장 목록 조회 */}
+              {/* 공장 목록 조회 및 인라인 에디팅 토글 */}
               <div>
                 <div className="border-b border-gray-900 pb-2 mb-4 font-bold text-gray-900 text-sm">
                   공장 목록 ({factories.length}개)
                 </div>
                 <div className="space-y-4">
                   {factories.length > 0 ? (
-                    factories.map((f, idx) => (
-                      <div
-                        key={f.id || idx}
-                        className="border border-gray-200 bg-white rounded-xl p-4 space-y-3 shadow-3xs"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex flex-col text-left">
-                            <span className="font-bold text-gray-900 text-sm">
-                              {f.factory_name || `공장 ${idx + 1}`}
-                            </span>
-                            <span className="text-xs text-gray-400 mt-1">{f.address || "-"}</span>
+                    factories.map((f, idx) => {
+                      const isEditing = editingFactoryId === f.id;
+                      if (isEditing) {
+                        // 인라인 수정 폼 활성화 모드
+                        return (
+                          <div
+                            key={f.id || idx}
+                            className="bg-slate-50 border border-gray-200 rounded-xl p-5 space-y-4 shadow-3xs"
+                          >
+                            <h4 className="text-sm font-bold text-gray-900">공장 정보 수정</h4>
+                            <form onSubmit={handleEditSubmit} className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    공장명 *
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="예: 울산 제1공장"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.factory_name}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        factory_name: e.target.value,
+                                      }))
+                                    }
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    소재지 *
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="예: 울산시 북구 산업로 100"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.address}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        address: e.target.value,
+                                      }))
+                                    }
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    가동 상태 *
+                                  </label>
+                                  <select
+                                    className="w-full bg-white border border-gray-200 text-sm px-2 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 text-gray-700 bg-white"
+                                    value={editFactoryData.operation_status || "가동"}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        operation_status: e.target.value,
+                                      }))
+                                    }
+                                    required
+                                  >
+                                    <option value="가동">가동</option>
+                                    <option value="정지">정지</option>
+                                    <option value="폐쇄">폐쇄</option>
+                                    <option value="정비">정비</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    이용 비율 (%) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    placeholder="예: 40"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.utilization_rate}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        utilization_rate: e.target.value,
+                                      }))
+                                    }
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    Scope 1 (tCO2e)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    placeholder="예: 1200"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.scope1_emissions}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        scope1_emissions: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    Scope 2 (tCO2e)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    placeholder="예: 800"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.scope2_emissions}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        scope2_emissions: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    FEOC (%)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="예: 8.5"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.feoc_raw_material_ratio}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        feoc_raw_material_ratio: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs pt-1">
+                                <div>
+                                  <label className="text-xs font-bold text-gray-600 block mb-1">
+                                    TRIR
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="예: 0.12"
+                                    className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+                                    value={editFactoryData.trir_safety_rate}
+                                    onChange={(e) =>
+                                      setEditFactoryData((prev) => ({
+                                        ...prev,
+                                        trir_safety_rate: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2 justify-end pt-2">
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-750 text-xs font-bold rounded-lg transition cursor-pointer"
+                                >
+                                  취소
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2 bg-[#03a94d] hover:bg-[#02823b] text-white text-xs font-bold rounded-lg transition shadow-sm cursor-pointer"
+                                >
+                                  수정 완료
+                                </button>
+                              </div>
+                            </form>
                           </div>
-                          <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
-                            가동중
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
-                          {[
-                            ["이용 비율", `${f.utilization_rate || 0}%`],
-                            ["Scope 1", `${formatNum(f.scope1_emissions)} tCO2e`],
-                            ["Scope 2", `${formatNum(f.scope2_emissions)} tCO2e`],
-                            ["FEOC", `${f.feoc_raw_material_ratio || 0}%`],
-                            ["TRIR", f.trir_safety_rate || 0],
-                          ].map(([label, val], i) => (
-                            <div key={i} className="p-3 text-center">
-                              <div className="text-gray-400 font-semibold mb-1">{label}</div>
-                              <div className="font-bold text-gray-800">{val}</div>
+                        );
+                      }
+
+                      // 일반 공장 카드 모드
+                      return (
+                        <div
+                          key={f.id || idx}
+                          className="border border-gray-200 bg-white rounded-xl p-4 space-y-3 shadow-3xs hover:border-gray-300 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex flex-col text-left">
+                              <span className="font-bold text-gray-900 text-sm">
+                                {f.factory_name || `공장 ${idx + 1}`}
+                              </span>
+                              <span className="text-xs text-gray-400 mt-1">{f.address || "-"}</span>
                             </div>
-                          ))}
+                            <div className="flex items-center gap-3">
+                              {renderOperationStatusBadge(f.operation_status)}
+                              <div className="flex gap-1.5 ml-2 border-l border-gray-150 pl-3">
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(f)}
+                                  className="text-xs font-bold text-[#03a94d] hover:text-[#02823b] transition cursor-pointer"
+                                >
+                                  수정
+                                </button>
+                                <span className="text-gray-200 select-none">|</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteClick(f.id, f.factory_name)}
+                                  className="text-xs font-bold text-red-500 hover:text-red-755 transition cursor-pointer"
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
+                            {[
+                              ["이용 비율", `${f.utilization_rate || 0}%`],
+                              ["Scope 1", `${formatNum(f.scope1_emissions)} tCO2e`],
+                              ["Scope 2", `${formatNum(f.scope2_emissions)} tCO2e`],
+                              ["FEOC", `${f.feoc_raw_material_ratio || 0}%`],
+                              ["TRIR", f.trir_safety_rate || 0],
+                            ].map(([label, val], i) => (
+                              <div key={i} className="p-3 text-center">
+                                <div className="text-gray-400 font-semibold mb-1">{label}</div>
+                                <div className="font-bold text-gray-800">{val}</div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-center text-gray-400 text-sm py-6">
                       등록된 공장 정보가 없습니다.
@@ -413,7 +733,19 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
                 {!showAddForm ? (
                   <button
                     type="button"
-                    onClick={() => setShowAddForm(true)}
+                    onClick={() => {
+                      setShowAddForm(true);
+                      setNewFactory({
+                        factory_name: "",
+                        address: "",
+                        operation_status: "가동",
+                        utilization_rate: "",
+                        scope1_emissions: "",
+                        scope2_emissions: "",
+                        feoc_raw_material_ratio: "",
+                        trir_safety_rate: "",
+                      });
+                    }}
                     className="w-full py-3 border border-dashed border-[#03a94d] hover:bg-emerald-50/30 text-[#03a94d] text-sm font-bold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>+ 새 공장 등록하기</span>
@@ -456,6 +788,24 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-gray-600 block mb-1">
+                            가동 상태 *
+                          </label>
+                          <select
+                            className="w-full bg-white border border-gray-200 text-sm px-2 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 text-gray-700 bg-white"
+                            value={newFactory.operation_status}
+                            onChange={(e) =>
+                              setNewFactory((prev) => ({ ...prev, operation_status: e.target.value }))
+                            }
+                            required
+                          >
+                            <option value="가동">가동</option>
+                            <option value="정지">정지</option>
+                            <option value="폐쇄">폐쇄</option>
+                            <option value="정비">정비</option>
+                          </select>
+                        </div>
                         <div>
                           <label className="text-xs font-bold text-gray-600 block mb-1">
                             이용 비율 (%) *
@@ -528,7 +878,10 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
                             }
                           />
                         </div>
-                        <div className="col-span-2 md:col-span-1">
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-1">
+                        <div>
                           <label className="text-xs font-bold text-gray-600 block mb-1">
                             TRIR
                           </label>
@@ -556,6 +909,7 @@ const CompanyDetail = ({ savedData, factories, onAddFactory, onNavigateToRegiste
                             setNewFactory({
                               factory_name: "",
                               address: "",
+                              operation_status: "가동",
                               utilization_rate: "",
                               scope1_emissions: "",
                               scope2_emissions: "",
