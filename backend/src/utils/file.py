@@ -8,6 +8,9 @@ from src.utils.settings import settings
 from src.utils.db import save, findOne
 from src.models.model import responseModel
 
+from fastapi.responses import FileResponse
+from urllib.parse import quote
+
 # --------------------------
 # 파일명 분리, 암호화 로직
 # --------------------------
@@ -159,6 +162,25 @@ async def checkBusinessStatus(businessNumber: str):
     else:
         return responseModel(False, "API 서버 응답 실패", {"code": response.status_code})
     
+
+# --------------------------
+# 자가진단 및 행동강령 양식 파일 다운로드
+# -------------------------- 
+def sampleFileDownloadProcess(filename: str):
+    """sampleFiles 폴더에서 양식 파일 다운로드 (자가진단 체크리스트, 행동강령)"""
+    try:
+        filePath = Path("sampleFiles") / filename
+        if not filePath.exists():
+            return responseModel(False, f"파일을 찾을 수 없습니다: {filename}")
+ 
+        encoded = quote(filename)
+        return FileResponse(
+            path=str(filePath),
+            filename=filename,
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"}
+        )
+    except Exception as e:
+        return responseModel(False, f"파일 다운로드 중 오류가 발생했습니다: {str(e)}")
 
 
 # ════════════════════════════════════════════════════════════

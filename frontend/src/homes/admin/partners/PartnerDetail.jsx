@@ -18,7 +18,6 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
   const [selfAssessVersions, setSelfAssessVersions] = useState([]);
   const [categorizedFiles, setCategorizedFiles] = useState({ coc: [], selfassess: [], evidence: [], cert: [] });
   const [factories, setFactories] = useState([]);
-  const [userChangedVersion, setUserChangedVersion] = useState(false);
 
   const p = partner || {};
   const pid = p.partner_id || p.id;
@@ -47,14 +46,14 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
       });
   }, [pid]);
 
-  /* [v3.0] 버전 변경 시 자가진단 재조회 — 사용자 수동 변경만 처리 (레이스 컨디션 방지) */
+  /* [v2.1] 버전 변경 시 해당 버전 자가진단 재조회 */
   useEffect(() => {
-    if (!pid || !selectedVersion || !userChangedVersion) return;
+    if (!pid || !selectedVersion) return;
     GET(`/company/${pid}/selfassess?version=${selectedVersion}`)
       .then(json => {
         if (json.status && json.data?.answers) setSelfAssessAnswers(json.data.answers);
       });
-  }, [pid, selectedVersion, userChangedVersion]);
+  }, [pid, selectedVersion]);
 
   const handleToggleCard = (id) => setOpenCards(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -197,10 +196,10 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
           <div className="space-y-3">
             <div className="w-full bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-3xs mb-4">
               <span className="text-xs font-bold text-gray-600">버전:</span>
-              <select value={selectedVersion} onChange={e => { setUserChangedVersion(true); setSelectedVersion(e.target.value); }}
+              <select value={selectedVersion} onChange={e => setSelectedVersion(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-slate-400">
                 {selfAssessVersions.length > 0 ? selfAssessVersions.map((v, i) => (
-                  <option key={i} value={v.version}>v{v.version} ({v.answer_count || v.count || 0}건 · {v.created_at?.slice(0,10) || ""})</option>
+                  <option key={i} value={v.version}>v{v.version} ({v.count || 0}건 · {v.created_at?.slice(0,10) || ""})</option>
                 )) : <option value="">데이터 없음</option>}
               </select>
             </div>
@@ -218,7 +217,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {item.priority && <span className={getPriorityBadgeClass(item.priority)}>우선순위: {(item.priority || "").toUpperCase()}</span>}
-                      {(item.risk_level || item.risk_grade) && <span className={getRiskGradeBadgeClass(item.risk_level || item.risk_grade)}>평가: {item.risk_level || item.risk_grade}</span>}
+                      {item.risk_grade && <span className={getRiskGradeBadgeClass(item.risk_grade)}>평가: {item.risk_grade}</span>}
                       <span className="text-gray-400 font-bold text-sm">{isSelected ? "▲" : "▼"}</span>
                     </div>
                   </div>
@@ -227,11 +226,11 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex flex-col">
                           <span className="text-[10px] text-gray-400 font-semibold mb-1">지표명</span>
-                          <span className="text-xs font-bold text-gray-700">{item.indicator_name || item.indicator || item.category || ""}</span>
+                          <span className="text-xs font-bold text-gray-700">{item.indicator || item.category || ""}</span>
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[10px] text-gray-400 font-semibold mb-1">증빙자료 필요 여부</span>
-                          {(item.evidence_yn || item.evidence_required) === "Y"
+                          {item.evidence_required === "Y"
                             ? <span className="inline-block text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-bold">⚠️ 증빙서류 필수 제출</span>
                             : <span className="inline-block text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md font-bold">✓ 증빙서류 선택</span>
                           }
@@ -239,7 +238,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-semibold mb-1">협력사 답변</span>
-                        <textarea readOnly disabled value={item.answer_text || item.answer || ""} className="w-full h-24 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none resize-none font-medium" />
+                        <textarea readOnly disabled value={item.answer || ""} className="w-full h-24 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none resize-none font-medium" />
                       </div>
                     </div>
                   )}
@@ -268,44 +267,57 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
 
         {/* ═══ 공장 정보 탭 — API 공장 데이터 ═══ */}
         {activeTab === "factory" && (
-          <Card className="p-6 bg-white">
-            <div>
-              <div className="font-bold text-emerald-600 text-sm mb-2">ESG 가중합산 요약 (공장별 이용 비율 반영)</div>
-              <div className="grid grid-cols-4 border-b border-gray-200 pb-4 mb-4 text-xs">
-                {[["Scope 1", `${formatNum(p.scope1)} tCO₂e`],["Scope 2", `${formatNum(p.scope2)} tCO₂e`],["FEOC 비중", `${p.feoc_ratio || 0}%`],["TRIR", p.trir || 0]].map((pair, i) => (
-                  <div key={i}><div className="text-gray-400 font-semibold">{pair[0]}</div><div className="font-bold text-gray-800 mt-1">{pair[1]}</div></div>
+          <div className="space-y-6 animate-fade-in">
+            <Card className="p-6 bg-white space-y-4">
+              <div className="border-b border-gray-100 pb-2 mb-2">
+                <h3 className="text-base font-bold text-[#03a94d]">ESG 가중합산 요약 (공장별 이용 비율 반영)</h3>
+              </div>
+              <div className="grid grid-cols-4 gap-4 text-sm">
+                {[
+                  ["Scope 1", `${formatNum(p.scope1)} tCO₂e`],
+                  ["Scope 2", `${formatNum(p.scope2)} tCO₂e`],
+                  ["FEOC 비중", `${p.feoc_ratio || 0}%`],
+                  ["TRIR", p.trir || 0]
+                ].map((pair, i) => (
+                  <div key={i}>
+                    <div className="text-gray-400 font-semibold">{pair[0]}</div>
+                    <div className="font-bold text-gray-800 mt-1">{pair[1]}</div>
+                  </div>
                 ))}
               </div>
-            </div>
-            <div className="mt-6">
-              <div className="border-b border-gray-900 pb-2 mb-4 font-bold text-gray-900 text-sm">
-                공장 목록 ({factories.length}개)
-              </div>
-              <div className="space-y-3">
-                {factories.length > 0 ? factories.map((f, idx) => (
-                  <div key={f.id || idx} className="border border-gray-900 bg-white rounded-xl p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col text-left">
-                        <span className="font-bold text-gray-900 text-sm">{f.factory_name || `공장${idx+1}`}</span>
-                        <span className="text-xs text-gray-400 mt-1">{f.address || f.factory_address || ""}</span>
-                      </div>
-                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
-                        {f.operation_status || "가동중"}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
-                      {[["이용 비율", `${f.utilization_rate || 0}%`],["Scope 1", `${formatNum(f.scope1_emissions || f.scope1)} tCO₂e`],["Scope 2", `${formatNum(f.scope2_emissions || f.scope2)} tCO₂e`],["FEOC", `${f.feoc_raw_material_ratio || f.feoc_ratio || 0}%`],["TRIR", f.trir_safety_rate || f.trir || 0]].map((pair, i) => (
-                        <div key={i} className="p-3 text-center">
-                          <div className="text-gray-400 font-semibold mb-1">{pair[0]}</div>
-                          <div className="font-bold text-gray-800">{pair[1]}</div>
+            </Card>
+
+            <Card className="p-6 bg-white space-y-4">
+              <div className="mt-6">
+                <div className="border-b border-gray-100 pb-2 mb-4">
+                  <h3 className="text-base font-bold text-[#03a94d]">공장 목록 ({factories.length}개)</h3>
+                </div>
+                <div className="space-y-3">
+                  {factories.length > 0 ? factories.map((f, idx) => (
+                    <div key={f.id || idx} className="border border-gray-200 bg-white rounded-xl p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold text-gray-900 text-sm">{f.factory_name || `공장${idx+1}`}</span>
+                          <span className="text-xs text-gray-400 mt-1">{f.address || f.factory_address || ""}</span>
                         </div>
-                      ))}
+                        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
+                          {f.operation_status || "가동중"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
+                        {[["이용 비율", `${f.utilization_rate || 0}%`],["Scope 1", `${formatNum(f.scope1_emissions || f.scope1)} tCO₂e`],["Scope 2", `${formatNum(f.scope2_emissions || f.scope2)} tCO₂e`],["FEOC", `${f.feoc_raw_material_ratio || f.feoc_ratio || 0}%`],["TRIR", f.trir_safety_rate || f.trir || 0]].map((pair, i) => (
+                          <div key={i} className="p-3 text-center">
+                            <div className="text-gray-400 font-semibold mb-1">{pair[0]}</div>
+                            <div className="font-bold text-gray-800">{pair[1]}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )) : <p className="text-center text-gray-400 text-sm py-6">등록된 공장 정보가 없습니다.</p>}
+                  )) : <p className="text-center text-gray-400 text-sm py-6">등록된 공장 정보가 없습니다.</p>}
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         )}
       </div>
     </div>

@@ -21,6 +21,7 @@ from src.models.model import (
     companyRegisterModel, companyUpdateModel, companyListModel,
     factoryRegisterModel, factoryUpdateModel,
 )
+from src.utils.file import sampleFileDownloadProcess
 
 router = APIRouter()
 
@@ -174,3 +175,11 @@ def updateCompany(partnerId: str, companyUpdateModel: companyUpdateModel):
     description="기업 soft delete")
 def companyDelete(partnerId: str):
     return deleteCompanyProcess(partnerId)
+
+
+# ── 자가진단 및 행동강령 서약서 양식 다운로드
+@router.get("/file/sample/{filename}",
+    summary="양식 파일 다운로드 (sampleFiles 폴더)",
+    description="자가진단 체크리스트(.xlsx) 및 행동강령(.pdf) 양식 다운로드")
+def sampleFileDownload(filename: str):
+    return sampleFileDownloadProcess(filename)

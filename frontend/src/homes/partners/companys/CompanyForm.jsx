@@ -7,8 +7,11 @@ const CompanyForm = ({
   certs,
   setCerts,
   fileStates,
-  onSave,
+  onSaveComplete,
   onCancel,
+  loginData,
+  apiCompany,
+  isProfileIncomplete,
 }) => {
   const {
     selfAssessFileName,
@@ -61,22 +64,94 @@ const CompanyForm = ({
     }
   };
 
-  // 폼 제출 검증 및 핸들러
-  const handleSubmit = (e) => {
+  /* [v3.0] 양식 다운로드 — 차수별 */
+  const handleDownloadSelfAssess = () => {
+    const tier = loginData?.tier || 1;
+    const tl = loginData?.tier_label || "";
+    let fn = "";
+    if (tier === 1) fn = "[양식]자가진단_체크리스트(1차 협력사)_v0.1.xlsx";
+    else if (tier === 2) fn = "[양식]자가진단_체크리스트(2차 협력사)_v0.1.xlsx";
+    else if (tier === 3 && tl.includes("A")) fn = "[양식]자가진단_체크리스트(3차-A(채굴))_v0.1.xlsx";
+    else if (tier === 3) fn = "[양식]자가진단_체크리스트(3차-A+B(전체))_v0.1.xlsx";
+    else fn = "[양식]자가진단_체크리스트(1차 협력사)_v0.1.xlsx";
+    const base = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
+    window.open(`${base}/company/file/sample/${encodeURIComponent(fn)}`, "_blank");
+  };
+
+  const handleDownloadCoC = () => {
+    const base = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
+    window.open(`${base}/company/file/sample/${encodeURIComponent("CoC_Agreement_Form.pdf")}`, "_blank");
+  };
+
+  // [v3.0] 폼 제출 — 유효성 검사 + API 등록/수정 + 파일 업로드
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const pid = loginData?.partner_id;
+    if (!pid) { alert("로그인 정보가 없습니다."); return; }
 
-    if (!formData.companyName || !formData.ceoName || !formData.bizNo || !formData.address) {
-      alert("필수 입력값(*)을 기입해주세요.");
-      return;
+    const required = ["companyName", "ceoName", "bizNo", "foundedDate", "address", "scope1", "scope2", "feocRatio", "trir"];
+    for (let key of required) {
+      if (!formData[key] && formData[key] !== 0) { alert("모든 기본 정보 및 ESG 지표 항목을 입력해주세요."); return; }
     }
+    const certKeys = ["iso14001", "iso45001", "iatf16949", "rba", "rmap", "cmrt", "emat"];
+    for (let ck of certKeys) { if (!certs[ck]) { alert("7대 글로벌 ESG 인증 여부를 모두 선택해주세요."); return; } }
 
-    if (!selfAssessFileName || !cocFileName || certFileNames.length === 0 || evidenceFileNames.length === 0) {
-      alert("자가진단서, 행동강령 서약서, 글로벌 인증 증빙서류는 필수 업로드 항목입니다.");
-      return;
-    }
+    const existCerts = (fileStates.categorizedFiles?.cert || []).length;
+    if ((fileStates.certFileObjs?.length || 0) === 0 && existCerts === 0) { alert("글로벌 인증 증빙서류를 최소 1개 이상 업로드해야 합니다."); return; }
+    const existSA = (fileStates.categorizedFiles?.selfassess || []).length;
+    if (!fileStates.selfAssessFileObj && existSA === 0) { alert("자가진단 완료 서류 파일을 업로드해주세요."); return; }
+    const existEv = (fileStates.categorizedFiles?.evidence || []).length;
+    if ((fileStates.evidenceFileObjs?.length || 0) === 0 && existEv === 0) { alert("증빙자료 파일을 1개 이상 업로드해주세요."); return; }
+    const existCoc = (fileStates.categorizedFiles?.coc || []).length;
+    if (!fileStates.cocFileObj && existCoc === 0) { alert("행동강령 준수 서약서 파일을 업로드해주세요."); return; }
 
-    alert("기업 정보가 저장되었습니다.");
-    onSave();
+    const needsUpdate = !!apiCompany;
+    const apiData = {
+      partnerId: pid, companyName: formData.companyName, ceoName: formData.ceoName,
+      bizNo: formData.bizNo, founded: formData.foundedDate, address: formData.address,
+      size: formData.companySize, country: formData.country,
+      tier: Number(loginData?.tier) || 0, tierLabel: loginData?.tier_label || "",
+      parentId: apiCompany?.parent_id || "",
+      scope1: parseInt(formData.scope1) || 0, scope2: parseInt(formData.scope2) || 0,
+      feocRatio: parseFloat(formData.feocRatio) || 0, trir: parseFloat(formData.trir) || 0,
+      iso14001: certs.iso14001 || "N", iso45001: certs.iso45001 || "N",
+      iatf: certs.iatf16949 || "N", rba: certs.rba || "N",
+      rmap: certs.rmap || "N", cmrt: certs.cmrt || "N", emat: certs.emat || "N",
+    };
+
+    try {
+      const res = needsUpdate ? await PUT(`/company/${pid}`, apiData) : await POST("/company/register", apiData);
+      if (res && res.status === true) {
+        const isEdit = needsUpdate && !isProfileIncomplete;
+        alert("기업 정보가 성공적으로 " + (isEdit ? "수정" : "등록") + "되었습니다.");
+
+        const baseURL = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
+        const uploads = [];
+        if (fileStates.cocFileObj) {
+          const fd = new FormData(); fd.append("partnerId", pid); fd.append("file", fileStates.cocFileObj);
+          uploads.push(fetch(`${baseURL}/company/file/coc`, { method: "POST", body: fd, credentials: "include" }).then(r => r.json()).then(r => { if (r.status) fileStates.setCocFileObj(null); }));
+        }
+        if (fileStates.selfAssessFileObj) {
+          const fd = new FormData(); fd.append("partnerId", pid); fd.append("file", fileStates.selfAssessFileObj);
+          uploads.push(fetch(`${baseURL}/company/file/selfassess`, { method: "POST", body: fd, credentials: "include" }).then(r => r.json()).then(r => {
+            if (r.status) { fileStates.setSelfAssessFileObj(null); alert("자가진단 OCR 완료 (v" + (r.data?.version || 1) + ", " + (r.data?.total_answers || 0) + "개 답변)"); }
+            else alert("자가진단 OCR 실패: " + (r.message || ""));
+          }));
+        }
+        if (fileStates.evidenceFileObjs?.length > 0) {
+          const fd = new FormData(); fd.append("partnerId", pid);
+          fileStates.evidenceFileObjs.forEach(f => fd.append("files", f));
+          uploads.push(fetch(`${baseURL}/company/file/evidence`, { method: "POST", body: fd, credentials: "include" }).then(r => r.json()).then(r => { if (r.status) fileStates.setEvidenceFileObjs([]); }));
+        }
+        if (fileStates.certFileObjs?.length > 0) {
+          const fd = new FormData(); fd.append("partnerId", pid);
+          fileStates.certFileObjs.forEach(f => fd.append("files", f));
+          uploads.push(fetch(`${baseURL}/company/file/cert`, { method: "POST", body: fd, credentials: "include" }).then(r => r.json()).then(r => { if (r.status) fileStates.setCertFileObjs([]); }));
+        }
+        if (uploads.length > 0) await Promise.all(uploads).catch(e => console.error("파일 업로드 오류:", e));
+        if (onSaveComplete) onSaveComplete({ ...apiData, partner_id: pid });
+      } else { alert(res?.message || "저장 실패. 다시 시도해주세요."); }
+    } catch (err) { alert("서버 연결 오류: " + (err.message || "")); }
   };
 
   return (
@@ -384,13 +459,13 @@ const CompanyForm = ({
             </p>
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-bold text-[#03a94d]">1차 협력사용 자가진단 파일.xlsx</p>
+                <p className="text-sm font-bold text-[#03a94d]">{loginData?.tier}차 협력사용 자가진단 파일.xlsx</p>
                 <p className="text-[11px] text-gray-400 font-medium">Excel 양식 파일</p>
               </div>
               <button
                 type="button"
                 className="text-xs px-3.5 py-2 border border-gray-250 bg-white hover:bg-[#03a94d] hover:text-white rounded-lg font-bold text-gray-700 transition cursor-pointer"
-                onClick={() => alert("1차 협력사용 자가진단 파일.xlsx 양식 파일 다운로드가 완료되었습니다.")}
+                onClick={() => handleDownloadSelfAssess()}
               >
                 양식 다운로드
               </button>
@@ -485,7 +560,7 @@ const CompanyForm = ({
               <button
                 type="button"
                 className="text-xs px-3.5 py-2 border border-gray-250 bg-white hover:bg-[#03a94d] hover:text-white rounded-lg font-bold text-gray-700 transition cursor-pointer"
-                onClick={() => alert("행동강령 서약서 양식 파일 다운로드가 완료되었습니다.")}
+                onClick={() => handleDownloadCoC()}
               >
                 양식 다운로드
               </button>

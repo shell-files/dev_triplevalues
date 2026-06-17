@@ -248,7 +248,8 @@ const App = () => {
     }
 
     const pages = {
-      company_info: <CompanyInfo key={pageKey} />,
+      // company_info: <CompanyInfo key={pageKey} />,
+      company_info: <CompanyInfo key={pageKey} loginData={loginData} />,
       supplychainMap: <SupplyChainMap key={pageKey} />,
       po: <PoList key={pageKey} />,
       risk: <RiskList key={pageKey} />

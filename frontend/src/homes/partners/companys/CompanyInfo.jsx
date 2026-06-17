@@ -1,178 +1,148 @@
 import React, { useState, useEffect } from "react";
-import CompanyWelcome from "./CompanyWelcome";
-import CompanyForm from "./CompanyForm";
-import CompanyDetail from "./CompanyDetail";
+import CompanyWelcome from "@partners/companys/CompanyWelcome";
+import CompanyForm from "@partners/companys/CompanyForm";
+import CompanyDetail from "@partners/companys/CompanyDetail";
+import { GET } from "@utils/Network";
 
-const CompanyInfo = () => {
-  const [viewState, setViewState] = useState("welcome");
-  const [savedData, setSavedData] = useState(null);
+/* [v3.0] CompanyInfos.jsx 전 기능 이식 — is_registered 라우팅, API 연동, 파일/공장 상태 */
 
-  // 공장 목록 상태 (기본 샘플 레코드 1개 포함 및 가동상태 명시)
-  const [factories, setFactories] = useState([
-    {
-      id: 1,
-      factory_name: "울산 제1공장",
-      address: "울산광역시 북구 산업로 100",
-      operation_status: "가동",
-      utilization_rate: 60,
-      scope1_emissions: 52000,
-      scope2_emissions: 28000,
-      feoc_raw_material_ratio: 8.5,
-      trir_safety_rate: 0.12,
-    },
-  ]);
+const CompanyInfo = ({ loginData }) => {
+  const [viewState, setViewState] = useState("loading");
+  const [apiCompany, setApiCompany] = useState(null);
+  const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+  const [factories, setFactories] = useState([]);
+  const [categorizedFiles, setCategorizedFiles] = useState({ coc: [], selfassess: [], evidence: [], cert: [] });
 
-  // 기본 정보 및 ESG 성과 지표
   const [formData, setFormData] = useState({
-    companyName: "",
-    ceoName: "",
-    bizNo: "",
-    foundedDate: "",
-    address: "",
-    companySize: "",
-    country: "",
-    scope1: "",
-    scope2: "",
-    feocRatio: "",
-    trir: "",
+    companyName: "", ceoName: "", bizNo: "", foundedDate: "", address: "",
+    companySize: "", country: "", scope1: "", scope2: "", feocRatio: "", trir: "",
   });
-
-  // 7대 글로벌 인증 준수 현황
   const [certs, setCerts] = useState({
-    iso14001: "",
-    iso45001: "",
-    iatf16949: "",
-    rba: "",
-    rmap: "",
-    cmrt: "",
-    emat: "",
+    iso14001: "", iso45001: "", iatf16949: "", rba: "", rmap: "", cmrt: "", emat: "",
   });
 
-  // 업로드된 모의 파일 이름들
-  const [selfAssessFileName, setSelfAssessFileName] = useState("");
+  /* 파일 상태 — 파일명 표시 + File 객체 보존 (업로드용) */
   const [cocFileName, setCocFileName] = useState("");
+  const [selfAssessFileName, setSelfAssessFileName] = useState("");
   const [certFileNames, setCertFileNames] = useState([]);
   const [evidenceFileNames, setEvidenceFileNames] = useState([]);
+  const [cocFileObj, setCocFileObj] = useState(null);
+  const [selfAssessFileObj, setSelfAssessFileObj] = useState(null);
+  const [certFileObjs, setCertFileObjs] = useState([]);
+  const [evidenceFileObjs, setEvidenceFileObjs] = useState([]);
 
-  // viewState가 register로 변경될 때 기존 저장 데이터가 있다면 복원
+  const pid = loginData?.partner_id;
+
+  /* 마운트 시 API 조회 → is_registered 기반 viewState 분기 */
   useEffect(() => {
-    if (viewState === "register") {
-      if (savedData) {
-        setFormData(savedData.formData);
-        setCerts(savedData.certs);
-        setSelfAssessFileName(savedData.selfAssessFileName);
-        setCocFileName(savedData.cocFileName);
-        setCertFileNames(savedData.certFileNames);
-        setEvidenceFileNames(savedData.evidenceFileNames);
-      } else {
+    if (!pid) { setViewState("welcome"); return; }
+
+    GET(`/company/${pid}`).then(json => {
+      if (json.status && json.data) {
+        const c = json.data.company || json.data;
+        setApiCompany(c);
+
+        /* [v3.0] 9개 필수 필드 검증 — 하나라도 누락 시 welcome */
+        const requiredFields = ["biz_no", "founded", "address", "size", "country", "scope1", "scope2", "feoc_ratio", "trir"];
+        const incomplete = requiredFields.some(f => !c[f] && c[f] !== 0);
+        
+        setIsProfileIncomplete(incomplete);
+
+        /* 폼 데이터 바인딩 (신규 기업도 company_name/ceo_name 기본값 표시) */
         setFormData({
-          companyName: "",
-          ceoName: "",
-          bizNo: "",
-          foundedDate: "",
-          address: "",
-          companySize: "",
-          country: "",
-          scope1: "",
-          scope2: "",
-          feocRatio: "",
-          trir: "",
+          companyName: c.company_name || "", ceoName: c.ceo_name || "",
+          bizNo: c.biz_no || "", foundedDate: c.founded || "",
+          address: c.address || "", companySize: c.size || "",
+          country: c.country || "", scope1: c.scope1 ?? "",
+          scope2: c.scope2 ?? "", feocRatio: c.feoc_ratio ?? "",
+          trir: c.trir ?? "",
         });
         setCerts({
-          iso14001: "",
-          iso45001: "",
-          iatf16949: "",
-          rba: "",
-          rmap: "",
-          cmrt: "",
-          emat: "",
+          iso14001: c.iso14001 || "", iso45001: c.iso45001 || "",
+          iatf16949: c.iatf || "", rba: c.rba || "",
+          rmap: c.rmap || "", cmrt: c.cmrt || "", emat: c.emat || "",
         });
-        setSelfAssessFileName("");
-        setCocFileName("");
-        setCertFileNames([]);
-        setEvidenceFileNames([]);
+
+        /* 화면 분기: 미등록(incomplete) → welcome, 등록완료 → detail */
+        setViewState(incomplete ? "welcome" : "detail");
+
+        /* 공장 + 파일 조회 */
+        setFactories(json.data.factories || []);
+      } else {
+        setViewState("welcome");
       }
-    }
-  }, [viewState]);
+    }).catch(() => setViewState("welcome"));
 
-  // 폼 제출 완료 처리 (저장 및 제출)
-  const handleSave = () => {
-    // 로컬 상위 상태 캐싱
-    setSavedData({
-      formData,
-      certs,
-      selfAssessFileName,
-      cocFileName,
-      certFileNames,
-      evidenceFileNames,
-    });
+    /* 파일 목록 조회 */
+    GET(`/company/${pid}/files`).then(fj => {
+      if (fj.status && fj.data) {
+        setCocFileName(fj.data.coc[0]?.filename || "");
+        setSelfAssessFileName(fj.data.selfassess[0]?.filename || "");
+        setCertFileNames(fj.data.cert.map(f => f.filename));
+        setEvidenceFileNames(fj.data.evidence.map(f => f.filename));
+        setCategorizedFiles(fj.data);
+      }
+    }).catch(() => {});
+  }, [pid]);
 
+  /* 등록/수정 완료 후 → detail로 전환 + 데이터 갱신 */
+  const handleSaveComplete = (updatedCompany) => {
+    setApiCompany(updatedCompany);
+    setIsProfileIncomplete(false);
     setViewState("detail");
+    /* 파일 재조회 */
+    if (pid) {
+      GET(`/company/${pid}/files`).then(fj => {
+        if (fj.status && fj.data) setCategorizedFiles(fj.data);
+      });
+    }
   };
 
-  // 취소 처리
-  const handleCancel = () => {
-    setViewState("welcome");
-  };
+  const handleCancel = () => { setViewState(apiCompany && !isProfileIncomplete ? "detail" : "welcome"); };
+  const handleAddFactory = (f) => { setFactories(prev => [...prev, f]); };
+  const handleDeleteFactory = (id) => { setFactories(prev => prev.filter(f => f.id !== id)); };
+  const handleUpdateFactory = (uf) => { setFactories(prev => prev.map(f => f.id === uf.id ? uf : f)); };
 
-  // 신규 공장 추가 핸들러
-  const handleAddFactory = (newFactory) => {
-    setFactories((prev) => [...prev, newFactory]);
-  };
-
-  // 공장 삭제 핸들러
-  const handleDeleteFactory = (id) => {
-    setFactories((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  // 공장 수정 핸들러
-  const handleUpdateFactory = (updatedFactory) => {
-    setFactories((prev) =>
-      prev.map((f) => (f.id === updatedFactory.id ? updatedFactory : f))
-    );
-  };
-
-  // 자식 폼 컴포넌트에게 내릴 파일 상태 팩
   const fileStates = {
-    selfAssessFileName,
-    setSelfAssessFileName,
-    cocFileName,
-    setCocFileName,
-    certFileNames,
-    setCertFileNames,
-    evidenceFileNames,
-    setEvidenceFileNames,
+    cocFileName, setCocFileName, selfAssessFileName, setSelfAssessFileName,
+    certFileNames, setCertFileNames, evidenceFileNames, setEvidenceFileNames,
+    cocFileObj, setCocFileObj, selfAssessFileObj, setSelfAssessFileObj,
+    certFileObjs, setCertFileObjs, evidenceFileObjs, setEvidenceFileObjs,
+    categorizedFiles, setCategorizedFiles,
   };
+
+  if (viewState === "loading") return (
+    <div className="p-6 flex items-center justify-center text-gray-400 min-h-[300px]">데이터를 불러오는 중입니다...</div>
+  );
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard'] text-gray-700">
-      {/* 2. 웰컴 화면 분기 */}
       {viewState === "welcome" && (
         <CompanyWelcome onNavigateToRegister={() => setViewState("register")} />
       )}
-
-      {/* 3. 등록 및 수정 폼 화면 분기 */}
       {viewState === "register" && (
         <CompanyForm
-          formData={formData}
-          setFormData={setFormData}
-          certs={certs}
-          setCerts={setCerts}
+          formData={formData} setFormData={setFormData}
+          certs={certs} setCerts={setCerts}
           fileStates={fileStates}
-          onSave={handleSave}
+          onSaveComplete={handleSaveComplete}
           onCancel={handleCancel}
+          loginData={loginData}
+          apiCompany={apiCompany}
+          isProfileIncomplete={isProfileIncomplete}
         />
       )}
-
-      {/* 4. 상세 조회 뷰 화면 분기 */}
       {viewState === "detail" && (
         <CompanyDetail
-          savedData={savedData}
+          savedData={{ formData, certs, cocFileName, selfAssessFileName, certFileNames, evidenceFileNames}}
+          apiCompany={apiCompany}
           factories={factories}
+          categorizedFiles={categorizedFiles}
           onAddFactory={handleAddFactory}
           onDeleteFactory={handleDeleteFactory}
           onUpdateFactory={handleUpdateFactory}
           onNavigateToRegister={() => setViewState("register")}
+          loginData={loginData}
         />
       )}
     </div>

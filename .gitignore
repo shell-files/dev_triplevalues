@@ -219,6 +219,7 @@ esgExcelFiles/
 esgPdfFiles/
 licenseFiles/
 supportingFiles/
+sampleFiles/
 secrets/
 
 node_modules/

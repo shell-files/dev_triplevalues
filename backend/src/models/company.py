@@ -25,7 +25,7 @@ def registerCompanyProcess(model) -> dict:
     certFields = [model.cmrt, model.emat, model.iso14001, model.iso45001, model.iatf, model.rba, model.rmap]
     certCount = sum(1 for v in certFields if v == "Y")
 
-    sql = "SELECT * FROM `COMPANY` WHERE partner_id = ? AND delete_yn = 0"
+    sql = "SELECT * FROM `COMPANY` WHERE partner_id = ? AND delete_yn = 0 AND is_registered = 0"
     company = findOne(sql, (model.partnerId,))
     if not company:
         return responseModel(False, "기업 정보를 찾을 수 없습니다.")
