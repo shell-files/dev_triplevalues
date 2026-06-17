@@ -3,6 +3,7 @@ from starlette.websockets import WebSocketState
 from src.utils.settings import settings
 from typing import List, Dict
 from pprint import pprint
+from src.utils.db import findAll
 
 router = APIRouter()
 
@@ -64,12 +65,39 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token_uuid: str
     await manager.connect(room_id, websocket)
 
     try:
-        # 2. 메세지 전송
+        # 최초 입장 알림 생성
         await manager.broadcast_to_room(room_id, {
             "type": "SYSTEM",
             "sender": "System",
             "data": f"[{room_id}] 사용자 알림"
         })
+
+        # 연결 유지 무한 루프
+        while True:
+            data = await websocket.receive_json()
+
+            # ── ALARM 가져오기 ──
+            # alarmSql = """
+            #     SELECT 
+            #         `id`, 
+            #         `type`,
+            #         `level`,
+            #         `title`, 
+            #         `content`,
+            #         `path`,
+            #         `is_read`,
+            #         `created_at`
+            #     FROM ALARM
+            #     WHERE `delete_yn` = 0 AND `partner_id` = ?
+            # """
+            # notifications = findAll(alarmSql, (room_id,))
+
+            # 2. 메세지 전송
+            await manager.broadcast_to_room(room_id, {
+                "type": "SYSTEM",
+                "sender": room_id,
+                # "notifications": notifications
+            })
     except WebSocketDisconnect:
         pprint(f"[Info] {room_id} 방 연결을 정상적으로 종료했습니다.")
 
@@ -97,18 +125,21 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await manager.connect(room_id, websocket)
 
     try:
-        # 같은 방(room_id) 사용자들에게만 입장 알림
-        await manager.broadcast_to_room(room_id, {
-            "type": "AIRFLOW",
-            "sender": "System",
-            "message": f"airflow 알림"
-        })
         pprint(f"방 ID: {room_id}")
+        # 최초 입장 알림 생성
+        await manager.broadcast_to_room(room_id, {
+            "type": "SYSTEM",
+            "sender": "System",
+            "data": f"[{room_id}] 사용자 알림"
+        })
 
         # ★★★ 이 루프가 없으면 open 되자마자 바로 closed 됩니다! ★★★
         while True:
             # 클라이언트로부터 메시지를 수신 대기하며 연결을 유지합니다.
-            data = await websocket.receive_text()
+            data = await websocket.receive_json()
+
+            # 같은 방(room_id) 사용자들에게만 입장 알림
+            await manager.broadcast_to_room(room_id, data)
 
     except WebSocketDisconnect:
         pprint(f"[Info] {room_id} 방 연결을 정상적으로 종료했습니다.")

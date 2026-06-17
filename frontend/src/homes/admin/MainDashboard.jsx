@@ -229,7 +229,7 @@ ${d.aiRecommendation || "조치 사항이 준비 중입니다."}`
         {/* 우측: 알림 피드 */}
         <div className="lg:col-span-2">
           <Card className="p-5 flex flex-col h-[calc(100vh-290px)] min-h-[420px]">
-            <CardHeader className="shrink-0 mb-2"><CardTitle>AI Agent 리스크 실시간 알림 피드</CardTitle></CardHeader>
+            <CardHeader className="shrink-0 mb-2"><CardTitle>AI Agent 리스크 실시간 알림 피드 [<span style={{color: '#ef4444'}}>{alerts.length}</span>건]</CardTitle></CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 h-[calc(100%-3.5rem)]">
               {alertsLoading ? (
                 <div className="flex items-center justify-center py-10 text-gray-400 text-sm">알림 데이터를 불러오는 중입니다...</div>

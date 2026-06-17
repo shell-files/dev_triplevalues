@@ -24,7 +24,6 @@ const Login = ({ onLoginSuccess }) => {
     try {
       setLoading(true); setError("");
       const res = await POST("/auth/login", { email, loginType: "oem" });
-      console.log("handleOemLogin", res.status)
       if (res.status) {
         onLoginSuccess(res.data);
       } else { setError(res.message || "로그인에 실패했습니다."); }

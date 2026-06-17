@@ -4,7 +4,7 @@
 // [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (sessionStorage.page 동기화)
 // [v2.0] 2026-06-09 — 로그인 게이트, API 연동, 더미 제거, 권한별 메뉴, pageKey
 // ────────────────────────────────────────────────────────
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import SidebarNav from "@components/Layout/SidebarNav";
 import HeaderNav from "@components/Layout/HeaderNav";
 import Login from "@homes/logins/Login";  // ---- 로그인/로그아웃 복구
@@ -43,14 +43,13 @@ const App = () => {
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
   const [isConnected, setIsConnected] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [count, setCount] = useState(0);
   const ws = useRef(null); // WebSocket 객체
 
   /* 웹소켓 연결 핸들러 */
   const handleConnectChat = (partnerId) => {
     if (ws.current) ws.current.close();
     if (partnerId === undefined) return;
+    partnerId = 'HMOS-001';
 
     let baseURL = import.meta.env.VITE_API_URL_DOMAIN || "localhost:8000";
     ws.current = new WebSocket(`ws://tval.${baseURL}/ws/${partnerId}`);
@@ -59,14 +58,7 @@ const App = () => {
     ws.current.onmessage = (event) => {
       // 💡 서버에서 온 JSON 문자열을 자바스크립트 객체로 변환
       const resData = JSON.parse(event.data);
-      // console.log(resData);
-      // if (resData.sender != clientId) {
-      //   if (resData.type === 'tv') {
-      //     console.log(resData);
-      //     setMessages((prev) => [...prev, resData]);
-      //     setCount(c => c + 1);
-      //   }
-      // }
+      if(resData && (resData.type === "SYSTEM" || resData.type === "AIRFLOW")) handleMe();
     };
 
     ws.current.onclose = () => {
@@ -109,6 +101,21 @@ const App = () => {
         setIsLoading(false);
       });
   };
+
+  /* 사용자 정보 핸들러 */
+  const handleMe = useCallback(() => {
+    GET("/auth/me").then(res => {
+      if (res.status && res.data?.isLoggedIn) {
+        setLoginData(res.data);
+        const isOem = Number(res.data?.tier) === 0;
+        setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
+        setNotifications(res.data?.notifications);
+        setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
+        setIsLoggedIn(true);
+      }
+      setIsLoading(false);
+    });
+  }, []);
   
   /* [v2.3] 앱 마운트 시 - 초대 URL 감지 + BE 세션 조회 (sessionStorage 미사용) */
   useEffect(() => {

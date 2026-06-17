@@ -30,7 +30,6 @@ def getDashboardAlertsProcess(params):
             LEFT JOIN AI_AGENT_RULE r ON a.indicator_no = r.indicator_no
             WHERE a.delete_yn = 0
             ORDER BY a.detected_at DESC
-            LIMIT 20
         """
         results = findAll(sql, None) or []
 
