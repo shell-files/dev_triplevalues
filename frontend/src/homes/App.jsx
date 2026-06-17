@@ -16,6 +16,7 @@ import PoList from "@homes/admin/pos/PoList";
 import RiskList from "@homes/admin/risks/RiskList";
 import CompanyInfo from "@partners/companys/CompanyInfo";
 import PartnerListSupplier from "@partners/subPartners/PartnerList";
+import PartnerDetailSupplier from "@partners/subPartners/PartnerDetail";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -229,9 +230,11 @@ const App = () => {
     if (page === "partner_list") {
       if (selPartner) {
         return (
-          <PlaceholderPage
-            title="하위 협력사 상세 정보"
-            desc="하위 협력사의 상세 프로필 마이그레이션 스프린트 가동을 대기 중입니다."
+          <PartnerDetailSupplier
+            key={pageKey}
+            partner={selPartner}
+            onBack={() => setSelPartner(null)}
+            loginData={loginData}
           />
         );
       }
