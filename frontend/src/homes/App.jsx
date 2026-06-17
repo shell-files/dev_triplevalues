@@ -37,7 +37,7 @@ const App = () => {
   const [showNotif, setShowNotif] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState("현대모비스");
-  const [notifications, setNotifications] = useState(null);
+  const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
@@ -81,7 +81,7 @@ const App = () => {
     const isOem = Number(data?.tier) === 0;
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
     setPage(isOem ? "dashboard" : "company_info");
-    handleConnectChat(data?.partner_id || undefined);
+    // handleConnectChat(data?.partner_id || undefined);
     /* [v2.4] tokenUuid를 document.cookie에 저장 (랜덤 UUID만, 민감 데이터 아님) */
     // if (data?.tokenUuid) {
     //   document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
@@ -135,7 +135,7 @@ const App = () => {
         const isOem = Number(res.data?.tier) === 0;
         setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
         setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
-        handleConnectChat(res.data?.partner_id || undefined);
+        // handleConnectChat(res.data?.partner_id || undefined);
         setIsLoggedIn(true);
       }
     });
