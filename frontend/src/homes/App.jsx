@@ -41,16 +41,50 @@ const App = () => {
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
+  const [isConnected, setIsConnected] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [count, setCount] = useState(0);
+  const ws = useRef(null); // WebSocket 객체
+
+  /* 웹소켓 연결 핸들러 */
+  const handleConnectChat = (id) => {
+    if (ws.current) ws.current.close();
+    let pId = null;
+    if (id !== undefined) pId = id;
+    if (pId === null || pId === undefined) return;
+
+    ws.current = new WebSocket(`ws://localhost:8000/ws/${pId}`);
+    ws.current.onopen = () => setIsConnected(true);
+
+    ws.current.onmessage = (event) => {
+      // 💡 서버에서 온 JSON 문자열을 자바스크립트 객체로 변환
+      const resData = JSON.parse(event.data);
+      console.log(resData);
+      // if (resData.sender != clientId) {
+      //   if (resData.type === 'tv') {
+      //     console.log(resData);
+      //     setMessages((prev) => [...prev, resData]);
+      //     setCount(c => c + 1);
+      //   }
+      // }
+    };
+
+    ws.current.onclose = () => {
+      setIsConnected(false);
+    };
+  };
+
   /* 로그인 성공 핸들러 */
   const handleLoginSuccess = (data) => {
     setLoginData(data);
     const isOem = Number(data?.tier) === 0;
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
     setPage(isOem ? "dashboard" : "company_info");
+    handleConnectChat(data?.partner_id || undefined);
     /* [v2.4] tokenUuid를 document.cookie에 저장 (랜덤 UUID만, 민감 데이터 아님) */
-    if (data?.tokenUuid) {
-      document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
-    }
+    // if (data?.tokenUuid) {
+    //   document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
+    // }
     
     setIsLoggedIn(true);
   };
@@ -100,6 +134,7 @@ const App = () => {
         const isOem = Number(res.data?.tier) === 0;
         setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
         setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
+        handleConnectChat(data?.partner_id || undefined);
         setIsLoggedIn(true);
       }
     });
