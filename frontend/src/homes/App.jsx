@@ -18,6 +18,7 @@ import CompanyInfo from "@partners/companys/CompanyInfo";
 import PartnerListSupplier from "@partners/subPartners/PartnerList";
 import PartnerDetailSupplier from "@partners/subPartners/PartnerDetail";
 import RawMaterialList from "@partners/materials/RawMaterialList";
+import RawMaterialVerify from "@partners/materials/RawMaterialVerify";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -283,20 +284,15 @@ const App = () => {
         }
         if (materialMode === "verify") {
           return (
-            <div className="p-6 space-y-4 bg-slate-50 min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard']">
-              <div>
-                <button onClick={onBack} className="text-sm bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                  </svg>
-                  목록으로 돌아가기
-                </button>
-              </div>
-              <PlaceholderPage 
-                title={`하위 협력사 제출 자료 검증 (${selMaterial.material_name})`} 
-                desc="하위 협력사 제출 건 검증 패널(2Depth-A) 영역입니다. (추후 실제 검증 컴포넌트 연동 예정)" 
-              />
-            </div>
+            <RawMaterialVerify
+              material={selMaterial}
+              loginData={loginData}
+              onBack={onBack}
+              onVerifyAction={(id, status, payload) => {
+                setSelMaterial(null);
+                setMaterialMode("list");
+              }}
+            />
           );
         }
         if (materialMode === "detail") {
