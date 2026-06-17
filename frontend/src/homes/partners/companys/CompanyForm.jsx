@@ -75,6 +75,7 @@ const CompanyForm = ({
       return;
     }
 
+    alert("기업 정보가 저장되었습니다.");
     onSave();
   };
 
@@ -101,7 +102,7 @@ const CompanyForm = ({
         {/* 카드 1: 기본 정보 및 ESG 성과 지표 입력 */}
         <Card className="p-6">
           <CardHeader className="border-b border-gray-300 pb-3 mb-4">
-            <CardTitle className="text-base text-gray-900 ">기본 정보 및 ESG 성과 지표 입력</CardTitle>
+            <CardTitle className="text-sm font-bold text-[#03a94d]">기본 정보 및 ESG 성과 지표 입력</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -264,7 +265,7 @@ const CompanyForm = ({
         {/* 카드 2: 글로벌 인증 준수 현황 */}
         <Card className="p-6">
           <CardHeader className="border-b border-gray-300 pb-3 mb-4">
-            <CardTitle className="text-base text-gray-900">글로벌 인증 준수 현황</CardTitle>
+            <CardTitle className="text-sm font-bold text-[#03a94d]">글로벌 인증 준수 현황</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
@@ -374,7 +375,7 @@ const CompanyForm = ({
         {/* 카드 3: 자가진단 및 증빙 자료 제출 */}
         <Card className="p-6">
           <CardHeader className="border-b border-gray-300 pb-3 mb-4">
-            <CardTitle className="text-base text-gray-900">자가진단 및 증빙 자료 제출</CardTitle>
+            <CardTitle className="text-sm font-bold text-[#03a94d]">자가진단 및 증빙 자료 제출</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-xs text-gray-500 leading-normal font-medium">
@@ -469,7 +470,7 @@ const CompanyForm = ({
         {/* 카드 4: 협력사 행동강령 준수 서약 및 동의 */}
         <Card className="p-6">
           <CardHeader className="border-b border-gray-300 pb-3 mb-4">
-            <CardTitle className="text-base text-gray-900">협력사 행동강령 준수 서약 및 동의</CardTitle>
+            <CardTitle className="text-sm font-bold text-[#03a94d]">협력사 행동강령 준수 서약 및 동의</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-xs text-gray-500 leading-normal font-medium">

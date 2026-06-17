@@ -86,11 +86,10 @@ const CompanyDetail = ({
     const isY = val === "Y";
     return (
       <span
-        className={`inline-block text-[12px] px-2 py-0.5 rounded font-bold border text-center ${
-          isY
+        className={`inline-block text-[12px] px-2 py-0.5 rounded font-bold border text-center ${isY
             ? "bg-emerald-50 text-emerald-700 border-emerald-100"
             : "bg-red-50 text-red-600 border-red-100"
-        }`}
+          }`}
       >
         {isY ? "Y (준수)" : "N (미준수)"}
       </span>
@@ -148,8 +147,9 @@ const CompanyDetail = ({
         </div>
       );
     }
+    const hasScroll = fileNames.length >= 7;
     return (
-      <div className="space-y-2">
+      <div className={`space-y-2 ${hasScroll ? "max-h-[360px] overflow-y-auto pr-1" : ""}`}>
         {fileNames.map((name, idx) => (
           <div
             key={idx}
@@ -312,11 +312,10 @@ const CompanyDetail = ({
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`px-6 py-3 font-bold border-b-2 tracking-tight whitespace-nowrap cursor-pointer transition-colors ${
-              activeTab === key
+            className={`px-6 py-3 font-bold border-b-2 tracking-tight whitespace-nowrap cursor-pointer transition-colors ${activeTab === key
                 ? "border-[#03a94d] text-[#03a94d]"
                 : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
+              }`}
           >
             {label}
           </button>
@@ -331,7 +330,7 @@ const CompanyDetail = ({
             {/* 기본 협력사 정보 */}
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-100 pb-2 mb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">기본 기업 정보</CardTitle>
+                <CardTitle className="text-sm font-bold text-[#03a94d]">기본 기업 정보</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -359,7 +358,7 @@ const CompanyDetail = ({
             {/* ESG 주요 지표 데이터 */}
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-100 pb-2 mb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">ESG 주요 지표 데이터</CardTitle>
+                <CardTitle className="text-sm font-bold text-[#03a94d]">ESG 주요 지표 데이터</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -387,7 +386,7 @@ const CompanyDetail = ({
             {/* 글로벌 인증 현황 */}
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-100 pb-2 mb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">
+                <CardTitle className="text-sm font-bold text-[#03a94d]">
                   글로벌 인증 및 이니셔티브 준수 현황
                 </CardTitle>
               </CardHeader>
@@ -421,7 +420,7 @@ const CompanyDetail = ({
           <div className="space-y-6 animate-fade-in">
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-50 pb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">자가진단 완료 문서</CardTitle>
+                <CardTitle className="text-sm font-bold text-[#03a94d]">자가진단 완료 문서</CardTitle>
               </CardHeader>
               <CardContent>
                 {renderFileListSection("자가진단 완료 문서", savedData?.selfAssessFileName)}
@@ -430,7 +429,7 @@ const CompanyDetail = ({
 
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-50 pb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">자가진단 증빙 자료</CardTitle>
+                <CardTitle className="text-sm font-bold text-[#03a94d]">자가진단 증빙 자료</CardTitle>
               </CardHeader>
               <CardContent>
                 {renderMultiFileListSection("자가진단 증빙 자료", savedData?.evidenceFileNames)}
@@ -439,7 +438,7 @@ const CompanyDetail = ({
 
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-50 pb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">글로벌 인증 증빙 자료</CardTitle>
+                <CardTitle className="text-sm font-bold text-[#03a94d]">글로벌 인증 증빙 자료</CardTitle>
               </CardHeader>
               <CardContent>
                 {renderMultiFileListSection("글로벌 인증 증빙 자료", savedData?.certFileNames)}
@@ -448,7 +447,7 @@ const CompanyDetail = ({
 
             <Card className="p-5 space-y-4">
               <CardHeader className="border-b border-gray-50 pb-2">
-                <CardTitle className="text-sm font-bold text-gray-900">행동강령 준수 서약서</CardTitle>
+                <CardTitle className="text-sm font-bold text-[#03a94d]">행동강령 준수 서약서</CardTitle>
               </CardHeader>
               <CardContent>
                 {renderFileListSection("행동강령 준수 서약서", savedData?.cocFileName)}
@@ -460,28 +459,28 @@ const CompanyDetail = ({
         {/* 3. 공장정보 탭 */}
         {activeTab === "factories" && (
           <div className="space-y-6 animate-fade-in">
-            <Card className="p-6 bg-white space-y-6">
-              {/* 가중합산 요약 보드 */}
-              <div>
-                <div className="font-bold text-[#03a94d] text-base mb-2">
-                  ESG 가중합산 요약 (공장별 이용 비율 반영)
-                </div>
-                <div className="grid grid-cols-4 border-b border-gray-200 pb-4 text-sm gap-4">
-                  {[
-                    ["Scope 1", `${formatNum(savedData?.formData?.scope1)} tCO2e`],
-                    ["Scope 2", `${formatNum(savedData?.formData?.scope2)} tCO2e`],
-                    ["FEOC 비중", `${savedData?.formData?.feocRatio || 0}%`],
-                    ["TRIR", savedData?.formData?.trir || 0],
-                  ].map(([label, val], i) => (
-                    <div key={i}>
-                      <div className="text-gray-400 font-semibold">{label}</div>
-                      <div className="font-bold text-gray-800 mt-1">{val}</div>
-                    </div>
-                  ))}
-                </div>
+            {/* 가중합산 요약 보드 */}
+            <Card className="p-6 bg-white">
+              <div className="font-bold text-[#03a94d] text-base mb-2">
+                ESG 가중합산 요약 (공장별 이용 비율 반영)
               </div>
+              <div className="grid grid-cols-4 text-sm gap-4">
+                {[
+                  ["Scope 1", `${formatNum(savedData?.formData?.scope1)} tCO2e`],
+                  ["Scope 2", `${formatNum(savedData?.formData?.scope2)} tCO2e`],
+                  ["FEOC 비중", `${savedData?.formData?.feocRatio || 0}%`],
+                  ["TRIR", savedData?.formData?.trir || 0],
+                ].map(([label, val], i) => (
+                  <div key={i}>
+                    <div className="text-gray-400 font-semibold">{label}</div>
+                    <div className="font-bold text-gray-800 mt-1">{val}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
 
-              {/* 공장 목록 조회 및 인라인 에디팅 토글 */}
+            {/* 공장 목록 조회 및 인라인 에디팅 토글 */}
+            <Card className="p-6 bg-white space-y-6">
               <div>
                 <div className="border-l-5 border-emerald-500 pl-2 pb-2 mb-4 font-bold text-gray-900 text-base">
                   공장 목록 ({factories.length}개)
@@ -682,15 +681,17 @@ const CompanyDetail = ({
                           className="border border-gray-200 bg-white rounded-xl p-4 space-y-3 shadow-3xs hover:border-gray-300 transition-colors"
                         >
                           <div className="flex justify-between items-start">
-                            <div className="flex flex-col text-left">
+                            <div className="flex flex-col text-left items-start">
+                              <div className="mb-1.5">
+                                {renderOperationStatusBadge(f.operation_status)}
+                              </div>
                               <span className="font-bold text-gray-900 text-sm">
                                 {f.factory_name || `공장 ${idx + 1}`}
                               </span>
                               <span className="text-xs text-gray-400 mt-1">{f.address || "-"}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                              {renderOperationStatusBadge(f.operation_status)}
-                              <div className="flex gap-1.5 ml-2 pl-3">
+                              <div className="flex gap-1.5 ml-2">
                                 <button
                                   type="button"
                                   onClick={() => startEdit(f)}
