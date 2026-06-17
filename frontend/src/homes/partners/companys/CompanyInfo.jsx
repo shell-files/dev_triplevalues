@@ -146,12 +146,6 @@ const CompanyInfo = () => {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard'] text-gray-700">
-      {/* 1. 페이지 공통 헤더 배너 (어드민 UI 1:1 대칭화) */}
-      <div>
-        <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">기업 정보 관리</h2>
-        <p className="text-sm text-gray-400 mt-0.5">플랫폼 연동을 위한 협력사 기본 정보 및 글로벌 인증 자산 마스터 관리</p>
-      </div>
-
       {/* 2. 웰컴 화면 분기 */}
       {viewState === "welcome" && (
         <CompanyWelcome onNavigateToRegister={() => setViewState("register")} />

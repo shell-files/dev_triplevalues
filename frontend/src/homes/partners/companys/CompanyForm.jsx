@@ -80,8 +80,13 @@ const CompanyForm = ({
 
   return (
     <div id="company-form-section" className="w-full space-y-6 flex-1">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-gray-900">신규 기업 정보 등록</h3>
+      {/* 페이지 헤더 배너 */}
+      <div>
+        <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">기업 정보 등록</h2>
+        <p className="text-sm text-gray-400 mt-0.5">플랫폼 연동을 위한 협력사 기본 정보 및 글로벌 인증 자산 마스터 관리</p>
+      </div>
+
+      <div className="flex justify-end">
         <button
           type="button"
           id="btn-cancel-form"
@@ -102,7 +107,7 @@ const CompanyForm = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 좌측: 기본 기업 정보 */}
               <div className="space-y-4">
-                <h4 className="text-xs font-extrabold text-[#03a94d] uppercase tracking-wider">기본 기업 정보</h4>
+                <h4 className="text-base font-bold text-[#03a94d] uppercase tracking-wider">기본 기업 정보</h4>
                 <div>
                   <label className="text-xs font-bold text-gray-600 block mb-1">기업명 *</label>
                   <input
@@ -196,7 +201,7 @@ const CompanyForm = ({
 
               {/* 우측: 핵심 ESG 지표 */}
               <div className="space-y-4 md:border-l md:pl-6 md:border-gray-100">
-                <h4 className="text-xs font-extrabold text-[#03a94d] uppercase tracking-wider">핵심 ESG 지표</h4>
+                <h4 className="text-base font-bold text-[#03a94d] uppercase tracking-wider">핵심 ESG 지표</h4>
                 <div>
                   <label className="text-xs font-bold text-gray-600 block mb-1">
                     Scope 1 배출량 (tCO2e) *

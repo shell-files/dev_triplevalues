@@ -276,6 +276,12 @@ const CompanyDetail = ({
 
   return (
     <div id="company-detail-section" className="w-full space-y-6 flex-1">
+      {/* 페이지 헤더 배너 */}
+      <div>
+        <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">기업 정보 상세</h2>
+        <p className="text-sm text-gray-400 mt-0.5">플랫폼 연동을 위한 협력사 기본 정보 및 글로벌 인증 자산 마스터 관리</p>
+      </div>
+
       {/* 상단 액션 바 */}
       <div className="flex items-center justify-between border-b border-gray-150 pb-4">
         <div>
