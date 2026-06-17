@@ -30,6 +30,7 @@ const PlaceholderPage = ({ title, desc }) => (
 );
 
 const App = () => {
+  const [isLoading, setIsLoading] = useState(true);  // ---- 백엔드 로딩 상태 (0)
   const [isLoggedIn, setIsLoggedIn] = useState(false);  // ---- 로그인 상태 (1)
   const [loginData, setLoginData] = useState(null); // -------- 로그인 상태 (2)
   const [page, setPage] = useState("dashboard");
@@ -88,6 +89,7 @@ const App = () => {
     // }
     
     setIsLoggedIn(true);
+    setIsLoading(false);
   };
     
   /* 로그아웃 핸들러 */
@@ -100,12 +102,14 @@ const App = () => {
         setLoginData(null);
         setPage("dashboard");
         setUserRole("현대모비스");
+        setIsLoading(true);
       });
   };
   
   /* [v2.3] 앱 마운트 시 - 초대 URL 감지 + BE 세션 조회 (sessionStorage 미사용) */
   useEffect(() => {
     if (isLoggedIn) return;
+    setIsLoading(true);
 
     /* 초대 URL 감지: /invite/{partnerId} */
     const urlPath = window.location.pathname;
@@ -137,6 +141,7 @@ const App = () => {
         setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
         // handleConnectChat(res.data?.partner_id || undefined);
         setIsLoggedIn(true);
+        setIsLoading(false);
       }
     });
   }, []);
@@ -151,8 +156,11 @@ const App = () => {
       });
   }, [userRole, isLoggedIn]);
   
+  if (isLoading) {
+    return <></>
+  }
+
   /* 로그인 전 가드 */
-  console.log(isLoggedIn)
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
