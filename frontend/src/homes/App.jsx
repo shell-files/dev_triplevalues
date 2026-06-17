@@ -15,6 +15,7 @@ import SupplyChainMap from "@homes/admin/maps/SupplyChainMap";
 import PoList from "@homes/admin/pos/PoList";
 import RiskList from "@homes/admin/risks/RiskList";
 import CompanyInfo from "@partners/companys/CompanyInfo";
+import PartnerListSupplier from "@partners/subPartners/PartnerList";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -46,7 +47,7 @@ const App = () => {
   const [isConnected, setIsConnected] = useState(false);
   const ws = useRef(null); // WebSocket 객체
 
- /* 웹소켓 연결 핸들러 */
+  /* 웹소켓 연결 핸들러 */
   const handleConnectChat = (partnerId) => {
     if (ws.current) ws.current.close();
     if (partnerId === undefined) return;
@@ -59,7 +60,7 @@ const App = () => {
     ws.current.onmessage = (event) => {
       // 💡 서버에서 온 JSON 문자열을 자바스크립트 객체로 변환
       const resData = JSON.parse(event.data);
-      if(resData && (resData.type === "SYSTEM" || resData.type === "AIRFLOW")) handleMe();
+      if (resData && (resData.type === "SYSTEM" || resData.type === "AIRFLOW")) handleMe();
     };
 
     ws.current.onclose = () => {
@@ -83,16 +84,16 @@ const App = () => {
     // if (data?.tokenUuid) {
     //   document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
     // }
-    
+
     setIsLoggedIn(true);
     setIsLoading(false);
   };
-    
+
   /* 로그아웃 핸들러 */
   const handleLogout = () => {
     setIsLoading(true);
     POST("/auth/logout")
-     .then(json => {
+      .then(json => {
         setIsLoggedIn(false);
         /* [v2.4] 쿠키 삭제 */
         document.cookie = "esg_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -117,7 +118,7 @@ const App = () => {
       setIsLoading(false);
     });
   }, []);
-  
+
   /* [v2.3] 앱 마운트 시 - 초대 URL 감지 + BE 세션 조회 (sessionStorage 미사용) */
   useEffect(() => {
     if (isLoggedIn) return;
@@ -158,7 +159,7 @@ const App = () => {
       setIsLoading(false);
     });
   }, []);
-  
+
   /* 로그인 후 협력사 목록 API 조회 */
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -168,25 +169,25 @@ const App = () => {
         else setApiCompanies([]);
       });
   }, [userRole, isLoggedIn]);
-  
+
   if (isLoading) {
     return <></>
   }
-  
+
   /* 로그인 전 가드 */
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   const unread = notifications.filter((n) => n.is_read === 0).length;
-  
+
   const handleResetPage = () => {
     setPage("dashboard");
     setSelPartner(null);
   };
 
   const handleMenuChange = (targetPage) => {
-    if(targetPage === null) targetPage = (userRole === '현대모비스') ? "dashboard" : "company_info";  
+    if (targetPage === null) targetPage = (userRole === '현대모비스') ? "dashboard" : "company_info";
     setPage(targetPage);
     setShowNotif(false);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
@@ -200,7 +201,7 @@ const App = () => {
     if (page === "dashboard") {
       return <MainDashboard key={pageKey} />;
     }
-    
+
     if (page === "partner") {
       if (selPartner) {
         return (
@@ -224,7 +225,25 @@ const App = () => {
         />
       );
     }
-    
+
+    if (page === "partner_list") {
+      if (selPartner) {
+        return (
+          <PlaceholderPage
+            title="하위 협력사 상세 정보"
+            desc="하위 협력사의 상세 프로필 마이그레이션 스프린트 가동을 대기 중입니다."
+          />
+        );
+      }
+      return (
+        <PartnerListSupplier
+          key={pageKey}
+          loginData={loginData}
+          setSelPartner={setSelPartner}
+        />
+      );
+    }
+
     const pages = {
       company_info: <CompanyInfo key={pageKey} />,
       supplychainMap: <SupplyChainMap key={pageKey} />,
@@ -240,16 +259,16 @@ const App = () => {
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
-      
+
       <SidebarNav
         page={page}
         setPage={handleMenuChange}
         userRole={userRole}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
-        // navigateTo={navigateTo}
+      // navigateTo={navigateTo}
       />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <HeaderNav
           userRole={userRole}
@@ -265,7 +284,7 @@ const App = () => {
           onResetPage={handleResetPage}
           setPage={handleMenuChange}
         />
-        
+
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 relative pt-16">
           {renderContent()}
         </main>
