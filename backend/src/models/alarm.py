@@ -17,9 +17,12 @@ from typing import Optional, List
 from src.utils.tokenset import decryptFromJwe
 from src.utils.db import findAll, findOne, save
 from src.utils.rediscl import getTokenRedis
-from src.models.model import responseModel, alarmListModel, alarmReadModel, alarmSendModel, alarmResponse
+from src.models.model import responseModel, alarmListModel, alarmReadModel, alarmSendModel, alarmResponse, alarmReadReqModel
 from src.models.notify import sendNotify, notifyType, getRelativeTime
 from src.utils.validatetok import validateToken
+from src.utils.settings import settings
+from fastapi import Request
+from src.utils.rediscl import client1
 
 # 알림 타입 전체 목록 (typeCounts 집계용 - AI_AGENT 타입 추가 반영)
 allTypes = [
@@ -210,6 +213,58 @@ def readAlarmProcess(alarmReadModel: alarmReadModel, companyId: int) -> alarmRes
         errMsg = str(e)
         print(f"[readAlarmProcess ERROR] {errMsg}")
         return alarmResponse(False, f"오류 발생 : {errMsg}", {})
+    
+def readAlarmReqProcess(request: Request, alarmReadModel : alarmReadReqModel, type: bool = True) -> responseModel:
+    """
+    알림 읽음 처리 (id 조건 매핑)
+    """
+    try:
+        tokenUuid = request.headers.get("X-Token-UUID", "") or request.cookies.get(settings.cookie_key, "")
+        if not tokenUuid:
+            return responseModel(False, "", {"isLoggedIn": False})
+ 
+        # Redis에서 세션 데이터 직접 조회
+        import json as _json
+        sessionRaw = client1.get(f"session:{tokenUuid}")
+        if not sessionRaw:
+            return responseModel(False, "", {"isLoggedIn": False})
+ 
+        sessionData = _json.loads(sessionRaw)
+        partnerId = sessionData.get("partner_id", "")
+
+        alarmUpSql = "UPDATE `ALARM` SET is_read = 1 WHERE `partner_id` = ? "
+
+        if type == True:
+            alarmUpSql += " AND `id` = ?"
+            params = (partnerId, alarmReadModel.id)
+        else:
+            params = (partnerId,)
+
+        save(alarmUpSql, params)
+
+        # ── ALARM 가져오기 ──
+        alarmSql = """
+            SELECT 
+                `id`, 
+                `type`,
+                `level`,
+                `title`, 
+                `content`,
+                `path`,
+                `is_read`,
+                `created_at`
+            FROM ALARM
+            WHERE `delete_yn` = 0 AND `partner_id` = ?
+        """
+        notifications = findAll(alarmSql, (partnerId,))
+
+        return responseModel(True, "알림 읽음 처리가 완료되었습니다.", {
+            "notifications": notifications
+        })
+    except Exception as e:
+        errMsg = str(e)
+        print(f"[readAlarmProcess ERROR] {errMsg}")
+        return responseModel(False, f"오류 발생 : {errMsg}", {})
 
 
 def deleteAlarmProcess(alarmId: int, uuid: str, companyId: int) -> alarmResponse:

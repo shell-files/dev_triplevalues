@@ -30,7 +30,7 @@ const PlaceholderPage = ({ title, desc }) => (
 );
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);  // ---- 백엔드 로딩 상태 (0)
+  const [isLoading, setIsLoading] = useState(false);  // ---- 백엔드 로딩 상태 (0)
   const [isLoggedIn, setIsLoggedIn] = useState(false);  // ---- 로그인 상태 (1)
   const [loginData, setLoginData] = useState(null); // -------- 로그인 상태 (2)
   const [page, setPage] = useState("dashboard");
@@ -38,7 +38,7 @@ const App = () => {
   const [showNotif, setShowNotif] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState("현대모비스");
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
 
@@ -50,7 +50,7 @@ const App = () => {
   /* 웹소켓 연결 핸들러 */
   const handleConnectChat = (partnerId) => {
     if (ws.current) ws.current.close();
-    if (id === undefined) return;
+    if (partnerId === undefined) return;
 
     let baseURL = import.meta.env.VITE_API_URL_DOMAIN || "localhost:8000";
     ws.current = new WebSocket(`ws://tval.${baseURL}/ws/${partnerId}`);
@@ -59,7 +59,7 @@ const App = () => {
     ws.current.onmessage = (event) => {
       // 💡 서버에서 온 JSON 문자열을 자바스크립트 객체로 변환
       const resData = JSON.parse(event.data);
-      console.log(resData);
+      // console.log(resData);
       // if (resData.sender != clientId) {
       //   if (resData.type === 'tv') {
       //     console.log(resData);
@@ -72,6 +72,10 @@ const App = () => {
     ws.current.onclose = () => {
       setIsConnected(false);
     };
+
+    ws.current.onerror = (err) => {
+      console.error("❌ 웹소켓 에러 발생:", err);
+    };
   };
 
   /* 로그인 성공 핸들러 */
@@ -79,6 +83,7 @@ const App = () => {
     setLoginData(data);
     const isOem = Number(data?.tier) === 0;
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
+    setNotifications(data?.notifications);
     setPage(isOem ? "dashboard" : "company_info");
     handleConnectChat(data?.partner_id || undefined);
     /* [v2.4] tokenUuid를 document.cookie에 저장 (랜덤 UUID만, 민감 데이터 아님) */
@@ -92,7 +97,8 @@ const App = () => {
     
   /* 로그아웃 핸들러 */
   const handleLogout = () => {
-    POST("/auth/logout", { method: "POST" })
+    setIsLoading(true);
+    POST("/auth/logout")
      .then(json => {
         setIsLoggedIn(false);
         /* [v2.4] 쿠키 삭제 */
@@ -100,7 +106,7 @@ const App = () => {
         setLoginData(null);
         setPage("dashboard");
         setUserRole("현대모비스");
-        setIsLoading(true);
+        setIsLoading(false);
       });
   };
   
@@ -136,11 +142,12 @@ const App = () => {
         setLoginData(res.data);
         const isOem = Number(res.data?.tier) === 0;
         setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
+        setNotifications(res.data?.notifications);
         setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
         handleConnectChat(res.data?.partner_id || undefined);
         setIsLoggedIn(true);
-        setIsLoading(false);
       }
+      setIsLoading(false);
     });
   }, []);
   
@@ -163,7 +170,7 @@ const App = () => {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const unread = notifications.filter((n) => !n.read).length;
+  const unread = notifications.filter((n) => n.is_read === 0).length;
   
   const handleResetPage = () => {
     setPage("dashboard");
@@ -171,7 +178,9 @@ const App = () => {
   };
 
   const handleMenuChange = (targetPage) => {
+    if(targetPage === null) targetPage = (userRole === '현대모비스') ? "dashboard" : "company_info";  
     setPage(targetPage);
+    setShowNotif(false);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
     /* [v2.3] BE에 현재 페이지 저장 (새로고침 복원용) */
@@ -245,6 +254,7 @@ const App = () => {
           handleLogout={handleLogout}
           loginData={loginData}
           onResetPage={handleResetPage}
+          setPage={handleMenuChange}
         />
         
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 relative pt-16">

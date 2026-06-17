@@ -8,7 +8,7 @@
 # ────────────────────────────────────────────────────────
 
 from fastapi import Response, Request
-from src.utils.db import findOne, save
+from src.utils.db import findOne, save, findAll
 from src.utils.tokenset import createUserTokens
 from src.utils.rediscl import setTokenRedis, client1
 from src.utils.kafkasv import sendToKafka
@@ -88,6 +88,22 @@ def loginProcess(response: Response, request: Request, loginModel):
             VALUES (?, ?, ?)
         """
         save(refreshTokenSql, (company["partner_id"], refreshToken, tokenUuid))
+
+        # ── ALARM 가져오기 ──
+        alarmSql = """
+            SELECT 
+                `id`, 
+                `type`,
+                `level`,
+                `title`, 
+                `content`,
+                `path`,
+                `is_read`,
+                `created_at`
+            FROM ALARM
+            WHERE `delete_yn` = 0 AND `partner_id` = ?
+        """
+        notifications = findAll(alarmSql, (company["partner_id"],))
  
         # ── accessToken Redis 저장 ──
         setTokenRedis(tokenUuid, accessToken)
@@ -122,6 +138,7 @@ def loginProcess(response: Response, request: Request, loginModel):
             "tier": company["tier"],
             "tier_label": company["tier_label"],
             "tokenUuid": tokenUuid,
+            "notifications": notifications,
         })
  
     except Exception as e:
@@ -316,6 +333,22 @@ def getSessionProcess(request: Request):
  
         sessionData = _json.loads(sessionRaw)
         currentPage = client1.get(f"page:{tokenUuid}") or sessionData.get("page", "dashboard")
+
+        # ── ALARM 가져오기 ──
+        alarmSql = """
+            SELECT 
+                `id`, 
+                `type`,
+                `level`,
+                `title`, 
+                `content`,
+                `path`,
+                `is_read`,
+                `created_at`
+            FROM ALARM
+            WHERE `delete_yn` = 0 AND `partner_id` = ?
+        """
+        notifications = findAll(alarmSql, (sessionData.get("partner_id", ""),))
  
         return responseModel(True, "", {
             "isLoggedIn": True,
@@ -325,6 +358,7 @@ def getSessionProcess(request: Request):
             "tier_label": sessionData.get("tier_label", ""),
             "email": sessionData.get("email", ""),
             "page": currentPage,
+            "notifications": notifications,
         })
  
     except Exception as e:

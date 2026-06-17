@@ -154,6 +154,9 @@ class alarmResponse(BaseModel):
     message : str
     data    : Optional[dict] = None
 
+class alarmReadReqModel(BaseModel):
+    """alarm.py PATCH 알림 읽음 처리 요청 모델 일껄?"""
+    id: Optional[int]     = Field(None, description="알람 식별 코드 (1 등)")
 
 # ────────────────────────────────────────────────────────
 # [v1.0] 아래 모델을 기존 model.py 하단에 추가해 주세요

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Chip } from "@components/Common/Chip";
+import { GET, POST, PUT, PATCH } from "@utils/Network";
 
-const NotificationPanel = ({ notifications, setNotifications, onClose }) => {
+const NotificationPanel = ({ notifications, setNotifications, onClose, unread, setPage }) => {
   const [selNotif, setSelNotif] = useState(null);
   const notifs = notifications || [];
-  const unread = notifs.filter((n) => !n.read).length;
+  // const unread = notifs.filter((n) => n.is_read === 0).length;
   
   const typeColor = { RISK: "red", URGENT: "orange", INSPECT: "yellow", SELF: "blue", INVITE: "green" };
   const typeLabel = { RISK: "리스크", URGENT: "긴급요청", INSPECT: "현장실사", SELF: "자가진단", INVITE: "초대" };
@@ -16,10 +17,18 @@ const NotificationPanel = ({ notifications, setNotifications, onClose }) => {
   };
 
   const handleAllRead = () => {
-    if (setNotifications) {
-      setNotifications((prev) => prev.map((n) => Object.assign({}, n, { read: true })));
-    }
+    // if (setNotifications) {
+    //   setNotifications((prev) => prev.map((n) => Object.assign({}, n, { read: true })));
+    // }
+    PATCH("/alarm/all", { id: 0 })
+    .then(res => {
+      if (res.status){
+        setNotifications(res.data?.notifications);
+      }
+    });
   };
+
+  const handleMove = () => setPage(selNotif?.path);
 
   if (selNotif) {
     return (
@@ -27,23 +36,28 @@ const NotificationPanel = ({ notifications, setNotifications, onClose }) => {
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <button onClick={() => setSelNotif(null)} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-600">← 목록</button>
           <span className="text-sm font-bold text-gray-800">알림 상세</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+          <button onClick={()=>onClose(false)} className="text-gray-400 hover:text-gray-600 text-lg" style={{cursor: 'pointer'}}>✕</button>
         </div>
         <div className="p-5">
           <div className="flex items-center gap-2 mb-3">
             <Chip text={typeLabel[selNotif.type] || selNotif.type} color={typeColor[selNotif.type] || "slate"} />
-            {!selNotif.read && <Chip text="읽지 않음" color="red" />}
+            {selNotif.is_read === 0 && <Chip text="읽지 않음" color="red" />}
           </div>
           <h3 className="font-bold text-gray-900 mb-2">{selNotif.title}</h3>
-          <p className="text-sm text-gray-600 leading-relaxed mb-4">{selNotif.msg}</p>
-          <p className="text-xs text-gray-400">{selNotif.time}</p>
+          <p className="text-sm text-gray-600 leading-relaxed mb-4">{selNotif.content}</p>
+          <p className="text-xs text-gray-400">{selNotif.created_at}</p>
           <div className="mt-4 flex gap-2">
-            <button className="px-4 py-2 bg-[#03a94d] hover:bg-[#02823b] text-white text-xs rounded-lg font-bold transition">관련 화면으로 이동</button>
-            {!selNotif.read && (
+            <button className="px-4 py-2 bg-[#03a94d] hover:bg-[#02823b] text-white text-xs rounded-lg font-bold transition" onClick={handleMove}>관련 화면으로 이동</button>
+            {selNotif.is_read === 0 && (
               <button
                 onClick={() => {
-                  handleRead(selNotif.id);
-                  setSelNotif((prev) => Object.assign({}, prev, { read: true }));
+                  PATCH("/alarm", { id: selNotif.id })
+                  .then(res => {
+                    if (res.status){
+                      setNotifications(res.data?.notifications);
+                      setSelNotif((prev) => Object.assign({}, prev, { is_read: 1 }));
+                    }
+                  });
                 }}
                 className="px-4 py-2 bg-gray-100 text-gray-700 text-xs rounded-lg"
               >
@@ -64,22 +78,22 @@ const NotificationPanel = ({ notifications, setNotifications, onClose }) => {
         </span>
         <div className="flex gap-2">
           <button onClick={handleAllRead} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-600">전체 읽음</button>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+          <button onClick={()=>onClose(false)} className="text-gray-400 hover:text-gray-600 text-lg" style={{cursor: 'pointer'}}>✕</button>
         </div>
       </div>
       <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
         {notifs.map((n) => (
           <div key={n.id} onClick={() => setSelNotif(n)}
-            className={"p-4 cursor-pointer hover:bg-gray-50 transition " + (!n.read ? "bg-emerald-50/30" : "")}>
+            className={"p-4 cursor-pointer hover:bg-gray-50 transition " + (n.is_read === 0 ? "bg-emerald-50/30" : "")}>
             <div className="flex items-start gap-3">
               <span className={n.level === "fail" ? "text-red-500 text-lg shrink-0" : n.level === "warn" ? "text-amber-500 text-lg shrink-0" : "text-blue-500 text-lg shrink-0"}>●</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="text-sm font-bold text-gray-900 truncate">{n.title}</p>
-                  {!n.read && <span className="w-2 h-2 bg-[#03a94d] rounded-full shrink-0" />}
+                  {(n.is_read === 0) && <span className="w-2 h-2 bg-[#03a94d] rounded-full shrink-0" />}
                 </div>
-                <p className="text-xs text-gray-500 line-clamp-2">{n.msg}</p>
-                <p className="text-xs text-gray-300 mt-1">{n.time}</p>
+                <p className="text-xs text-gray-500 line-clamp-2">{n.content}</p>
+                <p className="text-xs text-gray-300 mt-1">{n.created_at}</p>
               </div>
             </div>
           </div>
