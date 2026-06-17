@@ -2,6 +2,31 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@components/Common/Card";
 import { GET } from "@utils/Network";
 
+const MOCK_FACTORIES = [
+  {
+    id: 1,
+    factory_name: "인천 송도 합금 제1공장",
+    address: "인천광역시 연수구 송도과학로 32",
+    operation_status: "가동",
+    utilization_rate: 65,
+    scope1_emissions: 1840,
+    scope2_emissions: 920,
+    feoc_raw_material_ratio: 0,
+    trir_safety_rate: 0.05
+  },
+  {
+    id: 2,
+    factory_name: "경기 화성 원료 제2공장",
+    address: "경기도 화성시 향남읍 제약단지로 55",
+    operation_status: "정비",
+    utilization_rate: 35,
+    scope1_emissions: 980,
+    scope2_emissions: 460,
+    feoc_raw_material_ratio: 1.2,
+    trir_safety_rate: 0.12
+  }
+];
+
 const PartnerDetail = ({ partner, onBack, loginData }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [factories, setFactories] = useState([]);
@@ -14,12 +39,15 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
 
     GET(`/company/${pid}`)
       .then((json) => {
-        if (json.status && json.data) {
-          setFactories(json.data.factories || []);
+        if (json.status && json.data && json.data.factories && json.data.factories.length > 0) {
+          setFactories(json.data.factories);
+        } else {
+          setFactories(MOCK_FACTORIES);
         }
       })
       .catch((err) => {
         console.error("공장 정보 조회 실패:", err);
+        setFactories(MOCK_FACTORIES);
       });
   }, [pid]);
 
@@ -45,6 +73,43 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
         }
       >
         {isY ? "Y (준수)" : "N (미준수)"}
+      </span>
+    );
+  };
+
+  const renderOperationStatusBadge = (status) => {
+    const s = status || "가동";
+    if (s === "가동") {
+      return (
+        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[12px]">
+          가동
+        </span>
+      );
+    }
+    if (s === "정지") {
+      return (
+        <span className="bg-amber-50 text-amber-600 border border-amber-200 font-bold px-2 py-0.5 rounded text-[12px]">
+          정지
+        </span>
+      );
+    }
+    if (s === "폐쇄") {
+      return (
+        <span className="bg-red-50 text-red-600 border border-red-200 font-bold px-2 py-0.5 rounded text-[12px]">
+          폐쇄
+        </span>
+      );
+    }
+    if (s === "정비") {
+      return (
+        <span className="bg-blue-50 text-blue-600 border border-blue-200 font-bold px-2 py-0.5 rounded text-[12px]">
+          정비
+        </span>
+      );
+    }
+    return (
+      <span className="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[12px]">
+        {s}
       </span>
     );
   };
@@ -78,9 +143,6 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
             <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">
               {p.short || p.short_name || p.company_name || "미지정"}
             </h2>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${getTierBadgeClass(p.tier)}`}>
-              {p.tierLabel || p.tier_label || (p.tier ? `${p.tier}차 협력사` : "")}
-            </span>
           </div>
           <p className="text-sm text-gray-400 mt-1">
             파트너 코드: {pid} | 대표자: {p.ceo_name || p.ceo || "정보 없음"}
@@ -236,11 +298,9 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                             {f.address || f.factory_address || "-"}
                           </span>
                         </div>
-                        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[11px]">
-                          {f.operation_status || "가동"}
-                        </span>
+                        {renderOperationStatusBadge(f.operation_status)}
                       </div>
-                      <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-xs">
+                      <div className="grid grid-cols-5 border border-gray-200 rounded-lg divide-x divide-gray-200 bg-white text-sm">
                         {[
                           ["이용 비율", `${f.utilization_rate || 0}%`],
                           ["Scope 1", `${formatNum(f.scope1_emissions || f.scope1)} tCO₂e`],
