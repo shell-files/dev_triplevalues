@@ -23,6 +23,7 @@ jobs:
         run: |
           "VITE_API_URL=${{ secrets.VITE_API_URL }}" | Set-Content -Path .env -Encoding UTF8
           "VITE_API_URL_TV=${{ secrets.VITE_API_URL_TV }}" | Add-Content -Path .env
+          "VITE_API_URL_DOMAIN=${{ secrets.DOMAIN }}" | Add-Content -Path .env
       - name: Node Build
         working-directory: ./frontend
         run: npm run build

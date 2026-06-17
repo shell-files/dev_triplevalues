@@ -53,7 +53,8 @@ const App = () => {
     if (id !== undefined) pId = id;
     if (pId === null || pId === undefined) return;
 
-    ws.current = new WebSocket(`ws://localhost:8000/ws/${pId}`);
+    let baseURL = import.meta.env.VITE_API_URL_DOMAIN || "localhost:8000";
+    ws.current = new WebSocket(`ws://tval.${baseURL}/ws/${pId}`);
     ws.current.onopen = () => setIsConnected(true);
 
     ws.current.onmessage = (event) => {
