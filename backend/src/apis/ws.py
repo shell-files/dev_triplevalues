@@ -105,6 +105,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         })
         pprint(f"방 ID: {room_id}")
 
+        # ★★★ 이 루프가 없으면 open 되자마자 바로 closed 됩니다! ★★★
+        while True:
+            # 클라이언트로부터 메시지를 수신 대기하며 연결을 유지합니다.
+            data = await websocket.receive_text()
+
     except WebSocketDisconnect:
         pprint(f"[Info] {room_id} 방 연결을 정상적으로 종료했습니다.")
 
