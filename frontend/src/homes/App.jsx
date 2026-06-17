@@ -8,7 +8,7 @@ import PartnerDetail from "@homes/admin/partners/PartnerDetail";
 import SupplyChainMap from "@homes/admin/maps/SupplyChainMap";
 import PoList from "@homes/admin/pos/PoList";
 import RiskList from "@homes/admin/risks/RiskList";
-import CompanyInfo from "@partners/CompanyInfo";
+import CompanyInfo from "@partners/companys/CompanyInfo";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
