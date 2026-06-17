@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@components/Common/Card";
-import { RChip } from "@components/Common/Chip";
 import CircleIcon from "@components/Common/Icons/CircleIcon";
 import { POST } from "@utils/Network";
 
@@ -36,32 +35,27 @@ const PartnerList = ({ loginData, setSelPartner }) => {
     if (key === "id") return c.id || c.partner_id;
     if (key === "risk") return c.risk || c.risk_level || "";
     if (key === "short") return c.short || c.short_name || "";
-    if (key === "tierLabel") return c.tierLabel || c.tier_label || "";
     return c[key];
   };
 
   const getTierTheme = (tier) => {
     if (tier === 1) {
       return {
-        color: "#03a94d",
-        bgClass: "bg-emerald-50 text-emerald-700 border-emerald-100"
+        color: "#03a94d"
       };
     }
     if (tier === 2) {
       return {
-        color: "#0ea5e9",
-        bgClass: "bg-sky-50 text-sky-700 border-sky-100"
+        color: "#0ea5e9"
       };
     }
     if (tier === 3) {
       return {
-        color: "#8b5cf6",
-        bgClass: "bg-violet-50 text-violet-700 border-violet-100"
+        color: "#8b5cf6"
       };
     }
     return {
-      color: "#64748b",
-      bgClass: "bg-slate-50 text-slate-500 border-slate-100"
+      color: "#64748b"
     };
   };
 
@@ -71,42 +65,51 @@ const PartnerList = ({ loginData, setSelPartner }) => {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-['Pretendard']">
-      {/* 헤더 배너 */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-4">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full min-h-[calc(100vh-140px)] flex flex-col font-['Pretendard']">
+      {/* 페이지 헤더 배너 */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보</h1>
-          <p className="text-sm text-gray-400 mt-1">하위 공급망 파트너사 목록과 주요 ESG 정보 현황을 실시간 모니터링합니다.</p>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보</h2>
+          <p className="text-sm text-gray-400 mt-0.5">하위 공급망 파트너사 목록과 주요 ESG 정보 현황을 실시간 모니터링합니다.</p>
+        </div>
+        <div>
+          <button
+            onClick={() => {}}
+            className="px-4 py-2 text-sm font-bold text-white rounded-lg hover:bg-[#02823b] transition shrink-0 bg-[#03a94d] shadow-sm cursor-pointer"
+          >
+            + 초대하기
+          </button>
         </div>
       </div>
 
-      {/* 단일 KPI 카드 */}
-      <div className="grid grid-cols-1 gap-4">
-        <Card className="p-4 flex items-center justify-between bg-white border border-gray-100 shadow-sm rounded-xl">
+      {/* KPI 및 검색창 한 행 배치 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* KPI 카드 */}
+        <Card className="p-5 flex items-center justify-between bg-white border border-gray-100 shadow-sm rounded-xl">
           <div>
-            <p className="text-xs text-gray-400 font-semibold">전체 협력사 수</p>
+            <p className="text-sm text-gray-400 font-medium">전체 협력사 수</p>
             <p className="text-2xl font-black text-gray-900 mt-1">
               {loading ? "-" : `${companies.length}개사`}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-gray-100 text-slate-500 font-mono text-sm font-bold">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50/50 flex items-center justify-center border border-emerald-100/50 text-[#03a94d] font-mono text-sm font-bold">
             N
           </div>
         </Card>
-      </div>
 
-      {/* 텍스트 검색창 */}
-      <Card className="p-4 bg-slate-50/50 border border-slate-100 rounded-xl">
-        <div className="w-full">
-          <input
-            type="text"
-            placeholder="협력사명 검색..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200 transition"
-          />
-        </div>
-      </Card>
+        {/* 텍스트 검색창 */}
+        <Card className="p-5 bg-slate-50/50 border border-slate-100 rounded-xl flex items-center">
+          <div className="w-full">
+            <input
+              type="text"
+              placeholder="협력사명 검색..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
+            />
+          </div>
+        </Card>
+      </div>
 
       {/* 리스트 출력 */}
       <div className="space-y-3">
@@ -121,7 +124,7 @@ const PartnerList = ({ loginData, setSelPartner }) => {
             return (
               <Card key={g(c, "id")} className="overflow-hidden border-gray-100 hover:border-gray-200 transition-all rounded-xl shadow-xs">
                 <div
-                  className="p-4 flex items-center justify-between cursor-pointer bg-white"
+                  className="p-5 flex items-center justify-between cursor-pointer bg-white"
                   onClick={() => {
                     if (setSelPartner) setSelPartner(c);
                   }}
@@ -130,22 +133,18 @@ const PartnerList = ({ loginData, setSelPartner }) => {
                     <CircleIcon className="w-5 h-5" color={theme.color} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 text-sm">{g(c, "short")}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${theme.bgClass}`}>
-                          {g(c, "tierLabel")}
-                        </span>
+                        <span className="font-bold text-gray-900 text-base">{g(c, "short")}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">코드: {g(c, "id")}</p>
+                      <p className="text-sm text-gray-400 mt-1">코드: {g(c, "id")}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <RChip v={g(c, "risk")} />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         if (setSelPartner) setSelPartner(c);
                       }}
-                      className="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-800 transition cursor-pointer"
+                      className="text-xs bg-[#03a94d] hover:bg-[#02823b] text-white px-3 py-1.5 rounded-lg font-bold shadow-sm transition cursor-pointer"
                     >
                       상세 보기
                     </button>
