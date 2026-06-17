@@ -25,8 +25,7 @@ const Login = ({ onLoginSuccess }) => {
       setLoading(true); setError("");
       const res = await POST("/auth/login", { email, loginType: "oem" });
       if (res.status) {
-        if (onLoginSuccess) onLoginSuccess(res.data);
-        else alert("로그인 성공");
+        onLoginSuccess(res.data);
       } else { setError(res.message || "로그인에 실패했습니다."); }
     } catch { 
       setError("서버 연결 오류가 발생했습니다."); 

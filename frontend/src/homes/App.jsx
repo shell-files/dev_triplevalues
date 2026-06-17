@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from "react";
+// ────────────────────────────────────────────────────────
+// [v2.3] 2026-06-16 - sessionStorage 완전 제거, BE 세션 관리 (GET /auth/me) - 초대 URL 자동 로그인 (invite/{partnerId} 감지)
+// [v2.2] 2026-06-15 - 초대 URL 자동 로그인 (invite/{partnerId} 감지)
+// [v2.1] 2026-06-12 — 새로고침 시 현재 페이지 유지 (sessionStorage.page 동기화)
+// [v2.0] 2026-06-09 — 로그인 게이트, API 연동, 더미 제거, 권한별 메뉴, pageKey
+// ────────────────────────────────────────────────────────
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import SidebarNav from "@components/Layout/SidebarNav";
 import HeaderNav from "@components/Layout/HeaderNav";
 import Login from "@homes/logins/Login";  // ---- 로그인/로그아웃 복구
@@ -12,7 +18,7 @@ import CompanyInfo from "@partners/companys/CompanyInfo";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
-import { GET, POST } from "@utils/Network"; // ---- 로그인/로그아웃 복구
+import { GET, POST, PUT } from "@utils/Network"; // ---- 로그인/로그아웃 복구
 
 const PlaceholderPage = ({ title, desc }) => (
   <div className="p-6 bg-white rounded-xl border border-gray-200 shadow-sm animate-fade-in">
@@ -25,6 +31,7 @@ const PlaceholderPage = ({ title, desc }) => (
 );
 
 const App = () => {
+  const [isLoading, setIsLoading] = useState(false);  // ---- 백엔드 로딩 상태 (0)
   const [isLoggedIn, setIsLoggedIn] = useState(false);  // ---- 로그인 상태 (1)
   const [loginData, setLoginData] = useState(null); // -------- 로그인 상태 (2)
   const [page, setPage] = useState("dashboard");
@@ -32,51 +39,124 @@ const App = () => {
   const [showNotif, setShowNotif] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState("현대모비스");
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [apiCompanies, setApiCompanies] = useState(COMPANIES); // 전사 마스터 기업 자산 파이프라인
   const [selPartner, setSelPartner] = useState(null); // 1Depth-2Depth 화면 스위칭 상태 제어 엔진
+
+  const [isConnected, setIsConnected] = useState(false);
+  const ws = useRef(null); // WebSocket 객체
+
+ /* 웹소켓 연결 핸들러 */
+  const handleConnectChat = (partnerId) => {
+    if (ws.current) ws.current.close();
+    if (partnerId === undefined) return;
+    partnerId = 'HMOS-001';
+
+    let baseURL = import.meta.env.VITE_API_URL_DOMAIN || "localhost:8000";
+    ws.current = new WebSocket(`ws://tval.${baseURL}/ws/${partnerId}`);
+    ws.current.onopen = () => setIsConnected(true);
+
+    ws.current.onmessage = (event) => {
+      // 💡 서버에서 온 JSON 문자열을 자바스크립트 객체로 변환
+      const resData = JSON.parse(event.data);
+      if(resData && (resData.type === "SYSTEM" || resData.type === "AIRFLOW")) handleMe();
+    };
+
+    ws.current.onclose = () => {
+      setIsConnected(false);
+    };
+
+    ws.current.onerror = (err) => {
+      console.error("❌ 웹소켓 에러 발생:", err);
+    };
+  };
 
   /* 로그인 성공 핸들러 */
   const handleLoginSuccess = (data) => {
     setLoginData(data);
     const isOem = Number(data?.tier) === 0;
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
+    setNotifications(data?.notifications);
     setPage(isOem ? "dashboard" : "company_info");
-    try {
-      localStorage.setItem("esg_login", JSON.stringify({
-        ...data,
-        userRole: isOem ? "현대모비스" : (data?.tier_label || ""),
-        page: isOem ? "dashboard" : "company_info",
-      }));
-    } catch (e) {}
+    handleConnectChat(data?.partner_id || undefined);
+    /* [v2.4] tokenUuid를 document.cookie에 저장 (랜덤 UUID만, 민감 데이터 아님) */
+    // if (data?.tokenUuid) {
+    //   document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
+    // }
+    
     setIsLoggedIn(true);
+    setIsLoading(false);
   };
     
   /* 로그아웃 핸들러 */
   const handleLogout = () => {
-    POST("/auth/logout", { method: "POST" })
+    setIsLoading(true);
+    POST("/auth/logout")
      .then(json => {
         setIsLoggedIn(false);
-        localStorage.removeItem("esg_login");
+        /* [v2.4] 쿠키 삭제 */
+        document.cookie = "esg_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         setLoginData(null);
         setPage("dashboard");
         setUserRole("현대모비스");
+        setIsLoading(false);
       });
   };
-  
-  /* 앱 마운트 시 세션 복원 */
-  useEffect(() => {
-    if (isLoggedIn) return;
-    try {
-      const saved = localStorage.getItem("esg_login");
-      if (saved) {
-        const data = JSON.parse(saved);
-        setLoginData(data);
-        setUserRole(data.userRole || "현대모비스");
-        setPage(data.page || "dashboard");
+
+  /* 사용자 정보 핸들러 */
+  const handleMe = useCallback(() => {
+    GET("/auth/me").then(res => {
+      if (res.status && res.data?.isLoggedIn) {
+        setLoginData(res.data);
+        const isOem = Number(res.data?.tier) === 0;
+        setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
+        setNotifications(res.data?.notifications);
+        setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
         setIsLoggedIn(true);
       }
-    } catch (e) {}
+      setIsLoading(false);
+    });
+  }, []);
+  
+  /* [v2.3] 앱 마운트 시 - 초대 URL 감지 + BE 세션 조회 (sessionStorage 미사용) */
+  useEffect(() => {
+    if (isLoggedIn) return;
+    setIsLoading(true);
+
+    /* 초대 URL 감지: /invite/{partnerId} */
+    const urlPath = window.location.pathname;
+    const inviteMatch = urlPath.match(/\/invite\/([A-Za-z0-9\-]+)/);
+    if (inviteMatch) {
+      const partnerId = inviteMatch[1];
+      POST(`/auth/invite-login/${partnerId}`)
+        .then(res => {
+          if (res.status && res.data?.accessType === "free_pass") {
+            handleLoginSuccess(res.data);
+            window.history.replaceState({}, "", "/");
+          } else if (res.data?.accessType === "require_auth") {
+            alert(res.message || "등록이 완료된 기업입니다. 2차 인증 후 로그인해 주세요.");
+            window.history.replaceState({}, "", "/");
+          } else {
+            alert(res.message || "유효하지 않은 초대 링크입니다.");
+            window.history.replaceState({}, "", "/");
+          }
+        });
+      return;
+    }
+
+    /* [v2.3] BE 세션 조회 — httpOnly 쿠키 기반 (sessionStorage 미사용) */
+    GET("/auth/me").then(res => {
+      if (res.status && res.data?.isLoggedIn) {
+        setLoginData(res.data);
+        const isOem = Number(res.data?.tier) === 0;
+        setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
+        setNotifications(res.data?.notifications);
+        setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
+        handleConnectChat(res.data?.partner_id || undefined);
+        setIsLoggedIn(true);
+      }
+      setIsLoading(false);
+    });
   }, []);
   
   /* 로그인 후 협력사 목록 API 조회 */
@@ -89,12 +169,16 @@ const App = () => {
       });
   }, [userRole, isLoggedIn]);
   
+  if (isLoading) {
+    return <></>
+  }
+  
   /* 로그인 전 가드 */
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const unread = notifications.filter((n) => !n.read).length;
+  const unread = notifications.filter((n) => n.is_read === 0).length;
   
   const handleResetPage = () => {
     setPage("dashboard");
@@ -102,9 +186,13 @@ const App = () => {
   };
 
   const handleMenuChange = (targetPage) => {
+    if(targetPage === null) targetPage = (userRole === '현대모비스') ? "dashboard" : "company_info";  
     setPage(targetPage);
+    setShowNotif(false);
     setPageKey(prev => prev + 1); // 복구된 화면 강제 리마운트 파이프라인
     setSelPartner(null); // 메뉴 이동 시 상세 보기 바인딩 초기화 리셋 안전장치 가동
+    /* [v2.3] BE에 현재 페이지 저장 (새로고침 복원용) */
+    PUT("/auth/page", { page: targetPage });
   };
 
   /* 기존 레거시 구조에 로그인 세션 및 렌더링 키 결합 통합 완공 */
@@ -175,6 +263,7 @@ const App = () => {
           handleLogout={handleLogout}
           loginData={loginData}
           onResetPage={handleResetPage}
+          setPage={handleMenuChange}
         />
         
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 relative pt-16">
