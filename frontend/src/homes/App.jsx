@@ -14,6 +14,7 @@ import PartnerDetail from "@homes/admin/partners/PartnerDetail";
 import SupplyChainMap from "@homes/admin/maps/SupplyChainMap";
 import PoList from "@homes/admin/pos/PoList";
 import RiskList from "@homes/admin/risks/RiskList";
+import CompanyInfo from "@partners/companys/CompanyInfo";
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -45,7 +46,7 @@ const App = () => {
   const [isConnected, setIsConnected] = useState(false);
   const ws = useRef(null); // WebSocket 객체
 
-  /* 웹소켓 연결 핸들러 */
+ /* 웹소켓 연결 핸들러 */
   const handleConnectChat = (partnerId) => {
     if (ws.current) ws.current.close();
     if (partnerId === undefined) return;
@@ -171,7 +172,7 @@ const App = () => {
   if (isLoading) {
     return <></>
   }
-
+  
   /* 로그인 전 가드 */
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -225,6 +226,7 @@ const App = () => {
     }
     
     const pages = {
+      company_info: <CompanyInfo key={pageKey} />,
       supplychainMap: <SupplyChainMap key={pageKey} />,
       po: <PoList key={pageKey} />,
       risk: <RiskList key={pageKey} />
