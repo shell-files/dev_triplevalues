@@ -48,14 +48,12 @@ const App = () => {
   const ws = useRef(null); // WebSocket 객체
 
   /* 웹소켓 연결 핸들러 */
-  const handleConnectChat = (id) => {
+  const handleConnectChat = (partnerId) => {
     if (ws.current) ws.current.close();
-    let pId = null;
-    if (id !== undefined) pId = id;
-    if (pId === null || pId === undefined) return;
+    if (id === undefined) return;
 
     let baseURL = import.meta.env.VITE_API_URL_DOMAIN || "localhost:8000";
-    ws.current = new WebSocket(`ws://tval.${baseURL}/ws/${pId}`);
+    ws.current = new WebSocket(`ws://tval.${baseURL}/ws/${partnerId}`);
     ws.current.onopen = () => setIsConnected(true);
 
     ws.current.onmessage = (event) => {
@@ -82,7 +80,7 @@ const App = () => {
     const isOem = Number(data?.tier) === 0;
     setUserRole(isOem ? "현대모비스" : (data?.tier_label || "1차 협력사"));
     setPage(isOem ? "dashboard" : "company_info");
-    // handleConnectChat(data?.partner_id || undefined);
+    handleConnectChat(data?.partner_id || undefined);
     /* [v2.4] tokenUuid를 document.cookie에 저장 (랜덤 UUID만, 민감 데이터 아님) */
     // if (data?.tokenUuid) {
     //   document.cookie = `esg_token=${data.tokenUuid}; path=/; SameSite=Lax`;
@@ -139,7 +137,7 @@ const App = () => {
         const isOem = Number(res.data?.tier) === 0;
         setUserRole(isOem ? "현대모비스" : (res.data?.tier_label || "1차 협력사"));
         setPage(res.data?.page || (isOem ? "dashboard" : "company_info"));
-        // handleConnectChat(res.data?.partner_id || undefined);
+        handleConnectChat(res.data?.partner_id || undefined);
         setIsLoggedIn(true);
         setIsLoading(false);
       }
