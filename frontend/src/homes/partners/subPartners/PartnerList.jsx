@@ -89,7 +89,7 @@ const PartnerList = ({ loginData, setSelPartner }) => {
         {/* KPI 카드 */}
         <Card className="p-5 flex items-center justify-between bg-white border border-gray-100 shadow-sm rounded-xl">
           <div>
-            <p className="text-xs text-gray-400 font-semibold">전체 협력사 수</p>
+            <p className="text-sm text-gray-400 font-medium">전체 협력사 수</p>
             <p className="text-2xl font-black text-gray-900 mt-1">
               {loading ? "-" : `${companies.length}개사`}
             </p>
@@ -135,9 +135,9 @@ const PartnerList = ({ loginData, setSelPartner }) => {
                     <CircleIcon className="w-5 h-5" color={theme.color} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 text-sm">{g(c, "short")}</span>
+                        <span className="font-bold text-gray-900 text-base">{g(c, "short")}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">코드: {g(c, "id")}</p>
+                      <p className="text-sm text-gray-400 mt-1">코드: {g(c, "id")}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -146,7 +146,7 @@ const PartnerList = ({ loginData, setSelPartner }) => {
                         e.stopPropagation();
                         if (setSelPartner) setSelPartner(c);
                       }}
-                      className="text-xs bg-[#03a94d] hover:bg-[#02823b] text-white px-3 py-1.5 rounded-lg font-bold shadow-sm transition cursor-pointer"
+                      className="text-sm bg-[#03a94d] hover:bg-[#02823b] text-white px-3 py-1.5 rounded-lg font-bold shadow-sm transition cursor-pointer"
                     >
                       상세 보기
                     </button>
