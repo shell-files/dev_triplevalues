@@ -111,7 +111,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
                 <span className="text-sm font-bold text-gray-800 truncate">{displayName}</span>
               </div>
               <button type="button" onClick={() => handleDownload(file)}
-                className="text-xs px-3 py-1.5 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg font-bold text-gray-700 transition shrink-0">
+                className="text-xs px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg font-bold text-gray-700 transition shrink-0 shadow-2xs">
                 다운로드
               </button>
             </div>
@@ -122,18 +122,18 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full flex flex-col">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 shadow-2xs">← 목록으로 돌아가기</button>
+        <button onClick={onBack} className="text-xs bg-white border border-gray-200 text-gray-600 px-3.5 py-2 rounded-lg font-bold hover:bg-gray-50 shadow-2xs transition-colors">← 목록으로 돌아가기</button>
       </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-gray-100 pb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-[#03a94d] tracking-tight">{p.short || p.short_name || p.company_name || "미지정"}</h1>
+            <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">{p.short || p.short_name || p.company_name || "미지정"}</h2>
             <span className={`text-xs px-2 py-0.5 rounded font-semibold ${getTierBadgeClass(p.tier)}`}>{p.tierLabel || p.tier_label}</span>
           </div>
-          <p className="text-sm text-gray-400 mt-1">파트너 코드: {pid} | 대표자: {p.ceo_name || p.ceo || "정보 없음"}</p>
+          <p className="text-sm text-gray-400 mt-0.5">파트너 코드: {pid} | 대표자: {p.ceo_name || p.ceo || "정보 없음"}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-gray-400">종합 위험 등급</span>
@@ -159,7 +159,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
               <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">기본 협력사 정보</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {[["기업명", p.company_name],["대표자명", p.ceo_name],["사업자등록번호", p.biz_no],["설립일", p.founded],["대표 이메일 주소", p.email || "-"],["기업 규모", p.size],["소재 국가", p.country],["소재지", p.address]].map((pair, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50/50 border border-gray-100 rounded-xl">
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border border-gray-100 rounded-lg">
                     <span className="text-gray-400 font-semibold">{pair[0]}</span>
                     <span className="font-bold text-gray-800">{pair[1] || "정보 없음"}</span>
                   </div>
@@ -170,7 +170,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
               <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">ESG 주요 지표 데이터</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {[["Scope 1 (tCO₂e)", formatNum(p.scope1)],["Scope 2 (tCO₂e)", formatNum(p.scope2)],["FEOC 원료 비중", p.feoc_ratio != null ? `${p.feoc_ratio}%` : "-"],["TRIR 산업안전율", p.trir != null ? p.trir : "-"]].map((pair, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50/50 border border-gray-100 rounded-xl">
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border border-gray-100 rounded-lg">
                     <span className="text-gray-400 font-semibold">{pair[0]}</span>
                     <span className="font-mono font-bold text-gray-800">{pair[1]}</span>
                   </div>
@@ -181,7 +181,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
               <h2 className="text-sm font-bold text-gray-900 border-b border-gray-50 pb-2">글로벌 인증 및 이니셔티브 준수 현황</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {[["CMRT (분쟁광물 보고)", p.cmrt],["EMAT (배터리·광물 추적)", p.emat],["ISO 14001 (환경경영)", p.iso14001],["ISO 45001 (안전보건)", p.iso45001],["IATF 16949 (품질경영)", p.iatf],["RBA (책임 비즈니스)", p.rba],["RMAP (책임 광물 보증)", p.rmap]].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/50 border border-gray-100 rounded-xl">
+                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-gray-100 rounded-lg">
                     <span className="text-gray-400 font-semibold">{item[0]}</span>
                     {renderCertBadge(item[1])}
                   </div>
@@ -194,10 +194,10 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
         {/* ═══ 자가진단 내역 탭 — API 데이터 ═══ */}
         {activeTab === "selfassess" && (
           <div className="space-y-3">
-            <div className="w-full bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-3xs mb-4">
+            <div className="w-full bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3 shadow-3xs mb-4">
               <span className="text-xs font-bold text-gray-600">버전:</span>
               <select value={selectedVersion} onChange={e => setSelectedVersion(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-slate-400">
+                className="bg-slate-50 border border-gray-200 text-xs px-3 py-2 rounded-lg font-bold text-gray-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors">
                 {selfAssessVersions.length > 0 ? selfAssessVersions.map((v, i) => (
                   <option key={i} value={v.version}>v{v.version} ({v.count || 0}건 · {v.created_at?.slice(0,10) || ""})</option>
                 )) : <option value="">데이터 없음</option>}

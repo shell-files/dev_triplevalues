@@ -58,16 +58,16 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-4">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in w-full h-full flex flex-col">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보 관리</h1>
-          <p className="text-sm text-gray-400 mt-1">공급망 내 파트너사의 ESG 위험 수준 및 주요 글로벌 인증 준수 현황을 실시간 관제합니다.</p>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보 관리</h2>
+          <p className="text-sm text-gray-400 mt-0.5">공급망 내 파트너사의 ESG 위험 수준 및 주요 글로벌 인증 준수 현황을 실시간 관제합니다.</p>
         </div>
         <div>
           {/* [v1.2] 초대하기 버튼 */}
           <button onClick={() => setShowInviteModal(true)}
-            className="px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 transition shrink-0"
+            className="px-4 py-2 rounded-lg shadow-sm text-sm font-bold text-white hover:opacity-90 transition shrink-0"
             style={{ backgroundColor: "#03a94d" }}>
             + 초대하기
           </button>
@@ -93,7 +93,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
         </Card>
       </div>
 
-      <Card className="p-4 bg-slate-50/50 border-slate-100">
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="md:col-span-2">
             <input
@@ -101,14 +101,14 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
               placeholder="협력사명 검색..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-3.5 py-2 rounded-lg font-bold text-gray-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition-colors"
             />
           </div>
           <div>
             <select
               value={tierFilter}
               onChange={(e) => setTierFilter(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-2.5 py-2 rounded-lg font-bold text-gray-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
             >
               <option value="all">모든 공급망 분류</option>
               <option value="1차">1차 협력사</option>
@@ -120,7 +120,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
             <select
               value={riskFilter}
               onChange={(e) => setRiskFilter(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full bg-slate-50 border border-gray-200 text-sm px-2.5 py-2 rounded-lg font-bold text-gray-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
             >
               <option value="all">모든 리스크 상태</option>
               <option value="고위험">고위험</option>
@@ -143,7 +143,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
             </button>
           </div>
         )}
-      </Card>
+      </div>
 
       <div className="space-y-3">
         {filtered.length > 0 ? (
@@ -174,7 +174,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
                         e.stopPropagation();
                         if (setSelPartner) setSelPartner(c);
                       }}
-                      className="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-800"
+                      className="text-xs bg-slate-900 text-white px-3 py-2 rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-2xs"
                     >
                       상세 보기
                     </button>

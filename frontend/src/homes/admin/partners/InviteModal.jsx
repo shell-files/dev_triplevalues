@@ -7,6 +7,7 @@
 // ────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { GET, POST } from "@utils/Network";
 
 const InviteModal = ({ isOpen, onClose, loginData }) => {
@@ -109,7 +110,7 @@ const InviteModal = ({ isOpen, onClose, loginData }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* 백드롭 */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -178,7 +179,8 @@ const InviteModal = ({ isOpen, onClose, loginData }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
