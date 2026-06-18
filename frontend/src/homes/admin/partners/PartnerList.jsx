@@ -58,11 +58,11 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-4">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보 관리</h1>
-          <p className="text-sm text-gray-400 mt-1">공급망 내 파트너사의 ESG 위험 수준 및 주요 글로벌 인증 준수 현황을 실시간 관제합니다.</p>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">협력사 정보 관리</h2>
+          <p className="text-sm text-gray-400 mt-0.5">공급망 내 파트너사의 ESG 위험 수준 및 주요 글로벌 인증 준수 현황을 실시간 관제합니다.</p>
         </div>
         <div>
           {/* [v1.2] 초대하기 버튼 */}
@@ -77,14 +77,14 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-4 flex items-center justify-between">
+        <Card className="p-5 flex items-center justify-between shadow-sm border-gray-100">
           <div>
             <p className="text-xs text-gray-400 font-semibold">총 협력사 수</p>
             <p className="text-2xl font-black text-gray-900 mt-1">{totalCompanies}개사</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-gray-100 text-slate-500 font-mono text-sm font-bold">N</div>
         </Card>
-        <Card className="p-4 flex items-center justify-between">
+        <Card className="p-5 flex items-center justify-between shadow-sm border-gray-100">
           <div>
             <p className="text-xs text-gray-400 font-semibold">고위험군 현황</p>
             <p className="text-2xl font-black text-red-600 mt-1">{highRiskCount}개사</p>
@@ -93,7 +93,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
         </Card>
       </div>
 
-      <Card className="p-4 bg-slate-50/50 border-slate-100">
+      <Card className="p-5 bg-white border border-gray-100 rounded-xl shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="md:col-span-2">
             <input
@@ -101,14 +101,14 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
               placeholder="협력사명 검색..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full bg-slate-50 border border-gray-200 rounded-lg px-3.5 py-2 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#03a94d] transition-colors"
             />
           </div>
           <div>
             <select
               value={tierFilter}
               onChange={(e) => setTierFilter(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full bg-slate-50 border border-gray-200 rounded-lg px-3.5 py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#03a94d]"
             >
               <option value="all">모든 공급망 분류</option>
               <option value="1차">1차 협력사</option>
@@ -120,7 +120,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
             <select
               value={riskFilter}
               onChange={(e) => setRiskFilter(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full bg-slate-50 border border-gray-200 rounded-lg px-3.5 py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#03a94d]"
             >
               <option value="all">모든 리스크 상태</option>
               <option value="고위험">고위험</option>
@@ -137,7 +137,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
                 setTierFilter("all");
                 setRiskFilter("all");
               }}
-              className="text-xs text-gray-500 hover:text-gray-800 underline font-medium"
+              className="text-xs text-gray-500 hover:text-gray-800 underline font-medium transition-colors"
             >
               필터 초기화
             </button>
@@ -150,9 +150,9 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
           filtered.map((c) => {
             const theme = getTierTheme(c.tier);
             return (
-              <Card key={g(c, "id")} className="overflow-hidden border-gray-100 hover:border-gray-200 transition-all">
+              <Card key={g(c, "id")} className="overflow-hidden border-gray-100 hover:border-gray-200 transition-all shadow-sm">
                 <div
-                  className="p-4 flex items-center justify-between cursor-pointer select-none bg-white"
+                  className="p-5 flex items-center justify-between cursor-pointer select-none bg-white"
                   onClick={() => {
                     if (setSelPartner) setSelPartner(c);
                   }}
@@ -161,10 +161,10 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
                     <CircleIcon className="w-5 h-5" color={theme.color} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 text-sm">{g(c, "short")}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${theme.bgClass}`}>{g(c, "tierLabel")}</span>
+                        <span className="font-bold text-gray-900 text-base">{g(c, "short")}</span>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded font-bold border ${theme.bgClass}`}>{g(c, "tierLabel")}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">코드: {g(c, "id")}</p>
+                      <p className="text-sm text-gray-400 mt-1">코드: {g(c, "id")}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -174,7 +174,7 @@ const PartnerList = ({ userRole, partnerRegistration, setSelPartner, apiCompanie
                         e.stopPropagation();
                         if (setSelPartner) setSelPartner(c);
                       }}
-                      className="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-800"
+                      className="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-800 transition duration-150"
                     >
                       상세 보기
                     </button>
