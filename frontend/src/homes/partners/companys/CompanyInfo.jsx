@@ -76,10 +76,10 @@ const CompanyInfo = ({ loginData }) => {
     /* 파일 목록 조회 */
     GET(`/company/${pid}/files`).then(fj => {
       if (fj.status && fj.data) {
-        setCocFileName(fj.data.coc[0]?.filename || "");
-        setSelfAssessFileName(fj.data.selfassess[0]?.filename || "");
-        setCertFileNames(fj.data.cert.map(f => f.filename));
-        setEvidenceFileNames(fj.data.evidence.map(f => f.filename));
+        setCocFileName(fj.data.coc[0]?.origin || "");
+        setSelfAssessFileName(fj.data.selfassess[0]?.origin || "");
+        setCertFileNames(fj.data.cert.map(f => f.origin));
+        setEvidenceFileNames(fj.data.evidence.map(f => f.origin));
         setCategorizedFiles(fj.data);
       }
     }).catch(() => {});
