@@ -38,7 +38,7 @@ const HeaderNav = ({
               </svg>
               {unread > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{unread}</span>}
             </button>
-            {showNotif && <NotificationPanel notifications={notifications} setNotifications={setNotifications} onClose={setShowNotif} unread={unread} setPage={setPage} />}
+            {showNotif && <NotificationPanel notifications={[...notifications].reverse()} setNotifications={setNotifications} onClose={setShowNotif} unread={unread} setPage={setPage} />}
           </div>
 
           {/* 회사명 + 역할 */}
