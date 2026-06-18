@@ -38,7 +38,7 @@ const RequestFormBase = ({
     });
   }, []);
 
-  const [product, setProduct] = useState("열차폐판");
+  const [product, setProduct] = useState("열 차폐판");
   const [selectedPO, setSelectedPO] = useState("");
   const [requestType, setRequestType] = useState("NEW");
   const [activeSpecs, setActiveSpecs] = useState({});
@@ -147,7 +147,7 @@ const RequestFormBase = ({
                 onChange={(e) => setProduct(e.target.value)}
                 className="w-full bg-slate-50 border border-gray-200 text-sm px-4 py-3 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold transition-colors cursor-pointer"
               >
-                <option value="열차폐판">열차폐판</option>
+                <option value="열 차폐판">열 차폐판</option>
                 <option value="휠">휠</option>
                 <option value="파이프">파이프</option>
                 <option value="튜브">튜브</option>
