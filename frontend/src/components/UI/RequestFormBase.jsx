@@ -21,25 +21,21 @@ const RequestFormBase = ({
   onBack = () => {},
   loginData = null,
 }) => {
-  /* [v2.0] PO 목록 API 조회 */
+  /* [v3.0] PO 목록 API 조회 */
   const [poList, setPoList] = useState([]);
   const [poMappingData, setPoMappingData] = useState({});
   useEffect(() => {
-    GET("/company/list", { userRole: "현대모비스" })
-      .then(json => {
-        /* PO 데이터는 supplychain products에서 조회 */
-      });
-    GET("/supplychain/products")
-      .then(json => {
-        if (json.status && json.data?.products) {
-          const mapping = {};
-          json.data.products.forEach(p => {
-            mapping[p.id] = { company: p.supplierId || "", material: p.name || "" };
-          });
-          setPoMappingData(mapping);
-          setPoList(json.data.products);
-        }
-      });
+    GET("/po/list").then(json => {
+      if (json.status && json.data?.orders) {
+        const orders = json.data.orders;
+        setPoList(orders);
+        const mapping = {};
+        orders.forEach(po => {
+          mapping[po.poId] = { company: po.receiverName || "", material: po.rawName || "" };
+        });
+        setPoMappingData(mapping);
+      }
+    });
   }, []);
 
   const [product, setProduct] = useState("열차폐판");
@@ -164,9 +160,12 @@ const RequestFormBase = ({
                 onChange={(e) => setSelectedPO(e.target.value)}
                 className="w-full bg-slate-50 border border-gray-200 text-sm px-4 py-3 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold transition-colors cursor-pointer"
               >
-                <option value=""></option>
-                <option value=""></option>
-                <option value=""></option>
+                <option value="">PO를 선택하세요</option>
+                {poList.map((po) => (
+                  <option key={po.poId} value={po.poId}>
+                    {po.poId} ({po.receiverName})
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">

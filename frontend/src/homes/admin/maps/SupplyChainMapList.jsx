@@ -19,14 +19,21 @@ const SupplyChainMapList = ({
   const [currentCategory, setCurrentCategory] = useState(null);
   const [currentStatus, setCurrentStatus] = useState("ALL");
 
+  /* [v2.2] status 매핑: DB "ACTIVE" → FE "NORMAL" 변환 */
+  const normalizeStatus = (s) => {
+    if (!s || s === "ACTIVE" || s === "NORMAL") return "NORMAL";
+    return s;
+  };
+
   const filteredProducts = currentCategory
     ? products.filter((item) => {
       const matchesSearch =
-        item.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
-        item.detailName.toLowerCase().includes(searchQuery.trim().toLowerCase());
+        item.name?.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+        item.detailName?.toLowerCase().includes(searchQuery.trim().toLowerCase());
       const matchesCategory = item.category === currentCategory;
+      const itemStatus = normalizeStatus(item.status);
       const matchesStatus =
-        currentStatus === "ALL" || item.status === currentStatus;
+        currentStatus === "ALL" || itemStatus === currentStatus;
 
       return matchesSearch && matchesCategory && matchesStatus;
     })
@@ -175,7 +182,7 @@ const SupplyChainMapList = ({
               </thead>
               <tbody id="product-table-body" className="divide-y divide-gray-100">
                 {filteredProducts.map((item) => {
-                  const isEmergency = item.status === "EMERGENCY";
+                  const isEmergency = normalizeStatus(item.status) === "EMERGENCY";
                   return (
                     <tr
                       key={item.id}
