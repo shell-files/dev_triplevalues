@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/Common/Card";
+import { GET, POST, PUT } from "@utils/Network";
 
 const CompanyForm = ({
   formData,
@@ -120,7 +121,7 @@ const CompanyForm = ({
     };
 
     try {
-      const res = needsUpdate ? await PUT(`/company/${pid}`, apiData) : await POST("/company/register", apiData);
+      const res = needsUpdate ? await PUT(`/company/${pid}`, apiData) : await POST("/company", apiData);
       if (res && res.status === true) {
         const isEdit = needsUpdate && !isProfileIncomplete;
         alert("기업 정보가 성공적으로 " + (isEdit ? "수정" : "등록") + "되었습니다.");
