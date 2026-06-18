@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import CompanyWelcome from "@partners/companys/CompanyWelcome";
 import CompanyForm from "@partners/companys/CompanyForm";
 import CompanyDetail from "@partners/companys/CompanyDetail";
-import { GET } from "@utils/Network";
+import { GET, POST, PUT } from "@utils/Network";
 
 /* [v3.0] CompanyInfos.jsx 전 기능 이식 — is_registered 라우팅, API 연동, 파일/공장 상태 */
 

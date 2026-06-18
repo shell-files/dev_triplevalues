@@ -507,7 +507,7 @@ const CompanyDetail = ({
                                     type="text"
                                     placeholder="예: 울산 제1공장"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.factory_name}
+                                    value={editFactoryData.factory_name || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
@@ -525,7 +525,7 @@ const CompanyDetail = ({
                                     type="text"
                                     placeholder="예: 울산시 북구 산업로 100"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.address}
+                                    value={editFactoryData.address || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
@@ -569,7 +569,7 @@ const CompanyDetail = ({
                                     max="100"
                                     placeholder="예: 40"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.utilization_rate}
+                                    value={editFactoryData.utilization_rate || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
@@ -587,7 +587,7 @@ const CompanyDetail = ({
                                     type="number"
                                     placeholder="예: 1200"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.scope1_emissions}
+                                    value={editFactoryData.scope1_emissions || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
@@ -604,7 +604,7 @@ const CompanyDetail = ({
                                     type="number"
                                     placeholder="예: 800"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.scope2_emissions}
+                                    value={editFactoryData.scope2_emissions || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
@@ -622,7 +622,7 @@ const CompanyDetail = ({
                                     step="0.1"
                                     placeholder="예: 8.5"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.feoc_raw_material_ratio}
+                                    value={editFactoryData.feoc_raw_material_ratio || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
@@ -643,7 +643,7 @@ const CompanyDetail = ({
                                     step="0.01"
                                     placeholder="예: 0.12"
                                     className="w-full bg-white border border-gray-200 text-sm px-3.5 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-gray-400 transition"
-                                    value={editFactoryData.trir_safety_rate}
+                                    value={editFactoryData.trir_safety_rate || ""}
                                     onChange={(e) =>
                                       setEditFactoryData((prev) => ({
                                         ...prev,
