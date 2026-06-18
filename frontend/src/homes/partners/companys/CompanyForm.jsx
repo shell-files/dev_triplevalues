@@ -35,6 +35,7 @@ const CompanyForm = ({
     const file = e.target.files[0];
     if (file) {
       setSelfAssessFileName(file.name);
+      if (fileStates.setSelfAssessFileObj) fileStates.setSelfAssessFileObj(file);
     }
   };
 
@@ -42,6 +43,7 @@ const CompanyForm = ({
     const file = e.target.files[0];
     if (file) {
       setCocFileName(file.name);
+      if (fileStates.setCocFileObj) fileStates.setCocFileObj(file);
     }
   };
 
@@ -52,6 +54,7 @@ const CompanyForm = ({
         const newNames = files.map((f) => f.name);
         return Array.from(new Set([...prev, ...newNames]));
       });
+      if (fileStates.setCertFileObjs) fileStates.setCertFileObjs(prev => [...(prev || []), ...files]);
     }
   };
 
@@ -62,6 +65,7 @@ const CompanyForm = ({
         const newNames = files.map((f) => f.name);
         return Array.from(new Set([...prev, ...newNames]));
       });
+      if (fileStates.setEvidenceFileObjs) fileStates.setEvidenceFileObjs(prev => [...(prev || []), ...files]);
     }
   };
 

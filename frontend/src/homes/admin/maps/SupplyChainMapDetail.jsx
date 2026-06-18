@@ -4,7 +4,7 @@ import { GET } from "@utils/Network";
 
 const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
   const [selectedVersion, setSelectedVersion] = useState("");
-  const [selectedNode, setSelectedNode] = useState("novelis");
+  const [selectedNode, setSelectedNode] = useState(null);
   const [animate, setAnimate] = useState(false);
 
   /* [v3.0] API state — BE에서 완성된 nodeDetails 직접 수신 */
@@ -12,9 +12,34 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
   const [nodeDetails, setNodeDetails] = useState({});
   const [requests, setRequests] = useState([]);
   const [versions, setVersions] = useState([]);
+  const [bomTree, setBomTree] = useState([]);
 
   /* short_name → FE 노드 키 (단순 조회, 변환 로직 없음) */
-  const NODE_KEY = { novelis: "노벨리스코리아", krm: "케이알엠", comilog: "Comilog", riotinto: "Windalco" };
+  /* [v5.0] 버전 필터 + partner_id 중복 제거 */
+  const verObj = versions.find(v => v.version === selectedVersion);
+  const verDate = verObj?.createdAt || "";
+  const filteredBomTree = (() => {
+    if (!bomTree || bomTree.length === 0) return [];
+    const hasDate = bomTree.some(n => n.createdAt && n.createdAt !== "");
+    let filtered = bomTree;
+    if (hasDate && verDate) {
+      filtered = bomTree.filter(n => n.createdAt === verDate);
+    } else if (hasDate) {
+      const max = bomTree.reduce((m, n) => (n.createdAt || "") > m ? n.createdAt : m, "");
+      filtered = max ? bomTree.filter(n => n.createdAt === max) : bomTree;
+    }
+    /* partner_id 기준 중복 제거 */
+    const seen = new Set();
+    return filtered.filter(n => {
+      const k = n.partnerId || n.shortName || n.companyName;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  })();
+  const tier1 = filteredBomTree.filter(n => n.tier === 1);
+  const tier2 = filteredBomTree.filter(n => n.tier === 2);
+  const tier3 = filteredBomTree.filter(n => n.tier === 3);
 
   /* [v3.0] API 조회 — 모든 useEffect는 early return 전에 배치 */
   useEffect(() => {
@@ -25,7 +50,10 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
         setNodeDetails(json.data.nodeDetails || {});
         setRequests(json.data.requests || []);
         setVersions(json.data.versions || []);
+        setBomTree(json.data.bomTree || []);
         if (json.data.versions?.length > 0) setSelectedVersion(json.data.versions[0].version);
+        const bt = json.data.bomTree || [];
+        if (bt.length > 0) setSelectedNode(bt[0].shortName || bt[0].companyName || null);
       }
     });
   }, [productId]);
@@ -39,7 +67,7 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
 
   /* [v3.0] nodeDetail — BE 데이터 직접 사용 */
   const defaultNode = { title: "-", partNo: "-", part: "-", weight: "-", qty: "-", leadtime: "-", spec: "-", origin: "-", dim: "-", chem: { mn: 0, cu: 0, si: 0, fe: 0, al: 0 } };
-  const nodeDetail = nodeDetails[NODE_KEY[selectedNode]] || defaultNode;
+  const nodeDetail = (selectedNode && nodeDetails[selectedNode]) ? nodeDetails[selectedNode] : defaultNode;
 
   // 화학 성분 수치에 따른 고(Red), 중(Amber), 저(Green) 리스크 분류 로직
   const getRiskLevel = (name, valueStr) => {
@@ -206,77 +234,106 @@ const SupplyChainMapDetail = ({ productId, onBack = () => { } }) => {
 
             {/* 가로/세로 트리 시각화 패널 */}
             <div className="relative py-4 px-2 bg-slate-50/50 rounded-xl border border-gray-200/50 flex-1 min-h-[460px] overflow-x-auto">
-              <div className="relative w-[600px] h-[440px] mx-auto">
-                {/* SVG 곡선/실선 연결선 */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                  {/* 1차 -> 2차 실선 */}
-                  <line x1="300" y1="116" x2="300" y2="178" stroke="#cbd5e1" strokeWidth="2" />
-                  {/* 2차 -> 3차-A (Comilog) 곡선 */}
-                  <path d="M 300 284 C 300 310, 160 310, 160 338" fill="none" stroke="#cbd5e1" strokeWidth="2" />
-                  {/* 2차 -> 3차-B (Rio Tinto) 곡선 */}
-                  <path d="M 300 284 C 300 310, 440 310, 440 338" fill="none" stroke="#cbd5e1" strokeWidth="2" />
-                </svg>
+              <div className="relative w-full h-[430px]">
+                {/* [v5.0] 동적 맵 — 중복 제거 + 크기 통일 + 연결선 정확 매칭 */}
 
-                {/* 1차 협력사 레벨 (저위험: 초록 테마) */}
-                <button
-                  type="button"
-                  id="node-novelis"
-                  onClick={() => setSelectedNode('novelis')}
-                  className={`absolute left-1/2 -translate-x-1/2 top-3 w-60 bg-emerald-50/40 border-2 border-emerald-500 shadow-md rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'novelis' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-white bg-emerald-600 px-1.5 py-0.5 rounded">1차 가공</span>
-                    <span className="text-xs text-emerald-700 font-bold">저위험</span>
-                  </div>
-                  <p className="text-base font-bold text-gray-900">노벨리스 코리아</p>
-                  <p className="text-sm text-emerald-800 mt-1 font-semibold">압연 및 합금 가공 플레이트</p>
-                </button>
+                {/* 1차 협력사 (상단 중앙) */}
+                <div className="absolute top-[10px] left-0 right-0 flex justify-center gap-3 z-10">
+                  {tier1.map((node) => {
+                    const key = node.shortName || node.companyName || "t1";
+                    const rl = node.riskLevel || "저위험";
+                    const isH = rl === "고위험"; const isM = rl === "중위험";
+                    const bgCls = isH ? "bg-red-50/40 border-red-500" : isM ? "bg-amber-50/40 border-amber-400" : "bg-emerald-50/40 border-emerald-500";
+                    const badgeCls = isH ? "bg-red-600" : isM ? "bg-amber-500" : "bg-emerald-600";
+                    const txtCls = isH ? "text-red-700" : isM ? "text-amber-700" : "text-emerald-700";
+                    const subCls = isH ? "text-red-800" : isM ? "text-amber-800" : "text-emerald-800";
+                    return (
+                      <button key={key} type="button" onClick={() => setSelectedNode(key)}
+                        className={`w-[220px] ${bgCls} border-2 shadow-md rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === key ? "ring-2 ring-slate-800 ring-offset-2" : ""}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs font-bold text-white ${badgeCls} px-1.5 py-0.5 rounded`}>1차 가공</span>
+                          <span className={`text-xs font-bold ${txtCls}`}>{rl}</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900 truncate">{node.companyName || key}</p>
+                        <p className={`text-xs mt-1 font-semibold ${subCls} truncate`}>{node.itemName || "-"}</p>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                {/* 2차 제련소 레벨 (중위험: 노란 테마) */}
-                <button
-                  type="button"
-                  id="node-krm"
-                  onClick={() => setSelectedNode('krm')}
-                  className={`absolute left-1/2 -translate-x-1/2 top-[180px] w-60 bg-amber-50/40 border-2 border-amber-400 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'krm' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded">2차 제련</span>
-                    <span className="text-xs text-amber-700 font-bold">중위험</span>
-                  </div>
-                  <p className="text-base font-bold text-gray-900">케이알엠(주)</p>
-                  <p className="text-sm text-amber-800 mt-1 font-semibold">재생 알루미늄 용해/제련</p>
-                </button>
+                {/* 1→2 연결선 */}
+                {tier2.length > 0 && <div className="absolute top-[108px] left-1/2 w-px h-[52px] bg-gray-300 z-0"></div>}
 
-                {/* 3차 채굴사 레벨 (2개 노드) */}
-                {/* Comilog 가봉 (중위험: 노란 테마) */}
-                <button
-                  type="button"
-                  id="node-comilog"
-                  onClick={() => setSelectedNode('comilog')}
-                  className={`absolute left-[40px] top-[340px] w-60 bg-amber-50/40 border-2 border-amber-400 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'comilog' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded">3차 채굴</span>
-                    <span className="text-xs text-amber-700 font-bold">중위험</span>
-                  </div>
-                  <p className="text-base font-bold text-gray-900">Comilog 가봉 광산 자산</p>
-                  <p className="text-sm text-amber-800 mt-1 font-semibold">망간 광석 채굴 및 파쇄 공정</p>
-                </button>
+                {/* 2차 협력사 (중앙) */}
+                <div className="absolute top-[160px] left-0 right-0 flex justify-center gap-3 z-10">
+                  {tier2.map((node) => {
+                    const key = node.shortName || node.companyName || "t2";
+                    const rl = node.riskLevel || "중위험";
+                    const isH = rl === "고위험"; const isM = rl === "중위험" || !node.riskLevel;
+                    const bgCls = isH ? "bg-red-50/40 border-red-500" : isM ? "bg-amber-50/40 border-amber-400" : "bg-emerald-50/40 border-emerald-500";
+                    const badgeCls = isH ? "bg-red-600" : isM ? "bg-amber-500" : "bg-emerald-600";
+                    const txtCls = isH ? "text-red-700" : isM ? "text-amber-700" : "text-emerald-700";
+                    const subCls = isH ? "text-red-800" : isM ? "text-amber-800" : "text-emerald-800";
+                    return (
+                      <button key={key} type="button" onClick={() => setSelectedNode(key)}
+                        className={`w-[220px] ${bgCls} border-2 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === key ? "ring-2 ring-slate-800 ring-offset-2" : ""}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs font-bold text-white ${badgeCls} px-1.5 py-0.5 rounded`}>2차 제련</span>
+                          <span className={`text-xs font-bold ${txtCls}`}>{rl}</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900 truncate">{node.companyName || key}</p>
+                        <p className={`text-xs mt-1 font-semibold ${subCls} truncate`}>{node.itemName || "-"}</p>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                {/* Rio Tinto (고위험: 붉은 테마) */}
-                <button
-                  type="button"
-                  id="node-riotinto"
-                  onClick={() => setSelectedNode('riotinto')}
-                  className={`absolute right-[40px] top-[340px] w-60 bg-red-50/40 border-2 border-red-500 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none z-10 ${selectedNode === 'riotinto' ? 'ring-2 ring-slate-800 ring-offset-2' : ''}`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">3차 채굴</span>
-                    <span className="text-xs text-red-700 font-bold">고위험</span>
+                {/* 2→3 연결선 (div 기반 — SVG 좌표 미스매치 방지) */}
+                {tier3.length > 0 && (
+                  <div className="absolute top-[258px] left-0 right-0 z-0 flex justify-center">
+                    <div className="relative" style={{ width: `${Math.max(tier3.length * 230, 230)}px` }}>
+                      {/* 수직 줄기 */}
+                      <div className="absolute left-1/2 top-0 w-px h-[30px] bg-gray-300"></div>
+                      {/* 수평 가지 */}
+                      {tier3.length > 1 && (
+                        <div className="absolute top-[30px] bg-gray-300" style={{
+                          left: `${(1 / (tier3.length * 2)) * 100}%`,
+                          right: `${(1 / (tier3.length * 2)) * 100}%`,
+                          height: "1px"
+                        }}></div>
+                      )}
+                      {/* 각 노드로 내려가는 수직선 */}
+                      {tier3.map((_, idx) => {
+                        const pct = tier3.length === 1 ? 50 : (idx / (tier3.length - 1)) * (100 - 100/tier3.length) + 100/(tier3.length*2);
+                        return <div key={idx} className="absolute top-[30px] w-px h-[22px] bg-gray-300" style={{ left: `${pct}%` }}></div>;
+                      })}
+                    </div>
                   </div>
-                  <p className="text-base font-bold text-gray-900">Rio Tinto 보크사이트 인프라</p>
-                  <p className="text-sm text-red-800 mt-1 font-semibold">보크사이트(알루미늄 원광) 수급</p>
-                </button>
+                )}
+
+                {/* 3차 협력사 (하단 — 최대 4개 균등 배치) */}
+                <div className="absolute top-[310px] left-0 right-0 flex justify-center gap-3 z-10 px-2">
+                  {tier3.map((node, idx) => {
+                    const key = node.shortName || node.companyName || ("t3-" + idx);
+                    const rl = node.riskLevel || "중위험";
+                    const isH = rl === "고위험";
+                    const bgCls = isH ? "bg-red-50/40 border-red-500" : "bg-amber-50/40 border-amber-400";
+                    const badgeCls = isH ? "bg-red-600" : "bg-amber-500";
+                    const txtCls = isH ? "text-red-700" : "text-amber-700";
+                    const subCls = isH ? "text-red-800" : "text-amber-800";
+                    return (
+                      <button key={key} type="button" onClick={() => setSelectedNode(key)}
+                        className={`w-[220px] ${bgCls} border-2 shadow-sm rounded-xl p-4 text-left transition cursor-pointer focus:outline-none ${selectedNode === key ? "ring-2 ring-slate-800 ring-offset-2" : ""}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs font-bold text-white ${badgeCls} px-1.5 py-0.5 rounded`}>3차 채굴</span>
+                          <span className={`text-xs font-bold ${txtCls}`}>{rl}</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900 truncate">{node.companyName || key}</p>
+                        <p className={`text-xs mt-1 font-semibold ${subCls} truncate`}>{node.itemName || "-"}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

@@ -140,17 +140,18 @@ const CompanyDetail = ({
   };
 
   const renderMultiFileListSection = (title, fileNames) => {
-    if (!fileNames || fileNames.length === 0) {
+    const uniqueNames = fileNames ? [...new Set(fileNames)] : [];
+    if (uniqueNames.length === 0) {
       return (
         <div className="bg-slate-50/60 border border-gray-100 p-3 rounded-xl flex items-center gap-3 text-xs text-gray-400">
           제출된 파일이 없습니다.
         </div>
       );
     }
-    const hasScroll = fileNames.length >= 7;
+    const hasScroll = uniqueNames.length >= 7;
     return (
       <div className={`space-y-2 ${hasScroll ? "max-h-[360px] overflow-y-auto pr-1" : ""}`}>
-        {fileNames.map((name, idx) => (
+        {uniqueNames.map((name, idx) => (
           <div
             key={idx}
             className="bg-slate-50/60 border border-gray-100 p-3 rounded-xl flex items-center justify-between gap-3 text-xs"

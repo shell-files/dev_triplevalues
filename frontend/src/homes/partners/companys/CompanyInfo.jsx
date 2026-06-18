@@ -78,8 +78,8 @@ const CompanyInfo = ({ loginData }) => {
       if (fj.status && fj.data) {
         setCocFileName(fj.data.coc[0]?.origin || "");
         setSelfAssessFileName(fj.data.selfassess[0]?.origin || "");
-        setCertFileNames(fj.data.cert.map(f => f.origin));
-        setEvidenceFileNames(fj.data.evidence.map(f => f.origin));
+        setCertFileNames([...new Set(fj.data.cert.map(f => f.origin))]);
+        setEvidenceFileNames([...new Set(fj.data.evidence.map(f => f.origin))]);
         setCategorizedFiles(fj.data);
       }
     }).catch(() => {});

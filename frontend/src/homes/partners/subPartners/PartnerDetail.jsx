@@ -2,30 +2,30 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@components/Common/Card";
 import { GET } from "@utils/Network";
 
-const MOCK_FACTORIES = [
-  {
-    id: 1,
-    factory_name: "인천 송도 합금 제1공장",
-    address: "인천광역시 연수구 송도과학로 32",
-    operation_status: "가동",
-    utilization_rate: 65,
-    scope1_emissions: 1840,
-    scope2_emissions: 920,
-    feoc_raw_material_ratio: 0,
-    trir_safety_rate: 0.05
-  },
-  {
-    id: 2,
-    factory_name: "경기 화성 원료 제2공장",
-    address: "경기도 화성시 향남읍 제약단지로 55",
-    operation_status: "정비",
-    utilization_rate: 35,
-    scope1_emissions: 980,
-    scope2_emissions: 460,
-    feoc_raw_material_ratio: 1.2,
-    trir_safety_rate: 0.12
-  }
-];
+// const MOCK_FACTORIES = [
+//   {
+//     id: 1,
+//     factory_name: "인천 송도 합금 제1공장",
+//     address: "인천광역시 연수구 송도과학로 32",
+//     operation_status: "가동",
+//     utilization_rate: 65,
+//     scope1_emissions: 1840,
+//     scope2_emissions: 920,
+//     feoc_raw_material_ratio: 0,
+//     trir_safety_rate: 0.05
+//   },
+//   {
+//     id: 2,
+//     factory_name: "경기 화성 원료 제2공장",
+//     address: "경기도 화성시 향남읍 제약단지로 55",
+//     operation_status: "정비",
+//     utilization_rate: 35,
+//     scope1_emissions: 980,
+//     scope2_emissions: 460,
+//     feoc_raw_material_ratio: 1.2,
+//     trir_safety_rate: 0.12
+//   }
+// ];
 
 const PartnerDetail = ({ partner, onBack, loginData }) => {
   const [activeTab, setActiveTab] = useState("info");

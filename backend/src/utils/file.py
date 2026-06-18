@@ -45,17 +45,20 @@ def licenseFile(file, partnerId):
         """    
         delFileId = findOne(selectSql, (partnerId, vrtsion))
 
-        deleteSql = f"""
-            UPDATE `LICENSE_FILE`
-            SET delete_yn = 1
-            WHERE id = ? AND delete_yn = 0
-        """
-        save(deleteSql, (delFileId.get("id"),))
+        # [v1.4] None 체크 — 이전 파일 레코드가 없으면 Soft Delete 건너뜀
+        if delFileId and delFileId.get("id"):
+            deleteSql = f"""
+                UPDATE `LICENSE_FILE`
+                SET delete_yn = 1
+                WHERE id = ? AND delete_yn = 0
+            """
+            save(deleteSql, (delFileId.get("id"),))
 
     fileIdSql = f"""
         SELECT id
         FROM `LICENSE_FILE`
-        WHERE fileName = ? AND delete_yn = 0;"""
+        WHERE fileName = ? AND delete_yn = 0
+    """
     fileIdParams = (newName,)
     fileId = findOne(fileIdSql, fileIdParams)
     if result:

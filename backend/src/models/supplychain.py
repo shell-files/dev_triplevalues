@@ -142,14 +142,27 @@ def getProductDetailProcess(productId: str) -> dict:
             "statusLabel": statusLabelMap.get(rawStatus, rawStatus),
         })
 
-    # 버전 히스토리 데이터 (BOM 기반)
-    versions = [{
-        "version": f"v1.0",
-        "label": f"v1.0 ({str(bom['created_at'])[:10]}부터) [최신]",
-        "bomId": bom["bom_id"],
-        "status": bom.get("status", "ACTIVE"),
-        "createdAt": str(bom["created_at"])[:10] if bom.get("created_at") else "",
-    }]
+    # [v5.1] 버전 히스토리 — BOM_TIER_TREE created_at 기반 동적 생성
+    versionRows = findAll("""
+        SELECT DISTINCT DATE(created_at) AS ver_date
+        FROM BOM_TIER_TREE WHERE bom_id = ?
+        ORDER BY ver_date ASC
+    """, (productId,)) or []
+    versions = []
+    for i, vr in enumerate(versionRows):
+        vd = str(vr["ver_date"])[:10] if vr.get("ver_date") else ""
+        vNum = f"v{i+1}.0"
+        isLatest = (i == len(versionRows) - 1)
+        versions.append({
+            "version": vNum,
+            "label": f"{vNum} ({vd}부터)" + (" [최신]" if isLatest else ""),
+            "bomId": bom["bom_id"],
+            "status": bom.get("status", "ACTIVE"),
+            "createdAt": vd,
+        })
+    if not versions:
+        versions = [{"version": "v1.0", "label": f"v1.0 ({str(bom.get('created_at',''))[:10]}부터) [최신]",
+                      "bomId": bom["bom_id"], "status": "ACTIVE", "createdAt": str(bom.get("created_at",""))[:10]}]
 
     return responseModel(True, "", {
         "bom": {
