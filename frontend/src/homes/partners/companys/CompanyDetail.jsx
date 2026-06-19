@@ -4,10 +4,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/Common/Car
 const CompanyDetail = ({
   savedData,
   factories,
+  categorizedFiles,
   onAddFactory,
   onDeleteFactory,
   onUpdateFactory,
   onNavigateToRegister,
+  apiCompany,
+  loginData,
 }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -96,9 +99,26 @@ const CompanyDetail = ({
     );
   };
 
-  // 모의 파일 다운로드 핸들러
-  const handleMockDownload = (fileName) => {
-    alert(fileName + " 파일 다운로드가 완료되었습니다.");
+  // [v1.5] 파일 다운로드 — window.open (CORS 우회 + BE Content-Disposition으로 오리진 파일명 보장)
+  const handleFileDownload = (storedFilename) => {
+    if (!storedFilename) return;
+    const proto = window.location.protocol;
+    const host = window.location.hostname;
+    const baseURL = host === "localhost"
+      ? "http://localhost:8000"
+      : `${proto}//${host}:8000`;
+    window.open(`${baseURL}/company/file/download/${encodeURIComponent(storedFilename)}`, "_blank");
+  };
+
+  /* categorizedFiles에서 origin → storedFilename 매핑 */
+  const findStoredFilename = (originName) => {
+    if (!categorizedFiles) return originName;
+    for (const key of ["coc", "selfassess", "evidence", "cert"]) {
+      const files = categorizedFiles[key] || [];
+      const found = files.find(f => f.origin === originName);
+      if (found) return found.filename || found.origin;
+    }
+    return originName;
   };
 
   // 서류 목록 렌더링 헬퍼
@@ -116,7 +136,7 @@ const CompanyDetail = ({
         {fileName && (
           <button
             type="button"
-            onClick={() => handleMockDownload(fileName)}
+            onClick={() => handleFileDownload(findStoredFilename(fileName))}
             className="text-xs p-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-700 transition shrink-0 flex items-center justify-center cursor-pointer"
           >
             <svg
@@ -164,7 +184,7 @@ const CompanyDetail = ({
             </div>
             <button
               type="button"
-              onClick={() => handleMockDownload(name)}
+              onClick={() => handleFileDownload(findStoredFilename(name))}
               className="text-xs p-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-700 transition shrink-0 flex items-center justify-center cursor-pointer"
             >
               <svg

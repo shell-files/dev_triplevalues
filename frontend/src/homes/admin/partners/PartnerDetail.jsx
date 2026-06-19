@@ -86,15 +86,18 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
     return <Chip text="평가: 저위험" color="green" />;
   };
 
-  let baseURL = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
+  /* [v1.1] HTTPS 혼합 콘텐츠 방지 — 현재 페이지 프로토콜 자동 매칭 */
+  /* [v2.3] 프로토콜 자동 매칭 — 환경변수와 무관하게 현재 페이지 프로토콜 사용 */
+  const proto = window.location.protocol;
+  const host = window.location.hostname;
+  let baseURL = host === "localhost"
+    ? "http://localhost:8000"
+    : `${proto}//${host}:8000`;
 
-  /* [v2.1] 파일 다운로드 — 실제 API 호출 */
+  /* [v2.2] 파일 다운로드 — window.open (CORS 우회 + 오리진 파일명 보장) */
   const handleDownload = (file) => {
     const fname = file.filename || file.origin || file;
-    const a = document.createElement("a");
-    a.href = `${baseURL}/company/file/download/${fname}`;
-    a.download = file.origin || fname;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    window.open(`${baseURL}/company/file/download/${encodeURIComponent(fname)}`, "_blank");
   };
 
   /* [v2.1] 파일 목록 렌더링 — API 파일 객체 지원 */

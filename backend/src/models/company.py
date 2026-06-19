@@ -12,6 +12,7 @@ from src.utils.file import supportingFile, softDeleteFileById
 from src.models.model import responseModel
 from pathlib import Path
 from urllib.parse import quote
+from fastapi import Response
 from fastapi.responses import FileResponse
 from src.utils.ocrs import extractChecklistProcess
 
@@ -238,6 +239,7 @@ async def uploadSelfAssessProcess(partnerId, file) -> dict:
             """
             save(updateSql, (partnerId, nextVersion, fileId))
         result["data"]["version"] = nextVersion
+
         if oldVersion > 0:
             # 이전 버전 답변은 delete_yn=1 처리 (최신 버전만 조회되도록)
             deleteSql = """
@@ -343,25 +345,40 @@ def getFilesByPartnerProcess(partnerId) -> dict:
 # ════════════════════════════════════════════════════════════
  
 def fileDownloadProcess(filename: str):
-    """파일 다운로드 — DB origin 컬럼으로 원본 파일명 변환 후 FileResponse 반환"""
- 
-    # DB에서 원본 파일명 조회 (SUPPORTING_FILE → LICENSE_FILE 순)
+    """파일 다운로드 — DB origin으로 원본 파일명 복원, Response 직접 반환"""
+
+    # 1. DB에서 원본 파일명 조회
     originName = filename
     for table in ["SUPPORTING_FILE", "LICENSE_FILE"]:
         row = findOne(f"SELECT origin FROM `{table}` WHERE filename = ?", (filename,))
         if row and row.get("origin"):
             originName = row["origin"]
             break
- 
-    # 파일 경로 탐색 (supportingFiles/ → licenseFiles/ 순)
+
+    # 2. 디스크에서 파일 찾기
+    filePath = None
     for folder in ["supportingFiles", "licenseFiles"]:
-        path = Path(folder) / filename
-        if path.exists():
-            encoded = quote(originName)
-            headers = {"Content-Disposition": f"attachment; filename*=UTF-8\'\'\'{encoded}"}
-            return FileResponse(path=str(path), headers=headers, media_type="application/octet-stream")
- 
-    return responseModel(False, "파일을 찾을 수 없습니다.")
+        candidate = Path(folder) / filename
+        if candidate.exists():
+            filePath = candidate
+            break
+
+    if not filePath:
+        return responseModel(False, "파일을 찾을 수 없습니다.")
+
+    # 3. 파일 바이너리 읽기
+    with open(str(filePath), "rb") as fobj:
+        content = fobj.read()
+
+    # 4. Content-Disposition 헤더 직접 조립 (원본 파일명 강제)
+    encodedOrigin = quote(originName, safe="")
+    cd_header = "attachment; filename*=UTF-8''" + encodedOrigin
+
+    return Response(
+        content=content,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": cd_header},
+    )
 
 
 # ════════════════════════════════════════════════════════════
