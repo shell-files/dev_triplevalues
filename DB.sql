@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════════════╗
--- ║  Alu-ESG Platform — DB 스키마 v0.5 (통합 최신판)                   ║
+-- ║  Alu-ESG Platform — DB 스키마 v0.6 (통합 최신판)                   ║
 -- ║  2026-06-05 · App.jsx (2,629줄) 기준 · 전체 30개 테이블            ║
 -- ║                                                                  ║
 -- ║  ── 명명 규칙 ──                                                   ║
@@ -17,6 +17,14 @@
 -- ║      LICENSE_FILE·SUPPORTING_FILE 신규 (파일 관리)                ║
 -- ║      RISK_CLASSIFICATION 제거 (ESG_RISK_CRITERIA와 중복)          ║
 -- ║  v0.5 TOKEN 테이블 추가 및 AI_AGENT_RULE 컬럼 추가 및 수정           ║
+-- ║  v0.6 [2026-06-19] BE 소스 교차 분석 기반 스키마 동기화              ║
+-- ║      + AI_AGENT_RUN_LOG 신규 (agentpipeline.py 실사용)              ║
+-- ║      + MATERIAL_REQUEST 신규 (워크플로우 요청 추적)                   ║
+-- ║      + MATERIAL_DRAFT 신규 (임시 저장 스냅샷)                        ║
+-- ║      - INVITE 삭제 (INVITATION_MESSAGE로 완전 대체)                 ║
+-- ║      - RM_APPROVAL_STEP 삭제 (BE 미참조, RM_APPROVAL로 통합)        ║
+-- ║      * ROLE/USER_ROLE/ROLE_MENU_ACCESS → RESERVED 태그 부여         ║
+-- ║      * ESG_INDICATOR/SELF_ASSESS_REPORT 등 → RESERVED 태그 부여     ║
 -- ║                                                                  ║
 -- ╚══════════════════════════════════════════════════════════════════╝
 
@@ -107,65 +115,7 @@ CREATE TABLE `ALARM` (
 
 -- ══════════════════════════════════════════════════════════
 -- S2. 기업 · 초대 (2) — ★ 산림파괴 컬럼 삭제
--- ══════════════════════════════════════════════════════════
-
-DROP TABLE IF EXISTS `COMPANY`;
-CREATE TABLE `COMPANY` (
-  id             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '기업 내부 ID (PK)',
-  partner_id     VARCHAR(20)  NOT NULL                COMMENT '협력사 코드 — COMPANIES.id',
-  company_name   VARCHAR(200) NOT NULL                COMMENT '기업명 — COMPANIES.company_name',
-  short_name     VARCHAR(50)                          COMMENT '약어명 — COMPANIES.short',
-  ceo_name       VARCHAR(50)                          COMMENT '대표자명',
-  biz_no         VARCHAR(30)                          COMMENT '사업자등록번호',
-  founded        DATE                                 COMMENT '설립일',
-  address        VARCHAR(500)                         COMMENT '소재지',
-  size           VARCHAR(20)                          COMMENT '규모 (대기업/중견/중소)',
-  country        VARCHAR(50)                          COMMENT '국가',
-  email          VARCHAR(255)                         COMMENT '대표 이메일',
-  tier           TINYINT      NOT NULL DEFAULT 0      COMMENT '차수 (0=원청사, 1~3)',
-  tier_label     VARCHAR(20)                          COMMENT '차수 표시명',
-  parent_id      VARCHAR(20)                          COMMENT '상위 협력사 코드',
-  risk_level     VARCHAR(10)                          COMMENT '리스크 등급 (저위험/중위험/고위험)',
-  employees      INT                                  COMMENT '임직원 수',
-  revenue        BIGINT                               COMMENT '매출액 (백만원)',
-  assets         BIGINT                               COMMENT '자산총계 (백만원)',
-  scope1         BIGINT                               COMMENT 'Scope 1 GHG (tCO₂e)',
-  scope2         BIGINT                               COMMENT 'Scope 2 GHG (tCO₂e)',
-  feoc_ratio     DECIMAL(5,2)                         COMMENT 'FEOC 원료 비중 (%)',
-  trir           DECIMAL(5,2)                         COMMENT '산업안전 TRIR',
-  cmrt           CHAR(1) DEFAULT 'N'                  COMMENT 'CMRT 인증 (Y/N)',
-  emat           CHAR(1) DEFAULT 'N'                  COMMENT 'EMAT 인증 (Y/N)',
-  iso14001       CHAR(1) DEFAULT 'N'                  COMMENT 'ISO 14001 인증',
-  iso45001       CHAR(1) DEFAULT 'N'                  COMMENT 'ISO 45001 인증',
-  iatf           CHAR(1) DEFAULT 'N'                  COMMENT 'IATF 16949 인증',
-  rba            CHAR(1) DEFAULT 'N'                  COMMENT 'RBA 인증',
-  rmap           CHAR(1) DEFAULT 'N'                  COMMENT 'RMAP 인증',
-  -- ✗ deforest_yn 삭제 (v0.4)
-  -- ✗ deforest_note 삭제 (v0.4)
-  cert_count     INT          DEFAULT 0               COMMENT '보유 인증 수',
-  status         VARCHAR(20)  DEFAULT 'ACTIVE'        COMMENT '상태',
-  is_registered  TINYINT(1)   NOT NULL DEFAULT 0        COMMENT '등록 완료 여부 (0=초대만, 1=등록 완료→재접속 시 2차 인증)',
-  delete_yn      TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '삭제 여부',
-  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-  PRIMARY KEY (id), UNIQUE KEY uq_partner (partner_id), KEY idx_tier (tier)
-) ENGINE=InnoDB COMMENT='기업 마스터 — E/S/G·re_ratio·산림파괴 삭제';
-
-DROP TABLE IF EXISTS `INVITE`;
-CREATE TABLE `INVITE` (
-  id          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '초대 ID (PK)',
-  company_id  BIGINT       NOT NULL                COMMENT '발송 기업 ID',
-  user_id     BIGINT       NOT NULL                COMMENT '발송자 ID',
-  role_id     INT          NOT NULL                COMMENT '초대 권한 (FK→ROLE.id)',
-  project_id  BIGINT                               COMMENT '프로젝트 ID',
-  email       VARCHAR(255) NOT NULL                COMMENT '수신자 이메일',
-  uuid        VARCHAR(100)                         COMMENT 'JWE 토큰 UUID',
-  status      VARCHAR(20)  DEFAULT 'PENDING'       COMMENT '상태 (PENDING/ACCEPTED/EXPIRED)',
-  accepted_at DATETIME                             COMMENT '수락 일시',
-  expired_at  DATETIME                             COMMENT '만료 일시',
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  PRIMARY KEY (id), KEY idx_email (email)
-) ENGINE=InnoDB COMMENT='초대 — PartnerInfo';
+-- [v0.6 삭제] INVITE 테이블 — INVITATION_MESSAGE 테이블로 완전 대체됨
 
 -- ══════════════════════════════════════════════════════════
 -- S3. PO 관리 (1)
@@ -196,77 +146,7 @@ CREATE TABLE `PURCHASE_ORDER` (
 
 -- ══════════════════════════════════════════════════════════
 -- S4. 원자재 · 결재 (4)
--- ══════════════════════════════════════════════════════════
-
-DROP TABLE IF EXISTS `RAW_MATERIAL`;
-CREATE TABLE `RAW_MATERIAL` (
-  `id`           BIGINT        NOT NULL AUTO_INCREMENT COMMENT '내부 ID (PK)',
-  `raw_id`       VARCHAR(30)   NOT NULL COMMENT '원자재 코드 (UNIQUE)',
-  `partner_id`   VARCHAR(20)   NOT NULL COMMENT '소유 협력사 코드 (FK)',
-  `name`         VARCHAR(200)  NOT NULL COMMENT '원자재명',
-  `width`        DECIMAL(10,2) COMMENT '폭 (mm)',
-  `length`       DECIMAL(10,2) COMMENT '길이 (mm)',
-  `weight_kg`    DECIMAL(10,2) COMMENT '중량 (kg)',
-  `components`   TEXT          COMMENT '화학 성분 비율 JSON',
-  `origin`       VARCHAR(200)  NOT NULL COMMENT '원산지',
-  `status`       VARCHAR(20)   DEFAULT 'DRAFT' COMMENT '상태 (DRAFT/REQUESTED/APPROVED)',
-  `requested_at` DATETIME      COMMENT '요청일',
-  `approved_at`  DATETIME      COMMENT '승인일',
-  `delete_yn`    TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '삭제 여부',
-  `created_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_raw` (`raw_id`),
-  KEY `idx_partner` (`partner_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='원자재 마스터';
-
-DROP TABLE IF EXISTS `RM_TIER_TREE`;
-CREATE TABLE `RM_TIER_TREE` (
-  id         BIGINT        NOT NULL AUTO_INCREMENT COMMENT '트리 노드 ID (PK)',
-  raw_id     VARCHAR(30)   NOT NULL                COMMENT '원자재 코드 (FK)',
-  tier       TINYINT       NOT NULL                COMMENT '차수 (1~3)',
-  short_name VARCHAR(50)                           COMMENT '협력사 약어명',
-  item_name  VARCHAR(200)                          COMMENT '품목명',
-  comp       VARCHAR(500)                          COMMENT '성분 표기',
-  qty_kg     DECIMAL(12,3)                         COMMENT '수량 (kg)',
-  sort_order INT           DEFAULT 0               COMMENT '정렬 순서',
-  PRIMARY KEY (id), KEY idx_raw (raw_id)
-) ENGINE=InnoDB COMMENT='원자재 공급망 트리';
-
-DROP TABLE IF EXISTS `RM_APPROVAL`;
-CREATE TABLE `RM_APPROVAL` (
-  approval_id       BIGINT   NOT NULL AUTO_INCREMENT COMMENT '결재 ID (PK)',
-  raw_material_id   VARCHAR(30) NOT NULL             COMMENT '원자재 코드 (FK)',
-  request_type      VARCHAR(20) NOT NULL DEFAULT 'NORMAL' COMMENT '유형 (NORMAL/URGENT)',
-  requester_partner VARCHAR(20)                      COMMENT '요청 협력사',
-  request_title     VARCHAR(200)                     COMMENT '제목',
-  request_content   TEXT                             COMMENT '내용',
-  deadline          DATETIME                         COMMENT '기한',
-  approval_yn       CHAR(1)  DEFAULT NULL            COMMENT '승인 (Y/N/NULL)',
-  approval_reason   TEXT                             COMMENT '승인/반려 사유',
-  approval_dt       DATETIME                         COMMENT '승인 일시',
-  approver_partner  VARCHAR(20)                      COMMENT '승인 협력사',
-  status            VARCHAR(20) DEFAULT 'PENDING'    COMMENT '상태',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-  delete_yn  TINYINT(1) NOT NULL DEFAULT 0           COMMENT '삭제 여부',
-  PRIMARY KEY (approval_id), KEY idx_raw (raw_material_id)
-) ENGINE=InnoDB COMMENT='원자재 결재 ★ 유지';
-
-DROP TABLE IF EXISTS `RM_APPROVAL_STEP`;
-CREATE TABLE `RM_APPROVAL_STEP` (
-  step_id       BIGINT   NOT NULL AUTO_INCREMENT COMMENT '단계 ID (PK)',
-  approval_id   BIGINT   NOT NULL                COMMENT '결재 ID (FK)',
-  step_order    TINYINT  NOT NULL                COMMENT '순서',
-  tier_level    TINYINT  NOT NULL                COMMENT '차수 (0~3)',
-  partner_id    VARCHAR(20)                      COMMENT '협력사 코드',
-  status        VARCHAR(20) DEFAULT 'WAITING'    COMMENT '상태',
-  approved_at   DATETIME                         COMMENT '승인 일시',
-  reject_reason TEXT                             COMMENT '반려 사유',
-  note          TEXT                             COMMENT '비고',
-  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  PRIMARY KEY (step_id), KEY idx_approval (approval_id)
-) ENGINE=InnoDB COMMENT='원자재 결재선 ★ 유지';
+-- [v0.6 삭제] RM_APPROVAL_STEP 테이블 — BE 미참조, RM_APPROVAL로 통합됨
 
 -- ══════════════════════════════════════════════════════════
 -- S5. BOM (2)
@@ -782,9 +662,85 @@ INSERT INTO `ESG_RISK_CRITERIA` (item_name,high_risk,medium_risk,low_risk) VALUE
 ('점수 환산','0~39점 (Critical 불합격 자동)','40~69점','70~100점'),
 ('결정 규칙','① Critical 1개라도 불합격 → 고위험 확정\n② FEOC/강제노동 즉시','① High 50%↑ 불합격\n② 40~69점\n③ Critical 전부 합격','① 70%↑ 합격\n② Critical·High 전부 합격\n③ 70점↑');
 
+-- ════════════════════════════════════════════════════════════════════
+-- [v0.6 신규] AI 에이전트 실행 로그
+-- ════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS `AI_AGENT_RUN_LOG` (
+  `run_id`           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '실행 ID (PK)',
+  `trigger_type`     VARCHAR(20)  NOT NULL DEFAULT 'AUTOMATIC' COMMENT '트리거 유형 (AUTOMATIC/MANUAL)',
+  `scope`            VARCHAR(20)  NOT NULL DEFAULT 'PARTNER' COMMENT '범위 (PARTNER/ALL)',
+  `scope_target`     VARCHAR(50)  COMMENT '대상 기업 코드',
+  `rules_evaluated`  INT          NOT NULL DEFAULT 0 COMMENT '평가된 룰 수',
+  `alerts_generated` INT          NOT NULL DEFAULT 0 COMMENT '생성된 알림 수',
+  `critical_count`   INT          NOT NULL DEFAULT 0 COMMENT 'CRITICAL 건수',
+  `fail_count`       INT          NOT NULL DEFAULT 0 COMMENT 'FAIL 건수',
+  `warn_count`       INT          NOT NULL DEFAULT 0 COMMENT 'WARN 건수',
+  `status`           VARCHAR(20)  NOT NULL DEFAULT 'RUNNING' COMMENT '상태 (RUNNING/SUCCESS/FAILED)',
+  `ai_model`         VARCHAR(100) COMMENT 'AI 모델명',
+  `ai_summary`       TEXT         COMMENT 'AI 요약',
+  `duration_ms`      BIGINT       COMMENT '소요 시간 (ms)',
+  `started_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '시작 일시',
+  `ended_at`         DATETIME     COMMENT '종료 일시',
+  PRIMARY KEY (`run_id`),
+  KEY `idx_scope_target` (`scope_target`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='AI 에이전트 실행 로그 — agentpipeline.py 연동';
+
+
+-- ════════════════════════════════════════════════════════════════════
+-- [v0.6 신규] 원자재 요청 이력 (차수별 Top-Down 워크플로우 추적)
+-- ════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS `MATERIAL_REQUEST` (
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  `request_id`      VARCHAR(50)  NOT NULL COMMENT '요청 고유 코드',
+  `oem_po_id`       VARCHAR(50)  NOT NULL COMMENT '원청사 기준 PO ID (통일 키)',
+  `bom_id`          VARCHAR(30)  NOT NULL COMMENT 'BOM 코드 (FK)',
+  `requester_id`    VARCHAR(20)  NOT NULL COMMENT '요청자 기업 코드',
+  `requester_tier`  TINYINT      NOT NULL COMMENT '요청자 차수 (0=원청사, 1~3)',
+  `receiver_id`     VARCHAR(20)  NOT NULL COMMENT '수신자 기업 코드',
+  `receiver_tier`   TINYINT      NOT NULL COMMENT '수신자 차수 (1~3)',
+  `request_type`    VARCHAR(20)  NOT NULL DEFAULT 'NORMAL' COMMENT '요청 유형 (NORMAL/URGENT)',
+  `status`          VARCHAR(30)  NOT NULL DEFAULT 'REQUESTED' COMMENT '상태 (REQUESTED/IN_PROGRESS/SUBMITTED/APPROVED/REJECTED/FINAL)',
+  `reject_reason`   TEXT         COMMENT '반려 사유',
+  `delete_yn`       TINYINT(1)   NOT NULL DEFAULT 0,
+  `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_req` (`request_id`),
+  KEY `idx_oem_po` (`oem_po_id`),
+  KEY `idx_requester` (`requester_id`),
+  KEY `idx_receiver` (`receiver_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='원자재 요청 이력 — 차수별 Top-Down 워크플로우 추적';
+
+
+-- ════════════════════════════════════════════════════════════════════
+-- [v0.6 신규] 원자재 임시 저장 (차수별 Draft 스냅샷)
+-- ════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS `MATERIAL_DRAFT` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'PK',
+  `request_id`    VARCHAR(50)  NOT NULL COMMENT '요청 코드 (FK→MATERIAL_REQUEST)',
+  `partner_id`    VARCHAR(20)  NOT NULL COMMENT '작성자 기업 코드',
+  `raw_name`      VARCHAR(200) COMMENT '원자재명',
+  `width`         DECIMAL(10,2) COMMENT '폭 (mm)',
+  `length`        DECIMAL(10,2) COMMENT '길이 (mm)',
+  `weight_kg`     DECIMAL(10,2) COMMENT '중량 (kg)',
+  `components`    TEXT          COMMENT '화학 성분비 JSON',
+  `origin`        VARCHAR(200)  COMMENT '원산지',
+  `draft_json`    JSON          COMMENT '기타 임시 저장 데이터',
+  `delete_yn`     TINYINT(1)   NOT NULL DEFAULT 0,
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_req_partner` (`request_id`, `partner_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='원자재 임시 저장 — 차수별 Draft 스냅샷';
+
+
 
 -- ╔══════════════════════════════════════════════════════════════════╗
--- ║  📊 DB v0.5 통계 — 총 30개 테이블 (UPPER_CASE 통일)                ║
+-- ║  📊 DB v0.6 통계 — 총 31개 테이블 (UPPER_CASE 통일)                ║
 -- ║  ─────────────────────────────────────────────                    ║
 -- ║  S1. 사용자·권한·메뉴·알림     : 5개                               ║
 -- ║  S2. 기업·초대                 : 2개                               ║

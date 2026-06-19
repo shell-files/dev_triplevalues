@@ -181,3 +181,63 @@ class dashboardAlertsRiskModel(BaseModel):
     """대쉬보드 알림 모델"""
     uuid  : Optional[str]        = Field(None,  description="Redis uuid — partner_id 조회용")
     types : Optional[List[str]]  = Field(None, description="읽음 처리할 유형 리스트. null/빈배열 → 전체")
+
+
+# ────────────────────────────────────────────────────────
+# 공급망 맵 관련 워크플로우(workflow)
+# ────────────────────────────────────────────────────────
+
+class CreateRequestBody(BaseModel):
+    """원자재 요청 생성 (원청사/1차/2차 → 하위)"""
+    oemPoId: str = Field(..., description="원청사 기준 PO ID (통일 키)")
+    bomId: str = Field(..., description="BOM 코드")
+    requesterId: str = Field(..., description="요청자 기업 코드")
+    requesterTier: int = Field(..., ge=0, le=2, description="요청자 차수 (0=원청사, 1, 2)")
+    receiverId: str = Field(..., description="수신자 기업 코드")
+    receiverTier: int = Field(..., ge=1, le=3, description="수신자 차수 (1, 2, 3)")
+    requestType: str = Field(default="NORMAL", description="요청 유형 (NORMAL/URGENT)")
+    specs: Optional[List[str]] = Field(default=None, description="요청 규격 항목 리스트")
+
+
+class ApproveRejectBody(BaseModel):
+    """승인/반려 요청"""
+    requestId: str = Field(..., description="요청 코드")
+    partnerId: str = Field(..., description="처리자 기업 코드")
+    partnerTier: int = Field(..., ge=0, le=2, description="처리자 차수")
+
+
+class RejectBody(ApproveRejectBody):
+    """반려 (사유 포함)"""
+    reason: str = Field(..., min_length=1, description="반려 사유")
+
+
+class SubmitToUpperBody(BaseModel):
+    """하위 → 상위 승인 요청"""
+    requestId: str = Field(..., description="요청 코드")
+    partnerId: str = Field(..., description="제출자 기업 코드")
+    partnerTier: int = Field(..., ge=1, le=3, description="제출자 차수")
+
+
+class FinalRegisterBody(BaseModel):
+    """1차 협력사 최종 등록"""
+    requestId: str = Field(..., description="요청 코드")
+    partnerId: str = Field(..., description="1차 협력사 기업 코드")
+    rawName: str = Field(..., description="원자재명")
+    width: Optional[float] = None
+    length: Optional[float] = None
+    weightKg: Optional[float] = None
+    components: Optional[str] = Field(default=None, description="화학 성분비 JSON")
+    origin: Optional[str] = Field(default=None, description="원산지")
+
+
+class SaveDraftBody(BaseModel):
+    """임시 저장"""
+    requestId: str = Field(..., description="요청 코드")
+    partnerId: str = Field(..., description="작성자 기업 코드")
+    rawName: Optional[str] = None
+    width: Optional[float] = None
+    length: Optional[float] = None
+    weightKg: Optional[float] = None
+    components: Optional[str] = None
+    origin: Optional[str] = None
+    draftJson: Optional[dict] = Field(default=None, description="기타 임시 데이터")
