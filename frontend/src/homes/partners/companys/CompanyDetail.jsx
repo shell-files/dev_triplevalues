@@ -102,11 +102,13 @@ const CompanyDetail = ({
   // [v1.5] 파일 다운로드 — window.open (CORS 우회 + BE Content-Disposition으로 오리진 파일명 보장)
   const handleFileDownload = (storedFilename) => {
     if (!storedFilename) return;
-    const proto = window.location.protocol;
-    const host = window.location.hostname;
-    const baseURL = host === "localhost"
-      ? "http://localhost:8000"
-      : `${proto}//${host}:8000`;
+    // const proto = window.location.protocol;
+    // const host = window.location.hostname;
+    // const baseURL = host === "localhost"
+    //   ? "http://localhost:8000"
+    //   : `${proto}//${host}:8000`;
+    /* [v1.6] 도커 환경 호환 — Network.js와 동일한 VITE_API_URL_TV 사용 */
+    const baseURL = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
     window.open(`${baseURL}/company/file/download/${encodeURIComponent(storedFilename)}`, "_blank");
   };
 

@@ -89,11 +89,14 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
 
   /* [v1.1] HTTPS 혼합 콘텐츠 방지 — 현재 페이지 프로토콜 자동 매칭 */
   /* [v2.3] 프로토콜 자동 매칭 — 환경변수와 무관하게 현재 페이지 프로토콜 사용 */
-  const proto = window.location.protocol;
-  const host = window.location.hostname;
-  let baseURL = host === "localhost"
-    ? "http://localhost:8000"
-    : `${proto}//${host}:8000`;
+  // const proto = window.location.protocol;
+  // const host = window.location.hostname;
+  // let baseURL = host === "localhost"
+  //   ? "http://localhost:8000"
+  //   : `${proto}//${host}:8000`;
+  
+  /* [v2.4] 도커 환경 호환 — Network.js와 동일한 VITE_API_URL_TV 사용 */
+  const baseURL = import.meta.env.VITE_API_URL_TV || "http://localhost:8000";
 
   /* [v2.2] 파일 다운로드 — window.open (CORS 우회 + 오리진 파일명 보장) */
   const handleDownload = (file) => {
