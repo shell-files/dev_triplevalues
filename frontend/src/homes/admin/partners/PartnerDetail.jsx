@@ -148,7 +148,7 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
 
       {/* 탭 */}
       <div className="flex border-b border-gray-200 text-base overflow-x-auto select-none">
-        {[["info","협력사 정보"],["selfassess","자가진단 내역"],["evidence","증빙 자료 확인"],["factory","공장 정보 확인"]].map(tab => (
+        {[["info","협력사 정보"],["selfassess","자가진단"],["evidence","증빙 자료"],["factory","공장 정보"]].map(tab => (
           <button key={tab[0]} onClick={() => setActiveTab(tab[0])}
             className={"px-4 py-2.5 font-bold border-b-2 tracking-tight whitespace-nowrap " + (activeTab === tab[0] ? "border-slate-900 text-slate-900" : "border-transparent text-gray-400 hover:text-gray-600")}>
             {tab[1]}
