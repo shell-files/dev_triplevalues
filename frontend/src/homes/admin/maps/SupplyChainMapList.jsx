@@ -44,7 +44,7 @@ const SupplyChainMapList = ({
       {/* 상단 제어 바 */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">공급망 맵 제품 리스트</h2>
+          <h2 className="text-2xl font-black text-[#03a94d] tracking-tight">공급망 맵(제품 리스트)</h2>
           <p className="text-sm text-gray-400 mt-0.5">BOM 규격별 제품 목록을 조회하고 상세 공급망 정보 및 이력을 확인합니다.</p>
         </div>
 

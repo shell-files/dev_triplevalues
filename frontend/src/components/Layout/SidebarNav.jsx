@@ -23,7 +23,7 @@ const NAV_CATEGORIES = [
   {
     title: "■ 공급망 추적 관리",
     items: [
-      { key: "supplychainMap", label: "공급망 맵 제품 리스트", badge: null },
+      { key: "supplychainMap", label: "공급망 맵", badge: null },
     ]
   },
   {
