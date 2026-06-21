@@ -6,7 +6,7 @@ const PARTNER_NAV_CATEGORIES = [
     title: "■ 협력사 전용 메뉴",
     items: [
       { key: "company_info", label: "기업 정보 관리", badge: null },
-      { key: "partner_list", label: "협력사 정보", badge: null },
+      { key: "partner_list", label: "협력사 정보 관리", badge: null },
       { key: "partner_rawmat", label: "원자재 관리", badge: null },
     ]
   }
@@ -16,26 +16,26 @@ const NAV_CATEGORIES = [
   {
     title: "■ 기준 및 협력사 정보",
     items: [
-      { key: "dashboard", label: "메인 대시보드", badge: null },
-      { key: "partner", label: "협력사 정보", badge: null },
+      { key: "dashboard", label: "대시보드", badge: null },
+      { key: "partner", label: "협력사 정보 관리", badge: null },
     ]
   },
   {
     title: "■ 공급망 추적 관리",
     items: [
-      { key: "supplychainMap", label: "공급망 맵", badge: null },
+      { key: "supplychainMap", label: "공급망 맵 제품 리스트", badge: null },
     ]
   },
   {
     title: "■ 구매 및 자재 관리",
     items: [
-      { key: "po", label: "PO 관리", badge: null },
+      { key: "po", label: "구매 발주 관리", badge: null },
     ]
   },
   {
     title: "■ 실사 및 평가",
     items: [
-      { key: "risk", label: "리스크 현황", badge: null },
+      { key: "risk", label: "공급망 리스크 관제", badge: null },
     ]
   }
 ];
