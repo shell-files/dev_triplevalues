@@ -220,7 +220,7 @@ ${d.aiRecommendation || "조치 사항이 준비 중입니다."}`
               </div>
               <button onClick={handleDeleteAlert} disabled={aiLoading || !selectedAlertId}
                 className="w-full py-2.5 bg-[#03a94d] hover:bg-[#02823b] disabled:bg-gray-200 text-white font-bold text-s rounded-lg transition shadow-sm select-none shrink-0 mt-2">
-                {aiLoading ? "처리 중..." : "확인 및 조치 완료 (숨기기)"}
+                {aiLoading ? "처리 중..." : "확인 및 조치 완료"}
               </button>
             </CardContent>
           </Card>

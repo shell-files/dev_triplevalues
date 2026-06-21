@@ -83,7 +83,8 @@ const PartnerDetail = ({ partner, onBack, loginData }) => {
   const renderRiskGradeBadge = (riskGrade) => {
     if (riskGrade === "고위험") return <Chip text="평가: 고위험" color="red" />;
     if (riskGrade === "중위험") return <Chip text="평가: 중위험" color="yellow" />;
-    return <Chip text="평가: 저위험" color="green" />;
+    if (riskGrade === "저위험") return <Chip text="평가: 저위험" color="green" />;
+    return <Chip text="평가: 평가중" color="green" />;
   };
 
   /* [v1.1] HTTPS 혼합 콘텐츠 방지 — 현재 페이지 프로토콜 자동 매칭 */
