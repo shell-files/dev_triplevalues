@@ -25,9 +25,9 @@
 #### 3. 팀원
 | 이름 | 역할 | 담당 업무 |
 | --- | --- | --- |
-| [이현서](https://github.com/mpsddd-commits) | 팀원 | 데이터 정보, AI Agent, DB, FE, BE, 업데이트 중 |
-| [이나라](https://github.com/frydaynar) | 팀원 | 화면 및 로고 디자인, WBS, DB, FE, BE, 업데이트 중 |
-| [남영준](https://github.com/HorieZA) | 팀장 | DB 명세서, DB ERD 초안, DB, FE, BE, 업데이트 중 |
+| [이현서](https://github.com/mpsddd-commits) | 팀원 | - ESG 정책 연구 및 데이터 도메인 분석</br>- AI 에이전트 아키텍처 설계</br>&nbsp;&nbsp;&nbsp;(Gemma4, BGE-M3, 리랭커 융합)</br>- Apache Airflow 파이프라인 구축</br>- DB 연동 및 풀스택 개발 |
+| [이나라](https://github.com/frydaynar) | 팀원 | - ESG공급망 관련 데이터 수집 및 분석</br>- 전체 UI/UX 화면 설계 및 로고 디자인</br>- Tailwind CSS 기반 퍼블리싱</br>- WBS(작업 분할 구조도) 기획 관리</br>- DB 연동 및 풀스택 개발 |
+| [남영준](https://github.com/HorieZA) | 팀장 | - DB 명세서 설계, ERD 초안 수립</br>- 계층(DB-FE-BE) 통합 연동 개발</br>- 전체 API 통신 아키텍처 설계</br>- Kafka 협력사 초대 파이프라인,</br>&nbsp;&nbsp;&nbsp;2차 보안 인증 코드 개발</br>- 개발 총괄 |
 - 이름 클릭시 팀원 개인 깃허브 페이지로 이동
 </br>
 
