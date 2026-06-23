@@ -306,6 +306,7 @@ def inviteAutoLoginProcess(response, request, partnerId):
             "tier": company["tier"],
             "tier_label": company.get("tier_label", ""),
             "tokenUuid": tokenUuid,
+            "notifications": [],
         })
  
     except Exception as e:

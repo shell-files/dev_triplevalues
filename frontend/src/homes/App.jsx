@@ -144,6 +144,7 @@ const App = () => {
             window.history.replaceState({}, "", "/");
           }
         });
+      setIsLoading(false)
       return;
     }
 
