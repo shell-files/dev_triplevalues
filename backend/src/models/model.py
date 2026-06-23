@@ -241,3 +241,24 @@ class SaveDraftBody(BaseModel):
     components: Optional[str] = None
     origin: Optional[str] = None
     draftJson: Optional[dict] = Field(default=None, description="기타 임시 데이터")
+
+
+class RequestListQuery(BaseModel):
+    """원자재 요청 목록 조회 쿼리 파라미터
+       GET /workflow/requests/{partnerId} 의 role·keyword 를 공통 모델로 바인딩.
+    """
+    role: str = Field(default="all", description="조회 범위 (all=발송·수신 전체 / sent=발송 / received=수신)")
+    keyword: Optional[str] = Field(default=None, description="검색어 — 제품명·BOM·요청처·수신처 LIKE 동적 필터")
+
+
+class CancelApprovalBody(BaseModel):
+    """승인 취소 요청 바디"""
+    requestId: str = Field(..., description="대상 요청 ID")
+    partnerId: str = Field(..., description="처리 주체(본인) 기업 코드")
+
+
+class RequestRollbackBody(BaseModel):
+    """반려 요청(제출 회수) 바디"""
+    requestId: str = Field(..., description="대상 요청 ID")
+    partnerId: str = Field(..., description="제출 주체(본인) 기업 코드")
+    reason: str | None = Field(None, description="반려 요청 사유(선택)")

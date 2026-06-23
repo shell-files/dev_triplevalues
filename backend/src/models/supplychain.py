@@ -1,13 +1,19 @@
 # src/models/supplychain.py
 # ────────────────────────────────────────────────────────
+# [v5.2] 2026-06-22 - 워크플로우 연동 브리지
+#   공급망 맵 요청 발송(sendRequestProcess) 시, 기존 RM_APPROVAL 기록과 함께
+#   워크플로우 정본 테이블 MATERIAL_REQUEST 에도 요청을 기록한다.
+#   → 협력사 '원자재 관리 화면'(workflow.getRequestsByPartnerProcess)이 즉시 조회 가능.
 # [v5.0] 2026-06-15 - 신규 PO 스키마 반영 (sender/receiver_company_id)
 #   PURCHASE_ORDER: sender_company_id, receiver_company_id, raw_id
 #   BOM_TIER_TREE: partner_id, raw_id, po_id
 # ────────────────────────────────────────────────────────
 
 import json, re
+from uuid import uuid4
 from src.utils.db import findOne, findAll, save
 from src.models.model import responseModel
+from src.models.workflow import _resolveCompanyCode
 
 
 def getProductListProcess() -> dict:
@@ -224,9 +230,22 @@ def sendRequestProcess(payload: dict) -> dict:
         sender = findOne("SELECT company_name FROM COMPANY WHERE partner_id = ? AND delete_yn = 0", (senderId,))
         senderName = sender["company_name"] if sender else senderId
 
+        # [v5.2] 요청자(원청사/상위) 차수 조회 — MATERIAL_REQUEST 브리지에 사용
+        #   [무결성] 식별자가 명칭으로 들어와도 코드(partner_id)로 정규화
+        senderCode, _ = _resolveCompanyCode(senderId)
+        senderInfo = findOne("SELECT tier FROM COMPANY WHERE partner_id = ? AND delete_yn = 0", (senderCode,))
+        requesterTier = int(senderInfo["tier"]) if senderInfo and senderInfo.get("tier") is not None else 0
+
+        # [v5.2] bom_id 보강 — payload 우선, 없으면 PO 기준 BOM_TIER_TREE 에서 조회
+        bomId = payload.get("bomId", "")
+        if not bomId and poId:
+            btRow = findOne("SELECT bom_id FROM BOM_TIER_TREE WHERE po_id = ? LIMIT 1", (poId,))
+            if btRow:
+                bomId = btRow.get("bom_id", "") or ""
+
         for tid in targetIds:
             save("""INSERT INTO RM_APPROVAL (raw_material_id,request_type,requester_partner,approver_partner,request_title,request_content,deadline,status) VALUES (?,?,?,?,?,?,?,'PENDING')""",
-                 (rawId or "PENDING", requestType, senderId, tid,
+                 (rawId or None, requestType, senderId, tid,
                   title or f"[{senderName}] 공급망 데이터 제출 요청",
                   content or "원자재 정보 및 ESG 지표 입력을 요청합니다.", deadline))
             save("""INSERT INTO ALARM (partner_id,type,level,title,content,path,meta_json) VALUES (?,'REQUEST',?,?,?,'/partner/request',?)""",
@@ -234,6 +253,35 @@ def sendRequestProcess(payload: dict) -> dict:
                   title or f"[{senderName}] 공급망 데이터 제출 요청",
                   content or "원자재 정보 및 ESG 지표 입력을 요청합니다.",
                   json.dumps({"senderId": senderId, "rawId": rawId, "poId": poId}, ensure_ascii=False)))
+
+            # [v5.2] 워크플로우 정본 테이블(MATERIAL_REQUEST) 동시 기록 — 원자재 관리 화면 조회용
+            #   실패해도 기존 RM_APPROVAL/ALARM 흐름은 영향받지 않도록 try 로 격리
+            try:
+                recvCode, recvValid = _resolveCompanyCode(tid)
+                if not recvValid:
+                    raise ValueError(f"수신자 코드 미해결: {tid}")  # 명칭 저장 차단 → 브리지 skip
+                recvInfo = findOne("SELECT tier FROM COMPANY WHERE partner_id = ? AND delete_yn = 0", (recvCode,))
+                receiverTier = int(recvInfo["tier"]) if recvInfo and recvInfo.get("tier") is not None else (requesterTier + 1)
+
+                # 동일 PO+수신자에 진행 중인 요청이 이미 있으면 중복 생성 방지
+                dup = findOne("""
+                    SELECT request_id FROM MATERIAL_REQUEST
+                    WHERE oem_po_id = ? AND receiver_id = ? AND status <> 'FINAL' AND delete_yn = 0
+                    LIMIT 1
+                """, (poId or "", recvCode))
+
+                if not dup:
+                    reqId = f"REQ-{uuid4().hex[:12].upper()}"
+                    save("""
+                        INSERT INTO MATERIAL_REQUEST
+                        (request_id, oem_po_id, bom_id, requester_id, requester_tier,
+                         receiver_id, receiver_tier, request_type, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'REQUESTED')
+                    """, (reqId, poId or "", bomId, senderCode, requesterTier,
+                          recvCode, receiverTier, requestType))
+            except Exception:
+                # 브리지 실패는 무시 (레거시 흐름 보호)
+                pass
 
         return responseModel(True, f"{len(targetIds)}개 협력사에 요청 발송 완료", {"sentCount": len(targetIds)})
     except Exception as e:

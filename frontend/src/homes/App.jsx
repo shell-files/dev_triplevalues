@@ -17,6 +17,7 @@ import RiskList from "@homes/admin/risks/RiskList";
 import CompanyInfo from "@partners/companys/CompanyInfo";
 import PartnerListSupplier from "@partners/subPartners/PartnerList";
 import PartnerDetailSupplier from "@partners/subPartners/PartnerDetail";
+import MaterialWorkflow from "@partners/materials/MaterialWorkflow"; // ----- N차 협력사용 원자재 관리
 import { COMPANIES } from "@assets/data/masterData";
 import { NOTIFICATIONS } from "@assets/data/masterData";
 import "@styles/App.css";
@@ -249,7 +250,9 @@ const App = () => {
 
     const pages = {
       // company_info: <CompanyInfo key={pageKey} />,
+      // partner_rawmat: <MaterialWorkflow key={pageKey} loginData={loginData} />,
       company_info: <CompanyInfo key={pageKey} loginData={loginData} />,
+      partner_rawmat: <MaterialWorkflow key={pageKey} loginData={loginData} apiCompanies={apiCompanies} />,
       supplychainMap: <SupplyChainMap key={pageKey} />,
       po: <PoList key={pageKey} />,
       risk: <RiskList key={pageKey} />

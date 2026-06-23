@@ -3,8 +3,8 @@
 # [v1.0] 공급망 맵 워크플로우 API — 원자재 요청/승인/반려/임시저장/최종등록
 # ────────────────────────────────────────────────────────
 
-from fastapi import APIRouter
-from src.models.model import CreateRequestBody, ApproveRejectBody, RejectBody, SubmitToUpperBody, FinalRegisterBody, SaveDraftBody
+from fastapi import APIRouter, Depends
+from src.models.model import CreateRequestBody, ApproveRejectBody, RejectBody, SubmitToUpperBody, FinalRegisterBody, SaveDraftBody, RequestListQuery, CancelApprovalBody, RequestRollbackBody
 from src.models.workflow import (
     createRequestProcess,
     getRequestDetailProcess,
@@ -16,6 +16,9 @@ from src.models.workflow import (
     saveDraftProcess,
     getDraftProcess,
     getWorkflowTreeProcess,
+    getSubPartnersProcess,
+    cancelApprovalProcess,
+    requestRollbackProcess,
 )
 
 router = APIRouter()
@@ -38,10 +41,10 @@ def getRequestDetail(requestId: str):
 
 
 @router.get("/requests/{partnerId}",
-    summary="기업별 요청 목록 조회",
-    description="특정 기업이 발송했거나 수신한 모든 요청 목록을 반환합니다.")
-def getRequestsByPartner(partnerId: str, role: str = "all"):
-    return getRequestsByPartnerProcess(partnerId, role)
+    summary="기업별 원자재 요청 목록 조회",
+    description="요청처/수신처 기준 요청 목록 + role·keyword 동적 필터 (RequestListQuery)")
+def getRequestsByPartner(partnerId: str, query: RequestListQuery = Depends()):
+    return getRequestsByPartnerProcess(partnerId, query.role, query.keyword)
 
 
 @router.post("/approve",
@@ -91,3 +94,24 @@ def getDraft(requestId: str, partnerId: str):
     description="원청사 PO ID 기준으로 1~3차 전체 요청 체인을 트리로 조회합니다.")
 def getWorkflowTree(oemPoId: str):
     return getWorkflowTreeProcess(oemPoId)
+
+
+@router.get("/subpartners/{parentId}",
+    summary="직속 하위 협력사 목록 조회",
+    description="로그인 기업(parentId)의 COMPANY.parent_id 와 일치하는 직속 하위 협력사만 반환")
+def getSubPartners(parentId: str):
+    return getSubPartnersProcess(parentId)
+
+
+@router.post("/cancel-approval",
+    summary="승인 취소 (1차)",
+    description="제출/최종 처리한 본인 요청을 IN_PROGRESS 로 롤백해 재수정 가능하게 함")
+def cancelApproval(body: CancelApprovalBody):
+    return cancelApprovalProcess(body.dict())
+
+
+@router.post("/request-rollback",
+    summary="반려 요청 (2·3차)",
+    description="SUBMITTED 상태인 본인 제출을 회수(IN_PROGRESS)하고 상위에 알림")
+def requestRollback(body: RequestRollbackBody):
+    return requestRollbackProcess(body.dict())

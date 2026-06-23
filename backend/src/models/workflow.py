@@ -1,5 +1,12 @@
 # src/models/workflow.py
 # ────────────────────────────────────────────────────────
+# [v1.1] 2026-06-22 - 조회 로직 교차 검증 완료
+#   · getRequestsByPartnerProcess → {requests:[...]} (FE 원자재 관리 목록)
+#   · getWorkflowTreeProcess       → {tree:[...]}     (FE 단계별 상태)
+#   · getDraftProcess              → {draft:{...}|null}(FE 폼 복원)
+#   JOIN 키(COMPANY.partner_id / short_name / company_name) 및 응답 필드 FE 일치 확인.
+#   ※ 데이터 소스: MATERIAL_REQUEST. 요청 생성은 supplychain.sendRequestProcess
+#     (v5.2 브리지)가 동일 테이블에 기록하므로 화면에 즉시 반영됨.
 # [v1.0] 공급망 맵 워크플로우 비즈니스 로직
 # ────────────────────────────────────────────────────────
 
@@ -31,6 +38,28 @@ TIER_PERMISSIONS = {
 def _generateRequestId():
     """요청 고유 코드 생성"""
     return f"REQ-{uuid4().hex[:12].upper()}"
+
+
+def _resolveCompanyCode(value):
+    """기업 식별자 정규화.
+       값이 유효한 COMPANY.partner_id(코드)면 그대로, 명칭(company_name/short_name)이면
+       해당 코드로 변환하여 반환. MATERIAL_REQUEST 외래키에 '기업명'이 저장되는 것을 방지.
+       반환: (code_or_value, isValidCode)
+    """
+    if not value:
+        return value, False
+    v = str(value).strip()
+    hit = findOne("SELECT partner_id FROM COMPANY WHERE partner_id = ? AND delete_yn = 0", (v,))
+    if hit:
+        return hit["partner_id"], True
+    byName = findOne("""
+        SELECT partner_id FROM COMPANY
+        WHERE (company_name = ? OR short_name = ?) AND delete_yn = 0
+        LIMIT 1
+    """, (v, v))
+    if byName:
+        return byName["partner_id"], True
+    return v, False  # 코드/명칭 모두 매칭 실패 — 원본 유지(정보 손실 방지)
 
 
 def _checkPermission(tier, action):
@@ -68,8 +97,26 @@ def createRequestProcess(data: dict) -> dict:
         if data["requesterTier"] >= data["receiverTier"]:
             return responseModel(False, "상위 차수에서 하위 차수로만 요청할 수 있습니다.")
 
+        # [무결성] 외래키에 '기업명'이 들어오는 것을 차단 — 코드(partner_id)로 정규화
+        requesterId, _ = _resolveCompanyCode(data["requesterId"])
+        receiverId, receiverValid = _resolveCompanyCode(data["receiverId"])
+        if not receiverValid:
+            return responseModel(False, f"수신자 기업 코드를 확인할 수 없습니다: {data['receiverId']}")
+
         requestId = _generateRequestId()
         reqType = data.get("requestType", "NORMAL")
+
+        # [거버넌스 #1] 긴급도(URGENT/NORMAL)는 오직 원청사만 결정.
+        #   협력사(차수>0)가 하위로 재요청할 때는 자기 값이 아니라
+        #   해당 oem_po_id 의 원청사(차수0) 요청 유형을 그대로 상속한다.
+        if requesterTier > 0:
+            oemRow = findOne("""
+                SELECT request_type FROM MATERIAL_REQUEST
+                WHERE oem_po_id = ? AND requester_tier = 0 AND delete_yn = 0
+                ORDER BY created_at ASC LIMIT 1
+            """, (data["oemPoId"],))
+            if oemRow and oemRow.get("request_type"):
+                reqType = oemRow["request_type"]
 
         save("""
             INSERT INTO `MATERIAL_REQUEST`
@@ -78,8 +125,8 @@ def createRequestProcess(data: dict) -> dict:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             requestId, data["oemPoId"], data["bomId"],
-            data["requesterId"], requesterTier,
-            data["receiverId"], data["receiverTier"],
+            requesterId, requesterTier,
+            receiverId, data["receiverTier"],
             reqType, STATUS_REQUESTED,
         ))
 
@@ -87,9 +134,9 @@ def createRequestProcess(data: dict) -> dict:
         alarmType = "URGENT" if reqType == "URGENT" else "INSPECT"
         alarmLevel = "fail" if reqType == "URGENT" else "info"
         _createAlarm(
-            data["receiverId"],
+            receiverId,
             f"{'긴급 ' if reqType == 'URGENT' else ''}원자재 정보 요청",
-            f"{data['requesterId']}에서 원자재 데이터 작성을 요청했습니다.",
+            f"{requesterId}에서 원자재 데이터 작성을 요청했습니다.",
             reqType=alarmType, level=alarmLevel,
             metaJson={"requestId": requestId, "oemPoId": data["oemPoId"]},
         )
@@ -181,8 +228,12 @@ def getRequestDetailProcess(requestId: str) -> dict:
 # ════════════════════════════════════════════════════════════
 # 3. 기업별 요청 목록 조회
 # ════════════════════════════════════════════════════════════
-def getRequestsByPartnerProcess(partnerId: str, role: str = "all") -> dict:
-    """기업이 발송/수신한 모든 요청 목록"""
+def getRequestsByPartnerProcess(partnerId: str, role: str = "all", keyword: str = None) -> dict:
+    """기업이 발송/수신한 모든 요청 목록.
+       [#4] BOM 마스터 원자재명 자동 매핑: 요청 행의 bom_id, 없으면 동일 oem_po_id 의
+            원청사(차수0) 요청 bom_id 를 따라 BOM 을 조인하여 제품명을 하이드레이션.
+       [#3] keyword 동적 검색: 제품명/BOM/요청처/수신처 LIKE 필터.
+    """
     try:
         if role == "sent":
             whereClause = "mr.requester_id = ?"
@@ -191,23 +242,42 @@ def getRequestsByPartnerProcess(partnerId: str, role: str = "all") -> dict:
         else:
             whereClause = "(mr.requester_id = ? OR mr.receiver_id = ?)"
 
-        params = (partnerId,) if role != "all" else (partnerId, partnerId)
+        params = [partnerId] if role != "all" else [partnerId, partnerId]
+
+        # [#3] 키워드 동적 필터 (제품명·BOM·요청처·수신처)
+        keywordClause = ""
+        if keyword and str(keyword).strip():
+            kw = f"%{str(keyword).strip()}%"
+            keywordClause = """
+                AND (b.product LIKE ? OR b.item_name LIKE ? OR mr.bom_id LIKE ?
+                     OR c1.company_name LIKE ? OR c2.company_name LIKE ?)
+            """
+            params += [kw, kw, kw, kw, kw]
 
         rows = findAll(f"""
             SELECT mr.*, c1.company_name AS requester_name,
-                   c2.company_name AS receiver_name
+                   c2.company_name AS receiver_name,
+                   b.product AS bom_product, b.item_name AS bom_item_name
             FROM MATERIAL_REQUEST mr
             LEFT JOIN COMPANY c1 ON mr.requester_id = c1.partner_id
             LEFT JOIN COMPANY c2 ON mr.receiver_id = c2.partner_id
-            WHERE {whereClause} AND mr.delete_yn = 0
+            LEFT JOIN BOM b ON b.bom_id = COALESCE(
+                NULLIF(mr.bom_id, ''),
+                (SELECT mr0.bom_id FROM MATERIAL_REQUEST mr0
+                 WHERE mr0.oem_po_id = mr.oem_po_id AND mr0.requester_tier = 0
+                   AND mr0.bom_id IS NOT NULL AND mr0.bom_id <> '' AND mr0.delete_yn = 0
+                 ORDER BY mr0.created_at ASC LIMIT 1)
+            )
+            WHERE {whereClause} AND mr.delete_yn = 0 {keywordClause}
             ORDER BY mr.created_at DESC
-        """, params) or []
+        """, tuple(params)) or []
 
         return responseModel(True, "요청 목록 조회 성공", {
             "requests": [{
                 "requestId": r["request_id"],
                 "oemPoId": r["oem_po_id"],
                 "bomId": r["bom_id"],
+                "productName": r.get("bom_product") or r.get("bom_item_name") or "",
                 "requesterId": r["requester_id"],
                 "requesterName": r.get("requester_name", ""),
                 "requesterTier": r["requester_tier"],
@@ -222,6 +292,36 @@ def getRequestsByPartnerProcess(partnerId: str, role: str = "all") -> dict:
         })
     except Exception as e:
         return responseModel(False, f"목록 조회 실패: {str(e)}")
+
+
+# ════════════════════════════════════════════════════════════
+# 3-1. parent_id 기반 직속 하위 협력사 조회 (하위 요청 드롭다운용)
+# ════════════════════════════════════════════════════════════
+def getSubPartnersProcess(parentId: str) -> dict:
+    """로그인 기업(parentId)의 '직속' 하위 협력사만 반환.
+       COMPANY.parent_id = 로그인 기업코드 조건으로 동적 필터 →
+       무분별한 전체 기업 노출 방지. (예: NOV-001 → 소속 2차만, KRM-001 → 소속 3차만)
+    """
+    try:
+        code, _ = _resolveCompanyCode(parentId)   # 명칭으로 들어와도 코드로 정규화
+        rows = findAll("""
+            SELECT partner_id, company_name, short_name, tier, tier_label
+            FROM COMPANY
+            WHERE parent_id = ? AND delete_yn = 0
+            ORDER BY tier ASC, company_name ASC
+        """, (code,)) or []
+        return responseModel(True, "하위 협력사 조회 성공", {
+            "parentId": code,
+            "partners": [{
+                "code": r["partner_id"],
+                "name": r.get("company_name") or r.get("short_name") or r["partner_id"],
+                "tier": r.get("tier"),
+                "tierLabel": r.get("tier_label", ""),
+            } for r in rows],
+            "total": len(rows),
+        })
+    except Exception as e:
+        return responseModel(False, f"하위 협력사 조회 실패: {str(e)}")
 
 
 # ════════════════════════════════════════════════════════════
@@ -439,6 +539,60 @@ def finalRegisterProcess(data: dict) -> dict:
         })
     except Exception as e:
         return responseModel(False, f"최종 등록 실패: {str(e)}")
+
+
+# ════════════════════════════════════════════════════════════
+# 7-1. 승인 취소 (1차 — 제출/최종 번복 후 자사 데이터 재수정)  [#1·#6]
+# ════════════════════════════════════════════════════════════
+def cancelApprovalProcess(data: dict) -> dict:
+    """본인(receiver)이 SUBMITTED/APPROVED/FINAL 처리한 요청을 IN_PROGRESS 로 롤백.
+       → 자사 원자재 입력 폼 잠금이 풀려 다시 수정 가능. 상위에 알림 발송.
+    """
+    try:
+        partnerId, _ = _resolveCompanyCode(data["partnerId"])
+        req = findOne("""SELECT * FROM MATERIAL_REQUEST
+                         WHERE request_id = ? AND receiver_id = ? AND delete_yn = 0""",
+                      (data["requestId"], partnerId))
+        if not req:
+            return responseModel(False, "본인이 처리한 요청을 찾을 수 없습니다.")
+        if req["status"] not in (STATUS_SUBMITTED, STATUS_APPROVED, STATUS_FINAL):
+            return responseModel(False, "승인 취소가 가능한 상태가 아닙니다.")
+        save("""UPDATE MATERIAL_REQUEST SET status = ?, updated_at = NOW()
+                WHERE request_id = ?""", (STATUS_IN_PROGRESS, data["requestId"]))
+        _createAlarm(req["requester_id"], "승인 취소",
+                     f"{partnerId} 가 제출을 취소하고 재작성에 들어갔습니다.",
+                     reqType="INSPECT", level="warn",
+                     metaJson={"requestId": data["requestId"]})
+        return responseModel(True, "승인을 취소했습니다. 자사 정보를 다시 수정할 수 있습니다.")
+    except Exception as e:
+        return responseModel(False, f"승인 취소 실패: {str(e)}")
+
+
+# ════════════════════════════════════════════════════════════
+# 7-2. 반려 요청 (2·3차 — 제출 후 스스로 거두어 재수정 요청)  [#1·#5·#6]
+# ════════════════════════════════════════════════════════════
+def requestRollbackProcess(data: dict) -> dict:
+    """하위(receiver)가 SUBMITTED 상태인 본인 제출을 IN_PROGRESS 로 되돌려 재수정.
+       상위에게 반려(수정) 요청 알림 발송. '승인 대기' 상태에서만 허용.
+    """
+    try:
+        partnerId, _ = _resolveCompanyCode(data["partnerId"])
+        req = findOne("""SELECT * FROM MATERIAL_REQUEST
+                         WHERE request_id = ? AND receiver_id = ? AND delete_yn = 0""",
+                      (data["requestId"], partnerId))
+        if not req:
+            return responseModel(False, "본인이 제출한 요청을 찾을 수 없습니다.")
+        if req["status"] != STATUS_SUBMITTED:
+            return responseModel(False, "반려 요청은 '승인 대기' 상태에서만 가능합니다.")
+        save("""UPDATE MATERIAL_REQUEST SET status = ?, updated_at = NOW()
+                WHERE request_id = ?""", (STATUS_IN_PROGRESS, data["requestId"]))
+        _createAlarm(req["requester_id"], "반려 요청 접수",
+                     f"{partnerId} 가 제출 건의 반려(수정)를 요청했습니다.",
+                     reqType="INSPECT", level="warn",
+                     metaJson={"requestId": data["requestId"], "reason": data.get("reason", "")})
+        return responseModel(True, "반려 요청을 보냈습니다. 자사 정보를 수정할 수 있습니다.")
+    except Exception as e:
+        return responseModel(False, f"반려 요청 실패: {str(e)}")
 
 
 # ════════════════════════════════════════════════════════════
