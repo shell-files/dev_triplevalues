@@ -16,7 +16,8 @@ services:
     image: uv:1
     restart: always
     ports:
-      - 8000:8000
+      # 로컬에서 8000 포트가 사용 중이면 .env 의 BACKEND_PORT 로 변경
+      - ${BACKEND_PORT:-8000}:8000
     networks:
       - main-network
     working_dir: /workspace
@@ -76,6 +77,8 @@ services:
 networks:
   main-network:
     driver: bridge
+    # apache/docker-compose.yaml, pgvector 등 외부 스택이 external 로 참조하는 고정 이름
+    name: dev_triplevalues_main-network
 
 volumes:
   auth_keys:

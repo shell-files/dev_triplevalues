@@ -1,0 +1,76 @@
+# ------------------------------------------------------------------
+# 로컬 개발/연동 테스트용 인프라 스택
+#  - 운영 서버에서는 별도로 운영되는 MariaDB / pgvector / Redis / Kafka 를
+#    로컬에서 main-network 에 붙여 재현한다.
+#  - 실행 순서: 루트 compose.yml (네트워크 생성) → 본 파일 → apache/
+#    docker compose -f compose.local.yml up -d
+# ------------------------------------------------------------------
+services:
+  mariadb:
+    container_name: mariadb
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIA_DB_ROOT_PASSWORD:-rootpass}
+      MARIADB_DATABASE: ${MARIA_DB_DATABASE:-triplevalues}
+      MARIADB_USER: ${MARIA_DB_USER:-tvaluser}
+      MARIADB_PASSWORD: ${MARIA_DB_PASSWORD:-tvalpass}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./.mariadb/conf.d:/etc/mysql/conf.d:ro
+      # 전체 스키마(30개 테이블) 초기 적재
+      - ./DB.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - ${MARIA_DB_LOCAL_PORT:-3306}:3306
+    networks:
+      - main-network
+
+  pgvector:
+    container_name: pgvector
+    image: pgvector/pgvector:pg16
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      POSTGRES_DB: ${POSTGRES_DATABASE:-vectordb}
+    volumes:
+      - pgvector-data:/var/lib/postgresql/data
+      - ./.pgvector/initdb.d:/docker-entrypoint-initdb.d:ro
+    # 호스트 5432 는 로컬 PostgreSQL 이 점유 중이라 게시하지 않음 (네트워크 내부 전용)
+    networks:
+      - main-network
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - main-network
+
+  kafka:
+    container_name: kafka
+    image: apache/kafka:3.9.1
+    restart: always
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - main-network
+
+networks:
+  main-network:
+    external: true
+    name: dev_triplevalues_main-network
+
+volumes:
+  mariadb-data:
+  pgvector-data:

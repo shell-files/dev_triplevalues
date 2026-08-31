@@ -110,12 +110,57 @@ CREATE TABLE `ALARM` (
   is_read    TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '읽음 여부 (0=안읽음)',
   delete_yn  TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '삭제 여부',
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-  PRIMARY KEY (id), KEY idx_user_read (user_id,is_read,delete_yn)
+  PRIMARY KEY (id), KEY idx_user_read (partner_id,is_read,delete_yn)
 ) ENGINE=InnoDB COMMENT='알림 — NotificationPanel / notify.py 호환';
 
 -- ══════════════════════════════════════════════════════════
 -- S2. 기업 · 초대 (2) — ★ 산림파괴 컬럼 삭제
 -- [v0.6 삭제] INVITE 테이블 — INVITATION_MESSAGE 테이블로 완전 대체됨
+
+-- [2026-08-31 복원] COMPANY DDL 이 파일에서 누락되어 있어
+-- BE(models/company.py, invite.py)·DAG(src/step05.py) 쿼리와
+-- 본 파일 10.1 샘플 INSERT 컬럼 목록을 기준으로 재구성함.
+DROP TABLE IF EXISTS `COMPANY`;
+CREATE TABLE `COMPANY` (
+  id            INT          NOT NULL AUTO_INCREMENT COMMENT '기업 ID (PK)',
+  partner_id    VARCHAR(20)  NOT NULL                COMMENT '협력사 코드 (UNIQUE)',
+  user_id       INT                                  COMMENT '대표 사용자 ID (FK→USER.id)',
+  company_name  VARCHAR(100) NOT NULL                COMMENT '기업명',
+  short_name    VARCHAR(50)                          COMMENT '축약명',
+  ceo_name      VARCHAR(50)                          COMMENT '대표자명',
+  biz_no        VARCHAR(30)                          COMMENT '사업자번호',
+  founded       DATE                                 COMMENT '설립일',
+  address       VARCHAR(300)                         COMMENT '주소',
+  size          VARCHAR(20)                          COMMENT '기업 규모',
+  country       VARCHAR(50)                          COMMENT '국가',
+  email         VARCHAR(100)                         COMMENT '대표 이메일',
+  tier          TINYINT      NOT NULL DEFAULT 0      COMMENT '차수 (0=원청사)',
+  tier_label    VARCHAR(30)                          COMMENT '차수 표시명',
+  parent_id     VARCHAR(20)                          COMMENT '상위 협력사 코드 (FK→COMPANY.partner_id)',
+  partner_type  VARCHAR(20)                          COMMENT '협력사 유형',
+  risk_level    VARCHAR(20)  DEFAULT '평가중'         COMMENT '리스크 등급',
+  employees     INT                                  COMMENT '임직원 수',
+  revenue       BIGINT                               COMMENT '매출 (백만원)',
+  assets        BIGINT                               COMMENT '자산 (백만원)',
+  scope1        BIGINT                               COMMENT 'Scope1 배출량 (tCO2e)',
+  scope2        BIGINT                               COMMENT 'Scope2 배출량 (tCO2e)',
+  feoc_ratio    DECIMAL(6,2)                         COMMENT 'FEOC 지분율 (%)',
+  trir          DECIMAL(6,2)                         COMMENT 'TRIR 재해율',
+  cmrt          CHAR(1)      DEFAULT 'N'             COMMENT 'CMRT 제출 (Y/N)',
+  emat          CHAR(1)      DEFAULT 'N'             COMMENT 'EMRT 제출 (Y/N)',
+  iso14001      CHAR(1)      DEFAULT 'N'             COMMENT 'ISO14001 (Y/N)',
+  iso45001      CHAR(1)      DEFAULT 'N'             COMMENT 'ISO45001 (Y/N)',
+  iatf          CHAR(1)      DEFAULT 'N'             COMMENT 'IATF16949 (Y/N)',
+  rba           CHAR(1)      DEFAULT 'N'             COMMENT 'RBA 가입 (Y/N)',
+  rmap          CHAR(1)      DEFAULT 'N'             COMMENT 'RMAP 인증 (Y/N)',
+  cert_count    INT          DEFAULT 0               COMMENT '인증 보유 수',
+  status        VARCHAR(20)  DEFAULT 'ACTIVE'        COMMENT '상태 (ACTIVE/INVITED)',
+  is_registered TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '등록 완료 여부',
+  delete_yn     TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '삭제 여부',
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  PRIMARY KEY (id), UNIQUE KEY uq_partner (partner_id), KEY idx_parent (parent_id)
+) ENGINE=InnoDB COMMENT='기업 (협력사 포함) — [복원 DDL]';
 
 -- ══════════════════════════════════════════════════════════
 -- S3. PO 관리 (1)
@@ -191,6 +236,72 @@ CREATE TABLE `BOM_TIER_TREE` (
   KEY `idx_partner_raw` (`partner_id`, `raw_id`),
   KEY `idx_po_trace` (`po_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='BOM 공급망 트리';
+
+-- [2026-08-31 복원] RAW_MATERIAL / RM_TIER_TREE / RM_APPROVAL / RM_APPROVAL_STEP
+-- DDL 이 파일에서 누락되어 있어 BE(models/rawmaterial.py, supplychain.py) 쿼리와
+-- 본 파일 샘플 INSERT 컬럼 목록을 기준으로 재구성함.
+DROP TABLE IF EXISTS `RAW_MATERIAL`;
+CREATE TABLE `RAW_MATERIAL` (
+  id           INT           NOT NULL AUTO_INCREMENT COMMENT '원자재 ID (PK)',
+  raw_id       VARCHAR(30)   NOT NULL                COMMENT '원자재 코드 (UNIQUE)',
+  partner_id   VARCHAR(20)   NOT NULL                COMMENT '협력사 코드 (FK→COMPANY.partner_id)',
+  name         VARCHAR(200)  NOT NULL                COMMENT '원자재명',
+  description  VARCHAR(500)                          COMMENT '설명',
+  width        INT                                   COMMENT '폭 (mm)',
+  length       INT                                   COMMENT '길이 (mm)',
+  weight_kg    DECIMAL(12,2)                         COMMENT '중량 (kg)',
+  components   VARCHAR(300)                          COMMENT '성분 구성',
+  origin       VARCHAR(100)                          COMMENT '원산지',
+  status       VARCHAR(20)   DEFAULT 'PENDING'       COMMENT '상태 (PENDING/APPROVED)',
+  requested_at DATE                                  COMMENT '요청일',
+  approved_at  DATE                                  COMMENT '승인일',
+  delete_yn    TINYINT(1)    NOT NULL DEFAULT 0      COMMENT '삭제 여부',
+  created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  PRIMARY KEY (id), UNIQUE KEY uq_raw (raw_id), KEY idx_partner (partner_id)
+) ENGINE=InnoDB COMMENT='원자재 — [복원 DDL]';
+
+DROP TABLE IF EXISTS `RM_TIER_TREE`;
+CREATE TABLE `RM_TIER_TREE` (
+  id         INT           NOT NULL AUTO_INCREMENT COMMENT 'ID (PK)',
+  raw_id     VARCHAR(30)   NOT NULL                COMMENT '원자재 코드 (FK→RAW_MATERIAL.raw_id)',
+  tier       TINYINT       NOT NULL                COMMENT '차수 (1~3)',
+  short_name VARCHAR(50)                           COMMENT '협력사 축약명',
+  item_name  VARCHAR(200)                          COMMENT '품목명',
+  comp       VARCHAR(300)                          COMMENT '성분',
+  qty_kg     DECIMAL(12,4)                         COMMENT '수량 (kg)',
+  sort_order INT           DEFAULT 0               COMMENT '정렬 순서',
+  PRIMARY KEY (id), KEY idx_raw_tier (raw_id, tier)
+) ENGINE=InnoDB COMMENT='원자재 공급망 트리 — [복원 DDL]';
+
+DROP TABLE IF EXISTS `RM_APPROVAL`;
+CREATE TABLE `RM_APPROVAL` (
+  id                INT          NOT NULL AUTO_INCREMENT COMMENT '승인 요청 ID (PK)',
+  raw_material_id   VARCHAR(30)                          COMMENT '원자재 코드 (FK→RAW_MATERIAL.raw_id)',
+  request_type      VARCHAR(20)  NOT NULL DEFAULT 'NORMAL' COMMENT '요청 유형 (NORMAL/URGENT)',
+  requester_partner VARCHAR(20)  NOT NULL                COMMENT '요청 협력사 코드',
+  approver_partner  VARCHAR(20)                          COMMENT '승인 협력사 코드',
+  request_title     VARCHAR(200)                         COMMENT '요청 제목',
+  request_content   TEXT                                 COMMENT '요청 내용',
+  deadline          DATETIME                             COMMENT '마감 기한',
+  approval_yn       CHAR(1)                              COMMENT '승인 여부 (Y/N)',
+  approval_reason   VARCHAR(500)                         COMMENT '승인/반려 사유',
+  approval_dt       DATETIME                             COMMENT '승인 일시',
+  status            VARCHAR(20)  NOT NULL DEFAULT 'PENDING' COMMENT '상태 (PENDING/APPROVED)',
+  created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  PRIMARY KEY (id), KEY idx_requester (requester_partner), KEY idx_raw (raw_material_id)
+) ENGINE=InnoDB COMMENT='원자재 승인 요청 — [복원 DDL]';
+
+DROP TABLE IF EXISTS `RM_APPROVAL_STEP`;
+CREATE TABLE `RM_APPROVAL_STEP` (
+  id          INT         NOT NULL AUTO_INCREMENT COMMENT '단계 ID (PK)',
+  approval_id INT         NOT NULL                COMMENT '승인 요청 ID (FK→RM_APPROVAL.id)',
+  step_order  INT         NOT NULL                COMMENT '단계 순서',
+  tier_level  TINYINT     NOT NULL                COMMENT '차수',
+  partner_id  VARCHAR(20) NOT NULL                COMMENT '협력사 코드',
+  status      VARCHAR(20) NOT NULL DEFAULT 'WAITING' COMMENT '상태 (WAITING/IN_PROGRESS/APPROVED)',
+  approved_at DATETIME                            COMMENT '승인 일시',
+  PRIMARY KEY (id), KEY idx_approval (approval_id, step_order)
+) ENGINE=InnoDB COMMENT='원자재 승인 단계 — [복원 DDL]';
 
 -- ══════════════════════════════════════════════════════════
 -- 공급망 관련 PO, BOM, 원자재 더미 데이터
@@ -350,6 +461,8 @@ CREATE TABLE `AI_AGENT_ALERT` (
   rule_id           BIGINT       NOT NULL                COMMENT '룰 ID (FK)',
   alarm_id          BIGINT                               COMMENT 'ALARM 연동 ID',
   severity          VARCHAR(20)  NOT NULL                COMMENT '심각도',
+  -- [2026-08-31 추가] ai/step05(프롬프트 적재)·step06(추론 조회)이 사용하는 컬럼이 DDL에 누락되어 있었음
+  prompt            LONGTEXT                             COMMENT 'RAG 생성 프롬프트 (ai/step05 적재)',
   ai_confidence     DECIMAL(5,2)                         COMMENT 'AI 신뢰도',
   ai_reasoning      TEXT                                 COMMENT 'AI 판단 근거',
   ai_recommendation TEXT                                 COMMENT 'AI 권장 조치',
@@ -646,12 +759,14 @@ INSERT INTO `ALARM` (partner_id,type,level,title,content,is_read,created_at) VAL
 ('COM-001','SELF','info','자가진단 제출 — Comilog','SAR-2025-0001 제출.',1,'2026-05-17 14:05:00');
 
 -- 10.11 AI_AGENT_RULE (핵심 5개)
-INSERT INTO `AI_AGENT_RULE` (indicator_no,rule_code,rule_name,tier_scope,metric_key,operator,threshold_value,unit,severity,regulation,action_required,priority) VALUES
-(18,'FEOC_RATIO_ZERO','FEOC 0% 위반','3차-A','feoc_ratio','>','0','%','CRITICAL','IRA/FEOC','대안 소싱 (D+7)',10),
-(1,'FORCED_LABOR_ZERO','강제노동 Zero','전체','forced_labor_yn','=','Y','Y/N','CRITICAL','CSDDD/UFLPA','감사 시정 (D+3)',5),
-(5,'TRIR_LIMIT','TRIR 한도','3차-A','trir','>','2.0','건/백만h','FAIL','CSDDD','안전 개선 (D+14)',20),
-(50,'FEOC_TIER1_LIMIT','1차 FEOC 한도','1차','feoc_ratio','>=','10','%','FAIL','IRA/FEOC','FEOC 비해당 소싱',15),
-(15,'MERCURY_ZERO','수은 사용 금지','3차-A','mercury_yn','=','Y','Y/N','CRITICAL','CSDDD/REACH','수은 즉시 중단',5);
+-- [2026-08-31 수정] v0.5 DDL 개정으로 삭제된 unit 컬럼 제거
+-- (active_yn 은 기본값 0 유지 — src/step02.py 룰 추출이 active_yn=0 을 대상으로 함)
+INSERT INTO `AI_AGENT_RULE` (indicator_no,rule_code,rule_name,tier_scope,metric_key,operator,threshold_value,severity,regulation,action_required,priority) VALUES
+(18,'FEOC_RATIO_ZERO','FEOC 0% 위반','3차-A','feoc_ratio','>','0','CRITICAL','IRA/FEOC','대안 소싱 (D+7)',10),
+(1,'FORCED_LABOR_ZERO','강제노동 Zero','전체','forced_labor_yn','=','Y','CRITICAL','CSDDD/UFLPA','감사 시정 (D+3)',5),
+(5,'TRIR_LIMIT','TRIR 한도','3차-A','trir','>','2.0','FAIL','CSDDD','안전 개선 (D+14)',20),
+(50,'FEOC_TIER1_LIMIT','1차 FEOC 한도','1차','feoc_ratio','>=','10','FAIL','IRA/FEOC','FEOC 비해당 소싱',15),
+(15,'MERCURY_ZERO','수은 사용 금지','3차-A','mercury_yn','=','Y','CRITICAL','CSDDD/REACH','수은 즉시 중단',5);
 
 -- 10.13 ESG_RISK_CRITERIA
 INSERT INTO `ESG_RISK_CRITERIA` (item_name,high_risk,medium_risk,low_risk) VALUES
